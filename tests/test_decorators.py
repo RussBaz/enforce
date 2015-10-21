@@ -1,5 +1,5 @@
 ﻿import unittest
-from typing import Any, Optional
+from typing import Any, Optional, Sequence, TypeVar, Generic
 
 import enforce
 from enforce.exceptions import RuntimeTypeError
@@ -140,6 +140,38 @@ class DecoratorsTests(unittest.TestCase):
 
         self.assertEqual(original_doc, test.__doc__)
         self.assertEqual(original_name, test.__name__)
+
+    def test_sequence(self):
+        """
+        Verifies that Sequence type is handled correctly.
+        """
+        @enforce.runtime_validation
+        def foo(x: Sequence[int]):
+            pass
+
+        with self.assertRaises(RuntimeTypeError):
+            foo(1)
+
+        with self.assertRaises(RuntimeTypeError):
+            foo(('a', range))
+
+    def test_generic(self):
+        """
+        Verifies that a generic type variable can be handled.
+        """
+        T = TypeVar('T')
+
+        @enforce.runtime_validation
+        def first(seq: Sequence[T]) -> T:
+            if issubclass(type(seq[0]), int):
+                return seq[0]
+            else:
+                return None
+
+        first([0, 1, 2])
+
+        with self.assertRaises(RuntimeTypeError):
+            first('abcd')
 
 if __name__ == '__main__':
     unittest.main()
