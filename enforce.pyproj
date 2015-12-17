@@ -30,6 +30,9 @@
   <ItemGroup>
     <Compile Include="enforce\decorators.py" />
     <Compile Include="enforce\exceptions.py" />
+    <Compile Include="enforce\validators.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="enforce\__init__.py" />
     <Compile Include="setup.py" />
     <Compile Include="tests\test_decorators.py" />
