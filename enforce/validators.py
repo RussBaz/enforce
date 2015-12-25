@@ -117,6 +117,8 @@ class UnionNode(BaseNode):
 
 
 class TypeVarNode(BaseNode):
+    # TODO: This node does not yet take covariant and contravariant properties
+    # of the TypeVar into an account
 
     def __init__(self):
         return super().__init__(typing.Any, False, True)
@@ -129,6 +131,27 @@ class TypeVarNode(BaseNode):
 
     def reduce_data(self, validator, data, old_data):
         return data[0]
+
+
+class TupleNode(BaseNode):
+
+    def __init__(self):
+        return super().__init__(typing.Tuple, True)
+
+    def validate_data(self, validator, data, sticky=False):
+        if issubclass(type(data), self.data_type):
+            return len(data) == len(self.children)
+        else:
+            return False
+
+    def map_data(self, validator, data):
+        output = []
+        for element in data:
+            output.append(element)
+        return output
+
+    def reduce_data(self, validator, data, old_data):
+        return tuple(data)
 
 
 class Validator:
