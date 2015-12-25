@@ -79,7 +79,8 @@ class SimpleNode(BaseNode):
         return super().__init__(data_type, True, True)
 
     def validate_data(self, validator, data, sticky=False):
-        print('Validation:', data, self.data_type)
+        # Will keep till all the debugging is over
+        #print('Validation:', data, self.data_type)
         return issubclass(type(data), self.data_type)
 
     def map_data(self, validator, data):
@@ -95,7 +96,8 @@ class UnionNode(BaseNode):
         return super().__init__(typing.Any, False)
 
     def validate_data(self, validator, data, sticky=False):
-        print('Validation:', data, self.data_type)
+        # Will keep till all the debugging is over
+        #print('Validation:', data, self.data_type)
         if sticky and self.last_type is not None:
             return type(data) == self.last_type
         return True
@@ -142,6 +144,8 @@ class Validator:
         validatiors = self._validate(self.roots[param_name], data, self)
         result = visit(validatiors)
         self.data_out[param_name] = self.roots[param_name].data_out
+        if not result:
+            self.errors.append(param_name)
         return result
 
     def reset(self):
