@@ -30,7 +30,13 @@
   <ItemGroup>
     <Compile Include="enforce\decorators.py" />
     <Compile Include="enforce\exceptions.py" />
-    <Compile Include="enforce\parser.py">
+    <Compile Include="enforce\nodes.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="enforce\parsers.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="enforce\utils.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="enforce\validators.py">
@@ -42,7 +48,22 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="tests\test_decorators.py" />
+    <Compile Include="tests\test_enforce.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="tests\test_exceptions.py" />
+    <Compile Include="tests\test_nodes.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\test_parsers.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\test_utils.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\test_validators.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="enforce\" />

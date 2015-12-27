@@ -3,14 +3,14 @@
 from enforce.exceptions import RuntimeTypeError
 
 
-class ExceptionTests(unittest.TestCase):
+class ExceptionsTests(unittest.TestCase):
     """
-    A container for custom exception related tests
+    A container for custom exceptions related tests
     """
 
     def test_raises(self):
         """
-        Verifies that an exception is raised and returns a correct message
+        Verifies that an exception can be raised and it returns a correct message
         """
         message = 'hello world'
         with self.assertRaises(RuntimeTypeError) as cm:

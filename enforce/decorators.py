@@ -5,7 +5,7 @@ from typing import get_type_hints, Callable, Any
 
 from .exceptions import RuntimeTypeError
 from .validators import Validator
-from .parser import Parser
+from .parsers import Parser
 
 
 def runtime_validation(func: Callable) -> Callable:

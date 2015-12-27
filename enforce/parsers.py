@@ -1,8 +1,8 @@
 import typing
-import types
 
-from enforce.validators import (Validator, SimpleNode, UnionNode,
-                                TypeVarNode, TupleNode, visit)
+import enforce.nodes as nodes
+from .validators import Validator
+from .utils import visit
 
 
 class Parser:
@@ -26,7 +26,7 @@ class Parser:
         yield parser(node, hint, caller)
 
     def _parse_default(self, node, hint, parser):
-        new_node = yield SimpleNode(hint)
+        new_node = yield nodes.SimpleNode(hint)
         parser.validator.all_nodes.append(new_node)
         yield self._yield_parsing_result(node, new_node)
 
@@ -36,7 +36,7 @@ class Parser:
         Union type has to be parsed into multiple nodes 
         in order to enable further validation of nested types
         """
-        new_node = yield UnionNode()
+        new_node = yield nodes.UnionNode()
         parser.validator.all_nodes.append(new_node)
         for element in hint.__union_params__:
             yield self._map_parser(new_node, element, parser)
@@ -46,7 +46,7 @@ class Parser:
         try:
             global_node = parser.validator.globals[hint.__name__]
         except KeyError:
-            global_node = yield UnionNode()
+            global_node = yield nodes.UnionNode()
             if hint.__constraints__:
                 for constraint in hint.__constraints__:
                     yield self._map_parser(global_node, constraint, parser)
@@ -55,13 +55,13 @@ class Parser:
             parser.validator.globals[hint.__name__] = global_node
             parser.validator.all_nodes.append(global_node)
 
-        new_node = yield TypeVarNode()
+        new_node = yield nodes.TypeVarNode()
         new_node.add_child(global_node)
         parser.validator.all_nodes.append(new_node)
         yield self._yield_parsing_result(node, new_node)
 
     def _parse_tuple(self, node, hint, parser):
-        new_node = yield TupleNode()
+        new_node = yield nodes.TupleNode()
         for element in hint.__tuple_params__:
             yield self._map_parser(new_node, element, parser)
         yield self._yield_parsing_result(node, new_node)
