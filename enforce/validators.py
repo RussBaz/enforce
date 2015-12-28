@@ -9,7 +9,7 @@ class Validator:
         self.data_out = {}
         self.roots = {}
         self.all_nodes = []
-    
+
     def validate(self, data, param_name):
         validatiors = self._validate(self.roots[param_name], data)
         result = visit(validatiors)

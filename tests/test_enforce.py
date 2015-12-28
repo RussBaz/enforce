@@ -11,25 +11,25 @@ class GeneralTests(unittest.TestCase):
     """
 
     def test_argument_validation(self):
-        self.assertEqual(self.sampleFunction('11', 1), 12)
+        self.assertEqual(self.sample_function('11', 1), 12)
 
         result = 0
         with self.assertRaises(RuntimeTypeError):
-            result += self.sampleFunction(1, 2)
+            result += self.sample_function(1, 2)
 
         self.assertEqual(result, 0)
 
     def test_return_value_validation(self):
-        self.assertIsNone(self.sampleFunction('', None))
+        self.assertIsNone(self.sample_function('', None))
 
         result = 0
         with self.assertRaises(RuntimeTypeError):
-            result += self.sampleFunction('', 1)
+            result += self.sample_function('', 1)
 
         self.assertEqual(result, 0)
 
     @runtime_validation
-    def sampleFunction(self, text: str, data: typing.Union[int, None]) -> typing.Optional[int]:
+    def sample_function(self, text: str, data: typing.Union[int, None]) -> typing.Optional[int]:
         try:
             return int(text) + data
         except ValueError:
@@ -55,15 +55,15 @@ class SimpleTypesTests(unittest.TestCase):
     def test_none(self):
         @runtime_validation
         def sample(data: None) -> None:
-            return None
+            return data
 
         @runtime_validation
-        def sampleBad(data: typing.Any) -> None:
+        def sample_bad(data: typing.Any) -> None:
             return data
 
         self.assertIsNone(sample(None))
         with self.assertRaises(RuntimeTypeError):
-            sample(1)
+            sample_bad(1)
 
     def test_bool(self):
         @runtime_validation
@@ -71,7 +71,7 @@ class SimpleTypesTests(unittest.TestCase):
             return not data
 
         @runtime_validation
-        def sampleBad(data: typing.Any) -> bool:
+        def sample_bad(data: typing.Any) -> bool:
             return data
 
         self.assertFalse(sample(True))
@@ -79,7 +79,7 @@ class SimpleTypesTests(unittest.TestCase):
             sample(1)
 
         with self.assertRaises(RuntimeTypeError):
-            sampleBad('string')
+            sample_bad('string')
 
     def test_int(self):
         @runtime_validation
@@ -87,7 +87,7 @@ class SimpleTypesTests(unittest.TestCase):
             return data
 
         @runtime_validation
-        def sampleBad(data: typing.Any) -> int:
+        def sample_bad(data: typing.Any) -> int:
             return data
 
         self.assertEqual(sample(1), 1)
@@ -95,7 +95,7 @@ class SimpleTypesTests(unittest.TestCase):
             sample('')
 
         with self.assertRaises(RuntimeTypeError):
-            sampleBad('')
+            sample_bad('')
 
     def test_float(self):
         @runtime_validation
@@ -103,7 +103,7 @@ class SimpleTypesTests(unittest.TestCase):
             return data
 
         @runtime_validation
-        def sampleBad(data: typing.Any) -> float:
+        def sample_bad(data: typing.Any) -> float:
             return data
 
         self.assertEqual(sample(1.0), 1.0)
@@ -111,7 +111,7 @@ class SimpleTypesTests(unittest.TestCase):
             sample('')
 
         with self.assertRaises(RuntimeTypeError):
-            sampleBad('')
+            sample_bad('')
 
     def test_complex(self):
         @runtime_validation
@@ -119,7 +119,7 @@ class SimpleTypesTests(unittest.TestCase):
             return data
 
         @runtime_validation
-        def sampleBad(data: typing.Any) -> complex:
+        def sample_bad(data: typing.Any) -> complex:
             return data
 
         self.assertEqual(sample(1+1j), 1+1j)
@@ -127,7 +127,7 @@ class SimpleTypesTests(unittest.TestCase):
             sample('')
 
         with self.assertRaises(RuntimeTypeError):
-            sampleBad('')
+            sample_bad('')
 
     def test_string(self):
         @runtime_validation
@@ -135,7 +135,7 @@ class SimpleTypesTests(unittest.TestCase):
             return data
 
         @runtime_validation
-        def sampleBad(data: typing.Any) -> str:
+        def sample_bad(data: typing.Any) -> str:
             return data
 
         self.assertEqual(sample(''), '')
@@ -143,7 +143,7 @@ class SimpleTypesTests(unittest.TestCase):
             sample(1)
 
         with self.assertRaises(RuntimeTypeError):
-            sampleBad(1)
+            sample_bad(1)
 
     def test_bytes(self):
         @runtime_validation
@@ -151,7 +151,7 @@ class SimpleTypesTests(unittest.TestCase):
             return data
 
         @runtime_validation
-        def sampleBad(data: typing.Any) -> bytes:
+        def sample_bad(data: typing.Any) -> bytes:
             return data
 
         self.assertEqual(sample(b''), b'')
@@ -159,7 +159,7 @@ class SimpleTypesTests(unittest.TestCase):
             sample('')
 
         with self.assertRaises(RuntimeTypeError):
-            sampleBad(1)
+            sample_bad(1)
 
     def test_bytearray(self):
         @runtime_validation
@@ -167,7 +167,7 @@ class SimpleTypesTests(unittest.TestCase):
             return data
 
         @runtime_validation
-        def sampleBad(data: typing.Any) -> bytearray:
+        def sample_bad(data: typing.Any) -> bytearray:
             return data
 
         self.assertEqual(sample(bytearray(2)), bytearray(2))
@@ -175,7 +175,7 @@ class SimpleTypesTests(unittest.TestCase):
             sample(b'')
 
         with self.assertRaises(RuntimeTypeError):
-            sampleBad(1)
+            sample_bad(1)
 
 
 class ComplextTypesTests(unittest.TestCase):
@@ -189,7 +189,7 @@ class ComplextTypesTests(unittest.TestCase):
             return data
 
         @runtime_validation
-        def sampleBad(data: typing.Any) -> typing.Union[int, str]:
+        def sample_bad(data: typing.Any) -> typing.Union[int, str]:
             return data
 
         self.assertEqual(sample(1), 1)
@@ -198,7 +198,7 @@ class ComplextTypesTests(unittest.TestCase):
             sample(b'')
 
         with self.assertRaises(RuntimeTypeError):
-            sampleBad(1.0)
+            sample_bad(1.0)
 
     def test_optional(self):
         @runtime_validation
@@ -206,7 +206,7 @@ class ComplextTypesTests(unittest.TestCase):
             return data
 
         @runtime_validation
-        def sampleBad(data: typing.Any) -> typing.Union[int]:
+        def sample_bad(data: typing.Any) -> typing.Union[int]:
             return data
 
         self.assertEqual(sample(1), 1)
@@ -215,7 +215,7 @@ class ComplextTypesTests(unittest.TestCase):
             sample('')
 
         with self.assertRaises(RuntimeTypeError):
-            sampleBad('')
+            sample_bad('')
 
     def test_tuple(self):
         @runtime_validation
@@ -223,7 +223,7 @@ class ComplextTypesTests(unittest.TestCase):
             return data
 
         @runtime_validation
-        def sampleBad(data: typing.Any) -> typing.Tuple[int, str]:
+        def sample_bad(data: typing.Any) -> typing.Tuple[int, str]:
             return data
 
         self.assertEqual(sample((1, '')), (1, ''))
@@ -237,7 +237,7 @@ class ComplextTypesTests(unittest.TestCase):
             sample([])
 
         with self.assertRaises(RuntimeTypeError):
-            sampleBad((''))
+            sample_bad((''))
 
     def test_simple_unbounded_type_var(self):
         A = typing.TypeVar('A')
@@ -247,14 +247,14 @@ class ComplextTypesTests(unittest.TestCase):
             return data
 
         @runtime_validation
-        def sampleBad(data: typing.Any, option: A) -> A:
+        def sample_bad(data: typing.Any, option: A) -> A:
             return data
 
         self.assertEqual(sample(1), 1)
-        self.assertEqual(sampleBad('', 'hello world'), '')
+        self.assertEqual(sample_bad('', 'hello world'), '')
 
         with self.assertRaises(RuntimeTypeError):
-            sampleBad('', 1)
+            sample_bad('', 1)
 
     def test_simple_bounded_type_var(self):
         A = typing.TypeVar('A', int, str)
@@ -264,19 +264,19 @@ class ComplextTypesTests(unittest.TestCase):
             return data
 
         @runtime_validation
-        def sampleBad(data: typing.Any) -> A:
+        def sample_bad(data: typing.Any) -> A:
             return data
 
         self.assertEqual(sample(1), 1)
         self.assertEqual(sample(''), '')
-        self.assertEqual(sampleBad(1), 1)
-        self.assertEqual(sampleBad(''), '')
+        self.assertEqual(sample_bad(1), 1)
+        self.assertEqual(sample_bad(''), '')
 
         with self.assertRaises(RuntimeTypeError):
             sample(1.0)
 
         with self.assertRaises(RuntimeTypeError):
-            sampleBad(1.0)
+            sample_bad(1.0)
 
 
 class ContainerTypesTests(unittest.TestCase):

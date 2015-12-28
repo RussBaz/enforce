@@ -1,5 +1,5 @@
 import typing
-from abc import ABC, abstractclassmethod
+from abc import ABC, abstractmethod
 
 
 class BaseNode(ABC):
@@ -20,7 +20,7 @@ class BaseNode(ABC):
         if not valid:
             yield False
             raise StopIteration
-        
+
         results = []
         propogated_data = self.map_data(validator, data)
 
@@ -49,15 +49,15 @@ class BaseNode(ABC):
         self.last_type = type(data)
         yield True
 
-    @abstractclassmethod
+    @abstractmethod
     def validate_data(self, validator, data, sticky=False):
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def map_data(self, validator, data):
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def reduce_data(self, validator, data, old_data):
         pass
 
@@ -72,9 +72,9 @@ class BaseNode(ABC):
 
 
 class SimpleNode(BaseNode):
-    
+
     def __init__(self, data_type):
-        return super().__init__(data_type, True, True)
+        super().__init__(data_type, True, True)
 
     def validate_data(self, validator, data, sticky=False):
         # Will keep till all the debugging is over
@@ -91,7 +91,7 @@ class SimpleNode(BaseNode):
 class UnionNode(BaseNode):
 
     def __init__(self):
-        return super().__init__(typing.Any, False)
+        super().__init__(typing.Any, False)
 
     def validate_data(self, validator, data, sticky=False):
         # Will keep till all the debugging is over
@@ -110,8 +110,7 @@ class UnionNode(BaseNode):
         for element in data:
             if element is not None:
                 return element
-        else:
-            return None
+        return None
 
 
 class TypeVarNode(BaseNode):
@@ -119,7 +118,7 @@ class TypeVarNode(BaseNode):
     # of the TypeVar into an account
 
     def __init__(self):
-        return super().__init__(typing.Any, False, True)
+        super().__init__(typing.Any, False, True)
 
     def validate_data(self, validator, data, sticky=False):
         return True
@@ -134,7 +133,7 @@ class TypeVarNode(BaseNode):
 class TupleNode(BaseNode):
 
     def __init__(self):
-        return super().__init__(typing.Tuple, True)
+        super().__init__(typing.Tuple, True)
 
     def validate_data(self, validator, data, sticky=False):
         if issubclass(type(data), self.data_type):

@@ -13,10 +13,10 @@ class ExceptionsTests(unittest.TestCase):
         Verifies that an exception can be raised and it returns a correct message
         """
         message = 'hello world'
-        with self.assertRaises(RuntimeTypeError) as cm:
+        with self.assertRaises(RuntimeTypeError) as error:
             raise RuntimeTypeError(message)
 
-        self.assertEqual(message, cm.exception.__str__())
+        self.assertEqual(message, error.exception.__str__())
 
 if __name__ == '__main__':
     unittest.main()

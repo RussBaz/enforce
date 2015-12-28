@@ -14,9 +14,8 @@ class Parser:
             typing.TypeVar: self._parse_type_var,
             typing.TupleMeta: self._parse_tuple
             }
-    
+
     def parse(self, hint, hint_name):
-        self.globals = {}
         parsers = self._map_parser(None, hint, self)
         tree = visit(parsers)
         self.validator.roots[hint_name] = tree
@@ -33,7 +32,7 @@ class Parser:
     def _parse_union(self, node, hint, parser):
         """
         Parses Union type
-        Union type has to be parsed into multiple nodes 
+        Union type has to be parsed into multiple nodes
         in order to enable further validation of nested types
         """
         new_node = yield nodes.UnionNode()
