@@ -12,7 +12,9 @@ class Parser:
         self._mapping = {
             typing.UnionMeta: self._parse_union,
             typing.TypeVar: self._parse_type_var,
-            typing.TupleMeta: self._parse_tuple
+            typing.TupleMeta: self._parse_tuple,
+            complex: self._parse_complex,
+            float: self._parse_float
             }
 
     def parse(self, hint, hint_name):
@@ -21,7 +23,11 @@ class Parser:
         self.validator.roots[hint_name] = tree
 
     def _map_parser(self, node, hint, caller):
-        parser = self._mapping.get(type(hint), self._parse_default)
+        print(hint)
+        if type(hint) == type:
+            parser = self._mapping.get(hint, self._parse_default)
+        else:
+            parser = self._mapping.get(type(hint), self._parse_default)
         yield parser(node, hint, caller)
 
     def _parse_default(self, node, hint, parser):
@@ -63,6 +69,27 @@ class Parser:
         new_node = yield nodes.TupleNode()
         for element in hint.__tuple_params__:
             yield self._map_parser(new_node, element, parser)
+        yield self._yield_parsing_result(node, new_node)
+
+    def _parse_complex(self, node, hint, parser):
+        """
+        In Python both float and integer numbers can be used in place where
+        complex numbers are expected
+        """
+        new_node = yield nodes.UnionNode()
+        parser.validator.all_nodes.append(new_node)
+        for element in [complex, int, float]:
+            yield self._parse_default(new_node, element, parser)
+        yield self._yield_parsing_result(node, new_node)
+
+    def _parse_float(self, node, hint, parser):
+        """
+        Floats should accept integers as well, but not otherwise
+        """
+        new_node = yield nodes.UnionNode()
+        parser.validator.all_nodes.append(new_node)
+        for element in [int, float]:
+            yield self._parse_default(new_node, element, parser)
         yield self._yield_parsing_result(node, new_node)
 
     def _yield_parsing_result(self, node, new_node):

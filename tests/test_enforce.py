@@ -92,12 +92,15 @@ class SimpleTypesTests(unittest.TestCase):
 
         self.assertEqual(sample(1), 1)
         with self.assertRaises(RuntimeTypeError):
-            sample('')
+            sample(1.0)
 
         with self.assertRaises(RuntimeTypeError):
             sample_bad('')
 
     def test_float(self):
+        """
+        Floats should accept both floats and integers
+        """
         @runtime_validation
         def sample(data: float) -> float:
             return data
@@ -107,6 +110,7 @@ class SimpleTypesTests(unittest.TestCase):
             return data
 
         self.assertEqual(sample(1.0), 1.0)
+        self.assertEqual(sample(1), 1)
         with self.assertRaises(RuntimeTypeError):
             sample('')
 
@@ -114,6 +118,9 @@ class SimpleTypesTests(unittest.TestCase):
             sample_bad('')
 
     def test_complex(self):
+        """
+        Complex numbers should accept complex, integers and floats
+        """
         @runtime_validation
         def sample(data: complex) -> complex:
             return data
@@ -123,6 +130,8 @@ class SimpleTypesTests(unittest.TestCase):
             return data
 
         self.assertEqual(sample(1+1j), 1+1j)
+        self.assertEqual(sample(1), 1)
+        self.assertEqual(sample(1.0), 1.0)
         with self.assertRaises(RuntimeTypeError):
             sample('')
 
