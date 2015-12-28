@@ -164,6 +164,8 @@ class SimpleTypesTests(unittest.TestCase):
             return data
 
         self.assertEqual(sample(b''), b'')
+        self.assertEqual(sample(bytearray(2)), bytearray(2))
+        self.assertEqual(sample(memoryview(b'')), memoryview(b''))
         with self.assertRaises(RuntimeTypeError):
             sample('')
 
@@ -180,6 +182,22 @@ class SimpleTypesTests(unittest.TestCase):
             return data
 
         self.assertEqual(sample(bytearray(2)), bytearray(2))
+        with self.assertRaises(RuntimeTypeError):
+            sample(b'')
+
+        with self.assertRaises(RuntimeTypeError):
+            sample_bad(1)
+
+    def test_memoryview(self):
+        @runtime_validation
+        def sample(data: memoryview) -> memoryview:
+            return data
+
+        @runtime_validation
+        def sample_bad(data: typing.Any) -> memoryview:
+            return data
+
+        self.assertEqual(sample(memoryview(b'')), memoryview(b''))
         with self.assertRaises(RuntimeTypeError):
             sample(b'')
 

@@ -14,7 +14,8 @@ class Parser:
             typing.TypeVar: self._parse_type_var,
             typing.TupleMeta: self._parse_tuple,
             complex: self._parse_complex,
-            float: self._parse_float
+            float: self._parse_float,
+            bytes: self._parse_bytes
             }
 
     def parse(self, hint, hint_name):
@@ -23,7 +24,6 @@ class Parser:
         self.validator.roots[hint_name] = tree
 
     def _map_parser(self, node, hint, caller):
-        print(hint)
         if type(hint) == type:
             parser = self._mapping.get(hint, self._parse_default)
         else:
@@ -76,19 +76,27 @@ class Parser:
         In Python both float and integer numbers can be used in place where
         complex numbers are expected
         """
-        new_node = yield nodes.UnionNode()
-        parser.validator.all_nodes.append(new_node)
-        for element in [complex, int, float]:
-            yield self._parse_default(new_node, element, parser)
-        yield self._yield_parsing_result(node, new_node)
+        hints = [complex, int, float]
+        yield self._yield_unified_node(node, hints, parser)
 
     def _parse_float(self, node, hint, parser):
         """
         Floats should accept integers as well, but not otherwise
         """
+        hints = [int, float]
+        yield self._yield_unified_node(node, hints, parser)
+
+    def _parse_bytes(self, node, hint, parser):
+        """
+        Floats should accept integers as well, but not otherwise
+        """
+        hints = [bytearray, memoryview, bytes]
+        yield self._yield_unified_node(node, hints, parser)
+
+    def _yield_unified_node(self, node, hints, parser):
         new_node = yield nodes.UnionNode()
         parser.validator.all_nodes.append(new_node)
-        for element in [int, float]:
+        for element in hints:
             yield self._parse_default(new_node, element, parser)
         yield self._yield_parsing_result(node, new_node)
 
