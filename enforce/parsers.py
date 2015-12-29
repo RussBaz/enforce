@@ -13,6 +13,7 @@ class Parser:
             typing.UnionMeta: self._parse_union,
             typing.TypeVar: self._parse_type_var,
             typing.TupleMeta: self._parse_tuple,
+            typing.GenericMeta: self._parse_generic,
             complex: self._parse_complex,
             float: self._parse_float,
             bytes: self._parse_bytes
@@ -92,6 +93,9 @@ class Parser:
         """
         hints = [bytearray, memoryview, bytes]
         yield self._yield_unified_node(node, hints, parser)
+
+    def _parse_generic(self, node, hint, parser):
+        yield self._parse_default(node, hint, parser)
 
     def _yield_unified_node(self, node, hints, parser):
         new_node = yield nodes.UnionNode()

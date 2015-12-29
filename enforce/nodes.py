@@ -74,7 +74,7 @@ class BaseNode(ABC):
 class SimpleNode(BaseNode):
 
     def __init__(self, data_type):
-        super().__init__(data_type, True, True)
+        super().__init__(data_type, strict=True, type_var=False)
 
     def validate_data(self, validator, data, sticky=False):
         # Will keep till all the debugging is over

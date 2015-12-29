@@ -155,6 +155,9 @@ class SimpleTypesTests(unittest.TestCase):
             sample_bad(1)
 
     def test_bytes(self):
+        """
+        BYtes should accept bytes as well bytearray and memorieview
+        """
         @runtime_validation
         def sample(data: bytes) -> bytes:
             return data
@@ -331,7 +334,33 @@ class GenericTypesTests(unittest.TestCase):
     """
     Tests for the generic types
     """
-    pass
+    
+    def test_custom_generic(self):
+        T = typing.TypeVar('T')
+        class Sample(typing.Generic[T]):
+            def get(self, data: T) -> T:
+                return data
+
+        @runtime_validation
+        def return_int(data: Sample[int], arg: int) -> int:
+            return data.get(arg)
+
+        good = Sample[int]()
+        bad = Sample[str]()
+        #other = Sample()
+        #strange = Sample[T]()
+
+        #print('t:', type(good))
+        #print('t:', type(bad))
+        #print('t:', type(other))
+
+        #print(issubclass(type(good), Sample[int]))
+        #print(issubclass(type(good), typing.Generic))
+
+        self.assertEqual(return_int(good, 1), 1)
+
+        with self.assertRaises(RuntimeTypeError):
+            return_int(bad, 1)
 
 
 class NestedTypesTests(unittest.TestCase):

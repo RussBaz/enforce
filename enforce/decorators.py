@@ -1,48 +1,28 @@
 import inspect
+import typing
 from functools import wraps
-from typing import get_type_hints, Callable, Any
 
 from .exceptions import RuntimeTypeError
 from .parsers import Parser
+from .validators import Validator
 
 
-def runtime_validation(func: Callable) -> Callable:
+def runtime_validation(func: typing.Callable) -> typing.Callable:
     """
     This decorator enforces runtime parameter and return value validation
     It uses the standard Python 3.5 syntax for type hinting declaration
     """
     func_signature = inspect.signature(func)
 
-    argument_hints = get_type_hints(func)
+    argument_hints = typing.get_type_hints(func)
 
-    parser = Parser()
-    for name, hint in argument_hints.items():
-        if hint is None:
-            hint = type(None)
-        parser.parse(hint, name)
+    validator = get_validator(func, argument_hints)
 
-    validator = parser.validator
-
-    def parse_errors(errors, hints, return_type=False):
-        """
-        Generates an exception message based on which fields failed
-        """
-        error_message = "       Argument '{0}' was not of type {1}."
-        return_error_message = "        Return value was not of type {0}."
-        output = '\n  The following runtime type errors were encountered:'
-
-        for error in errors:
-            hint = hints.get(error, type(None))
-            if hint is None:
-                hint = type(None)
-            if return_type:
-                output += '\n' + return_error_message.format(hint)
-            else:
-                output += '\n' +  error_message.format(error, hint)
-        return output
+    if not validator:
+        return func
 
     @wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
+    def wrapper(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
         """
         This function will be returned by the decorator. It adds type checking before triggering
         the original function and then it checks for the output type. Only then it returns the
@@ -72,3 +52,53 @@ def runtime_validation(func: Callable) -> Callable:
         raise RuntimeTypeError(exception_text)
 
     return wrapper
+
+
+def get_validator(func: typing.Callable, hints: typing.Dict):
+    """
+    Checks if the function was already decorated with a type checker
+    Returns new validator if it was not and creates a new attribute in the passed function
+    with a new validator.
+    Otherwise, returns None
+    """
+    try:
+        if isinstance(func.__validator__, Validator):
+            return None
+        else:
+            func.__validator__ = init_validator(hints)
+            return func.__validator__
+    except AttributeError:
+        func.__validator__ = init_validator(hints)
+        return func.__validator__
+
+
+def init_validator(hints: typing.Dict):
+    """
+    Returns a new validator instance from a given dictionary of type hints
+    """
+    parser = Parser()
+    for name, hint in hints.items():
+        if hint is None:
+            hint = type(None)
+        parser.parse(hint, name)
+
+    return parser.validator
+
+
+def parse_errors(errors, hints, return_type=False):
+    """
+    Generates an exception message based on which fields failed
+    """
+    error_message = "       Argument '{0}' was not of type {1}. Actual type was: {2}"
+    return_error_message = "        Return value was not of type {0}. Actual type was: {1}"
+    output = '\n  The following runtime type errors were encountered:'
+
+    for error in errors:
+        hint = hints.get(error, type(None))
+        if hint is None:
+            hint = type(None)
+        if return_type:
+            output += '\n' + return_error_message.format(hint, 'mmm')
+        else:
+            output += '\n' +  error_message.format(error, hint, 'eeee')
+    return output
