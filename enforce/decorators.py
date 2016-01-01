@@ -7,21 +7,44 @@ from .parsers import Parser
 from .validators import Validator
 
 
-def runtime_validation(func: typing.Callable) -> typing.Callable:
+def runtime_validation(data, origin=True):
     """
     This decorator enforces runtime parameter and return value validation
     It uses the standard Python 3.5 syntax for type hinting declaration
     """
-    func_signature = inspect.signature(func)
 
-    argument_hints = typing.get_type_hints(func)
+    if isinstance(data, type):
+        for attr_name in dir(data):
+            try:
+                if attr_name == '__class__':
+                    raise AttributeError
+                old_attr = getattr(data, attr_name)
+                new_attr = decorate(old_attr)
+                setattr(data, attr_name, new_attr)
+            except AttributeError:
+                pass
+    else:
+        data = decorate(data)
+    return data
 
-    validator = get_validator(func, argument_hints)
+
+def decorate(data):
+    """
+    Performs the function decoration
+    """
+    if not hasattr(data, '__annotations__'):
+        return data
+
+    func_signature = inspect.signature(data)
+
+    argument_hints = typing.get_type_hints(data)
+
+    validator = get_validator(data, argument_hints)
 
     if not validator:
-        return func
+        return data
 
-    @wraps(func)
+    @wraps(data)
     def wrapper(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
         """
         This function will be returned by the decorator. It adds type checking before triggering
@@ -41,7 +64,7 @@ def runtime_validation(func: typing.Callable) -> typing.Callable:
                     break
                 binded_arguments.arguments[name] = validator.data_out[name]
         else:
-            result = func(*binded_arguments.args, **binded_arguments.kwargs)
+            result = data(*binded_arguments.args, **binded_arguments.kwargs)
             if 'return' in argument_hints.keys():
                 if not validator.validate(result, 'return'):
                     exception_text = parse_errors(validator.errors, argument_hints, True)
