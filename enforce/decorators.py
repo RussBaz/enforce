@@ -7,28 +7,29 @@ from .parsers import Parser
 from .validators import Validator
 
 
-def runtime_validation(data, origin=True):
+def runtime_validation(data, instance=None):
     """
     This decorator enforces runtime parameter and return value validation
     It uses the standard Python 3.5 syntax for type hinting declaration
     """
 
     if isinstance(data, type):
+        instance = data
         for attr_name in dir(data):
             try:
                 if attr_name == '__class__':
                     raise AttributeError
                 old_attr = getattr(data, attr_name)
-                new_attr = decorate(old_attr)
+                new_attr = decorate(old_attr, instance)
                 setattr(data, attr_name, new_attr)
             except AttributeError:
                 pass
     else:
-        data = decorate(data)
+        data = decorate(data, instance)
     return data
 
 
-def decorate(data):
+def decorate(data, instance=None):
     """
     Performs the function decoration
     """
@@ -39,7 +40,7 @@ def decorate(data):
 
     argument_hints = typing.get_type_hints(data)
 
-    validator = get_validator(data, argument_hints)
+    validator = get_validator(data, argument_hints, instance)
 
     if not validator:
         return data
@@ -77,13 +78,15 @@ def decorate(data):
     return wrapper
 
 
-def get_validator(func: typing.Callable, hints: typing.Dict):
+def get_validator(func: typing.Callable, hints: typing.Dict, instance=None):
     """
     Checks if the function was already decorated with a type checker
     Returns new validator if it was not and creates a new attribute in the passed function
     with a new validator.
     Otherwise, returns None
     """
+    if instance:
+        func = instance
     try:
         if isinstance(func.__validator__, Validator):
             return None

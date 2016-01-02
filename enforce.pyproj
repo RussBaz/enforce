@@ -42,6 +42,9 @@
     <Compile Include="enforce\validators.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="enforce\wrappers.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="enforce\__init__.py" />
     <Compile Include="setup.py" />
     <Compile Include="tests\test_decorators.py" />
@@ -61,6 +64,9 @@
     <Compile Include="tests\test_validators.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="tests\test_wrappers.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="enforce\" />
@@ -68,6 +74,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="README.rst" />
+    <Content Include="requirements.txt" />
   </ItemGroup>
   <ItemGroup>
     <Interpreter Include="env\">

@@ -43,6 +43,18 @@ class GeneralTests(unittest.TestCase):
         with self.assertRaises(RuntimeTypeError):
             sample.test('')
 
+    def test_method_decorator(self):
+        class SampleClass:
+            @runtime_validation
+            def test(self, data: int) -> int:
+                return data
+
+        sample = SampleClass()
+        self.assertEqual(sample.test(1), 1)
+
+        with self.assertRaises(RuntimeTypeError):
+            sample.test('')
+
     @runtime_validation
     def sample_function(self, text: str, data: typing.Union[int, None]) -> typing.Optional[int]:
         try:

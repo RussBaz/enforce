@@ -31,5 +31,8 @@ setup(
         'Programming Language :: Python :: 3.5',
     ],
     keywords='type validation',
-    packages=['enforce']
+    packages=['enforce'],
+    install_requires=[
+          'wrapt',
+    ]
 )
