@@ -19,7 +19,7 @@ class BaseNode(ABC):
 
         if not valid:
             yield False
-            raise StopIteration
+            return
 
         results = []
         propogated_data = self.map_data(validator, data)
@@ -38,7 +38,7 @@ class BaseNode(ABC):
 
         if not valid:
             yield False
-            raise StopIteration
+            return
 
         returned_data = [a.data_out for a in self.children]
         self.data_out = self.reduce_data(validator, returned_data, data)
