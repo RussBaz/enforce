@@ -1,4 +1,5 @@
 ﻿import unittest
+import typing
 
 from enforce import runtime_validation
 from enforce.exceptions import RuntimeTypeError
@@ -29,19 +30,23 @@ class DecoratorsTests(unittest.TestCase):
         """
         Checks if a class object can be decorated
         """
+        @runtime_validation
         class SampleClass:
             def test(self, data: int) -> int:
                 return data
 
-        sample = SampleClass()
-        self.assertEqual(sample.test(1), 1)
+            def test_bad(self, data: typing.Any) -> int:
+                return data
 
-        SampleClass = runtime_validation(SampleClass)
         sample = SampleClass()
         self.assertEqual(sample.test(1), 1)
+        self.assertEqual(sample.test_bad(1), 1)
 
         with self.assertRaises(RuntimeTypeError):
             sample.test('')
+
+        with self.assertRaises(RuntimeTypeError):
+            sample.test_bad('')
 
     def test_method(self):
         """
@@ -52,18 +57,79 @@ class DecoratorsTests(unittest.TestCase):
             def test(self, data: int) -> int:
                 return data
 
+            @runtime_validation
+            def test_bad(self, data: typing.Any) -> int:
+                return data
+
         sample = SampleClass()
         self.assertEqual(sample.test(1), 1)
+        self.assertEqual(sample.test_bad(1), 1)
 
         with self.assertRaises(RuntimeTypeError):
             sample.test('')
 
-    @unittest.skip
+        with self.assertRaises(RuntimeTypeError):
+            sample.test_bad('')
+
     def test_staticmethod(self):
         """
         Checks if a staticmethod of a class object can be decorated
         """
-        pass
+        class SampleClass:
+            @runtime_validation
+            @staticmethod
+            def test(data: int) -> int:
+                return data
+
+            @staticmethod
+            @runtime_validation
+            def test2(data: int) -> int:
+                return data
+
+            @runtime_validation
+            @staticmethod
+            def test_bad(data: typing.Any) -> int:
+                return data
+
+            @staticmethod
+            @runtime_validation
+            def test_bad2(data: typing.Any) -> int:
+                return data
+
+        sample = SampleClass()
+        self.assertEqual(sample.test(1), 1)
+        self.assertEqual(sample.test2(1), 1)
+        self.assertEqual(sample.test_bad(1), 1)
+        self.assertEqual(sample.test_bad2(1), 1)
+
+        self.assertEqual(SampleClass.test(1), 1)
+        self.assertEqual(SampleClass.test2(1), 1)
+        self.assertEqual(SampleClass.test_bad(1), 1)
+        self.assertEqual(SampleClass.test_bad2(1), 1)
+
+        with self.assertRaises(RuntimeTypeError):
+            sample.test('')
+
+        with self.assertRaises(RuntimeTypeError):
+            sample.test2('')
+
+        with self.assertRaises(RuntimeTypeError):
+            sample.test_bad('')
+
+        with self.assertRaises(RuntimeTypeError):
+            sample.test_bad2('')
+
+        with self.assertRaises(RuntimeTypeError):
+            SampleClass.test('')
+
+        with self.assertRaises(RuntimeTypeError):
+            SampleClass.test2('')
+
+        with self.assertRaises(RuntimeTypeError):
+            SampleClass.test_bad('')
+
+        with self.assertRaises(RuntimeTypeError):
+            SampleClass.test_bad2('')
 
     @unittest.skip
     def test_clasmethod(self):

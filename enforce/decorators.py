@@ -12,9 +12,7 @@ def runtime_validation(data, instance=None):
     This decorator enforces runtime parameter and return value validation
     It uses the standard Python 3.5 syntax for type hinting declaration
     """
-
     if isinstance(data, type):
-        instance = data
         for attr_name in dir(data):
             try:
                 if attr_name == '__class__':
@@ -33,6 +31,9 @@ def decorate(data, instance=None):
     """
     Performs the function decoration
     """
+    if isinstance(data, staticmethod):
+       return staticmethod(decorate(data.__get__(staticmethod)))
+
     if not hasattr(data, '__annotations__'):
         return data
 
