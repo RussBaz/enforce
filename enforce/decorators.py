@@ -1,5 +1,6 @@
 import inspect
 import typing
+from inspect import ismethoddescriptor
 from functools import wraps
 
 from .exceptions import RuntimeTypeError
@@ -32,7 +33,7 @@ def decorate(data, instance=None):
     Performs the function decoration
     """
     if isinstance(data, staticmethod):
-       return staticmethod(decorate(data.__get__(staticmethod)))
+       return staticmethod(decorate(data.__get__(staticmethod), instance))
 
     if not hasattr(data, '__annotations__'):
         return data
@@ -116,16 +117,16 @@ def parse_errors(errors, hints, return_type=False):
     """
     Generates an exception message based on which fields failed
     """
-    error_message = "       Argument '{0}' was not of type {1}. Actual type was: {2}"
-    return_error_message = "        Return value was not of type {0}. Actual type was: {1}"
-    output = '\n  The following runtime type errors were encountered:'
+    error_message = "       Argument '{0}' was not of type {1}."
+    return_error_message = "        Return value was not of type {0}."
+    output = "\n  The following runtime type errors were encountered:"
 
     for error in errors:
         hint = hints.get(error, type(None))
         if hint is None:
             hint = type(None)
         if return_type:
-            output += '\n' + return_error_message.format(hint, 'mmm')
+            output += '\n' + return_error_message.format(hint)
         else:
-            output += '\n' +  error_message.format(error, hint, 'eeee')
+            output += '\n' +  error_message.format(error, hint)
     return output
