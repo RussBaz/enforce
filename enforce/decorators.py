@@ -2,6 +2,9 @@ import inspect
 import typing
 from inspect import ismethoddescriptor
 from functools import wraps
+from pprint import pprint
+
+from wrapt import decorator
 
 from .exceptions import RuntimeTypeError
 from .parsers import Parser
@@ -13,6 +16,7 @@ def runtime_validation(data, instance=None):
     This decorator enforces runtime parameter and return value validation
     It uses the standard Python 3.5 syntax for type hinting declaration
     """
+    # If class, try to apply to every attribute
     if isinstance(data, type):
         for attr_name in dir(data):
             try:
@@ -23,18 +27,48 @@ def runtime_validation(data, instance=None):
                 setattr(data, attr_name, new_attr)
             except AttributeError:
                 pass
+    elif isinstance(data, staticmethod):
+        data = staticmethod(decorate(data.__func__))
+    elif isinstance(data, classmethod):
+        data = classmethod(decorate(data.__func__))
     else:
         data = decorate(data, instance)
     return data
 
+    # Some experiments
 
-def decorate(data, instance=None):
+    #@decorator
+    #def universal(wrapped, instance, args, kwargs):
+    #    if instance is None:
+    #        if inspect.isclass(wrapped):
+    #            # Decorator was applied to a class
+    #            # Cycle trough attributes and replace functions with annotations
+    #            for attr_name in dir(wrapped):
+    #                try:
+    #                    if attr_name == '__class__':
+    #                        raise AttributeError
+    #                    old_attr = getattr(wrapped, attr_name)
+    #                    new_attr = decorate(old_attr, None)
+    #                    setattr(wrapped, attr_name, new_attr)
+    #                except AttributeError:
+    #                    pass
+    #            return wrapped
+    #        else:
+    #            # Decorator was applied to a function or staticmethod.
+    #            return decorate(wrapped, None)
+    #    else:
+    #        if inspect.isclass(instance):
+    #            # Decorator was applied to a classmethod.
+    #            return wrapped(*args, **kwargs)
+    #        else:
+    #            # Decorator was applied to an instancemethod.
+    #            return wrapped(*args, **kwargs)
+
+
+def decorate(data, obj_instance=None):
     """
     Performs the function decoration
     """
-    if isinstance(data, staticmethod):
-       return staticmethod(decorate(data.__get__(staticmethod), instance))
-
     if not hasattr(data, '__annotations__'):
         return data
 
@@ -42,7 +76,7 @@ def decorate(data, instance=None):
 
     argument_hints = typing.get_type_hints(data)
 
-    validator = get_validator(data, argument_hints, instance)
+    validator = get_validator(data, argument_hints, obj_instance)
 
     if not validator:
         return data
