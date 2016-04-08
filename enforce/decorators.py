@@ -43,12 +43,14 @@ def check_recursive_types(types: typing.Iterable[typing.Tuple[str, typing.Any, t
             names = [name] * len(variable)   # also need to have name in there for error message
             if issubclass(type(variable), dict):
                 # If we're looking at dict, need to check keys and items independently
-                subhints1 = [subhints[0]] * len(variable)
-                subhints2 = [subhints[1]] * len(variable)
-                new_typecheck1, new_exception_text1 = check_recursive_types(zip(names, variable.keys(), subhints1), msg=msg)
-                new_typecheck2, new_exception_text2 = check_recursive_types(zip(names, variable.values(), subhints2), msg=msg)
-                new_typecheck      = new_typecheck1 and new_typecheck2
-                new_exception_text = new_exception_text1 + new_exception_text2
+                lists = [variable.keys(), variable.values()]
+                new_typecheck = typecheck
+                new_exception_text = ''
+                for i in range(2):
+                    subhintsi = [subhints[i]] * len(variable)
+                    new_typechecki, new_exception_texti = check_recursive_types(zip(names, lists[i], subhintsi), msg=msg)
+                    new_typecheck &= new_typechecki
+                    new_exception_text += new_exception_texti
             else:
                 if len(subhints) == 1:    # If only 1 subhint then /possibly/ applies to all elements
                     subhints = [subhints] * len(variable)
