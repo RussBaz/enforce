@@ -1,4 +1,5 @@
 ﻿import unittest
+import typing
 from typing import Any, Optional
 
 import enforce
@@ -29,7 +30,8 @@ class DecoratorsTests(unittest.TestCase):
         invalid_argument = 12   # Assumed to be integer
 
         error_code_1 = "Argument 'text' ('{0}') was not of type <class 'str'>. Actual type was <class 'int'>.".format(invalid_argument)
-        error_code_2 = "Return value '{0}' was not of type <class 'NoneType'>. Actual type was <class 'str'>.".format(message)
+        error_code_2 = ("Function '{0}' return value '{1}' was not of type {2}. "
+                        "Actual type was {3}.").format('test2', message, "<class 'NoneType'>", "<class 'str'>")
 
         self.assertIsNone(test(message))
 
@@ -89,7 +91,8 @@ class DecoratorsTests(unittest.TestCase):
         val_4 = {'integer': 12}
         last_4 = 1
 
-        error_message_4 = "Return value '{0}' was not of type <class 'str'>. Actual type was {1}.".format(None, type(None))
+        error_message_4= ("Function '{0}' return value '{1}' was not of type {2}. "
+                          "Actual type was {3}.").format('test2', None, "<class 'str'>", type(None))
 
         with self.assertRaises(RuntimeTypeError) as cm:
             test2(param_4, text_4, val_4, last_4)
@@ -140,6 +143,69 @@ class DecoratorsTests(unittest.TestCase):
 
         self.assertEqual(original_doc, test.__doc__)
         self.assertEqual(original_name, test.__name__)
+
+    def test_working_callable_argument(self):
+        @enforce.runtime_validation
+        def foo(func: typing.Callable[[int], str], bar: int) -> str:
+            return func(bar)
+
+        foo(lambda x: str(x), 5)
+
+        try:
+            foo(5, 7)
+        except enforce.exceptions.RuntimeTypeError:
+            pass
+
+    def test_tuple_support(self):
+        @enforce.runtime_validation
+        def test(tup: typing.Tuple[int, str, float]) -> typing.Tuple[str, int]:
+            return tup[1], tup[0]
+
+        tup = ('a', 5, 3.0)
+        try:
+            test(tup)
+            raise AssertionError('RuntimeTypeError should have been raised')
+        except enforce.exceptions.RuntimeTypeError:
+            pass
+
+    def test_list_support(self):
+        @enforce.runtime_validation
+        def test(arr: typing.List[str]) -> typing.List[str]:
+            return arr[:1]
+
+        arr = [1, 'b', 'c']
+        try:
+            test(arr)
+            raise AssertionError('RuntimeTypeError should have been raised')
+        except enforce.exceptions.RuntimeTypeError:
+            pass
+
+    def test_dict_support(self):
+        @enforce.runtime_validation
+        def test(hash: typing.Dict[str, int]) -> typing.Dict[int, str]:
+            return {value: key for key, value in hash.items()}
+
+        hash = {5: 1, 'b': 5}
+        try:
+            test(hash)
+            raise AssertionError('RuntimeTypeError should have been raised')
+        except enforce.exceptions.RuntimeTypeError:
+            pass
+
+    def test_recursion_slim(self):
+        @enforce.runtime_validation
+        def test(tup: typing.Tuple) -> typing.Tuple:
+            return tup
+
+        tup = (1, 2)
+        try:
+            test(tup)
+            raise AssertionError('RuntimeTypeError should have been raised')
+        except enforce.exceptions.RuntimeTypeError:
+            pass
+
+
+
 
 if __name__ == '__main__':
     unittest.main()
