@@ -165,6 +165,30 @@ class DecoratorsTests(unittest.TestCase):
         except enforce.exceptions.RuntimeTypeError:
             pass
 
+    def test_list_support(self):
+        @enforce.runtime_validation
+        def test(arr: typing.List[str]) -> typing.List[str]:
+            return arr[:1]
+
+        arr = [1, 'b', 'c']
+        try:
+            test(arr)
+            raise AssertionError('RuntimeTypeError should have been raised')
+        except enforce.exceptions.RuntimeTypeError:
+            pass
+
+    def test_dict_support(self):
+        @enforce.runtime_validation
+        def test(hash: typing.Dict[str, int]) -> typing.Dict[int, str]:
+            return {value: key for key, value in hash.items()}
+
+        hash = {5: 1, 'b': 5}
+        try:
+            test(hash)
+            raise AssertionError('RuntimeTypeError should have been raised')
+        except enforce.exceptions.RuntimeTypeError:
+            pass
+
 
 
 if __name__ == '__main__':
