@@ -14,7 +14,7 @@ def check_iterability(vartype: typing.TypeVar, hint: typing.TypeVar):
     return check_iterable and check_not_str and check_not_Any
 
 
-def check_recursive_types(types: typing.Iterable[typing.Tuple[str, typing.Any, typing.Any]]) -> typing.Tuple[bool, str]:
+def check_recursive_types(types: typing.Iterable[typing.Tuple[str, typing.Any, typing.Any]], msg: str) -> typing.Tuple[bool, str]:
     """
     Recursively checks types of some iterable.
 
@@ -24,7 +24,6 @@ def check_recursive_types(types: typing.Iterable[typing.Tuple[str, typing.Any, t
     Note, this is a /huge/ slowdown for large arrays. Possibly optimizations definitely exist.
     If it's ultra nested, yer gonna have a bad time.
     """
-    error_message = "Argument '{0}' ('{1}') was not of type {2}. Actual type was {3}.\n"
     typecheck = True
     exception_text = ''
     for name, variable, hint in types:
@@ -32,7 +31,7 @@ def check_recursive_types(types: typing.Iterable[typing.Tuple[str, typing.Any, t
         isiterable = check_iterability(vartype, hint)
         if not issubclass(vartype, hint):
             typecheck = False
-            exception_text += error_message.format(name, str(variable), hint, vartype)
+            exception_text += msg.format(name, str(variable), hint, vartype)
         if isiterable:
             # If we're currently examining an iterable type we need to recurse
             # __tuple_params__ defined on line 646 of typing.py
@@ -46,14 +45,14 @@ def check_recursive_types(types: typing.Iterable[typing.Tuple[str, typing.Any, t
                 # If we're looking at dict, need to check keys and items independently
                 subhints1 = [subhints[0]] * len(variable)
                 subhints2 = [subhints[1]] * len(variable)
-                new_typecheck1, new_exception_text1 = check_recursive_types(zip(names, variable.keys(), subhints1))
-                new_typecheck2, new_exception_text2 = check_recursive_types(zip(names, variable.values(), subhints2))
+                new_typecheck1, new_exception_text1 = check_recursive_types(zip(names, variable.keys(), subhints1), msg=msg)
+                new_typecheck2, new_exception_text2 = check_recursive_types(zip(names, variable.values(), subhints2), msg=msg)
                 new_typecheck      = new_typecheck1 and new_typecheck2
                 new_exception_text = new_exception_text1 + new_exception_text2
             else:
                 if len(subhints) == 1:    # If only 1 subhint then /possibly/ applies to all elements
                     subhints = [subhints] * len(variable)
-                new_typecheck, new_exception_text = check_recursive_types(zip(names, variable, subhints))
+                new_typecheck, new_exception_text = check_recursive_types(zip(names, variable, subhints), msg=msg)
             typecheck &= new_typecheck
             exception_text += new_exception_text
 
@@ -65,7 +64,8 @@ def runtime_validation(func: Callable) -> Callable:
     This decorator enforces runtime parameter and return value validation
     It uses the standard Python 3.5 syntax for type hinting declaration and its validation
     """
-    return_error_message = "Return value '{0}' was not of type {1}. Actual type was {2}."
+    error_message = "Argument '{0}' ('{1}') was not of type {2}. Actual type was {3}.\n"
+    return_error_message = "Function '{0}' return value '{1}' was not of type {2}. Actual type was {3}."
 
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -88,7 +88,7 @@ def runtime_validation(func: Callable) -> Callable:
         # check argument types
         types = [(name, binded_arguments.arguments.get(name), hint)
                  for name, hint in argument_hints.items()]
-        typecheck, exception_text = (check_recursive_types(types))
+        typecheck, exception_text = check_recursive_types(types, msg=error_message)
 
         if not typecheck:
             exception_text = exception_text[:-1]
@@ -96,10 +96,15 @@ def runtime_validation(func: Callable) -> Callable:
 
         # check return type
         result = func(*args, **kwargs)
-        return_type = type(result)
 
-        if not issubclass(return_type, return_hint):
-            raise RuntimeTypeError(return_error_message.format(str(result), return_hint, return_type))
+        func_name = func.__name__
+        typecheck, exception_text = check_recursive_types([(func_name, result, return_hint)],
+                                                          msg=return_error_message)
+        print(typecheck)
+        print('\t{} -> {}'.format(func_name, return_hint))
+        print('\t{} -> {}'.format(result, type(result)))
+        if not typecheck:
+            raise RuntimeTypeError(exception_text)
 
         # If all checks pass, return result of func
         return result

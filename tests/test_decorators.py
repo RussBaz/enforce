@@ -30,7 +30,8 @@ class DecoratorsTests(unittest.TestCase):
         invalid_argument = 12   # Assumed to be integer
 
         error_code_1 = "Argument 'text' ('{0}') was not of type <class 'str'>. Actual type was <class 'int'>.".format(invalid_argument)
-        error_code_2 = "Return value '{0}' was not of type <class 'NoneType'>. Actual type was <class 'str'>.".format(message)
+        error_code_2 = ("Function '{0}' return value '{1}' was not of type {2}. "
+                        "Actual type was {3}.").format('test2', message, "<class 'NoneType'>", "<class 'str'>")
 
         self.assertIsNone(test(message))
 
@@ -90,7 +91,8 @@ class DecoratorsTests(unittest.TestCase):
         val_4 = {'integer': 12}
         last_4 = 1
 
-        error_message_4 = "Return value '{0}' was not of type <class 'str'>. Actual type was {1}.".format(None, type(None))
+        error_message_4= ("Function '{0}' return value '{1}' was not of type {2}. "
+                          "Actual type was {3}.").format('test2', None, "<class 'str'>", type(None))
 
         with self.assertRaises(RuntimeTypeError) as cm:
             test2(param_4, text_4, val_4, last_4)
