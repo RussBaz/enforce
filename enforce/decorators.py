@@ -43,28 +43,30 @@ def check_recursive_types(types: typing.Iterable[typing.Tuple[str, typing.Any, t
             # If we're currently examining an iterable type we need to recurse
             # __tuple_params__ defined on line 646 of typing.py
             # Otherwise, types inherit from GenericMeta (line 878)
-            if issubclass(hint, typing.Tuple):   # Tuples have their own parameter for some reason
-                subhints = hint.__tuple_params__
+            # Tuples have their own parameter for some reason
+            subhints = hint.__tuple_params__ if issubclass(hint, typing.Tuple) else hint.__parameters__
+            if subhints is None:
+                typecheck = False
+                exception_text += msg.format(name, str(variable), hint, vartype)
             else:
-                subhints = hint.__parameters__
-            names = [name] * len(variable)   # also need to have name in there for error message
-            if issubclass(type(variable), dict):
-                # If we're looking at dict, need to check keys and items independently
-                lists = [variable.keys(), variable.values()]
-                new_typecheck = typecheck
-                new_exception_text = ''
-                for i in range(2):
-                    subhintsi = [subhints[i]] * len(variable)
-                    new_typechecki, new_exception_texti = check_recursive_types(zip(names, lists[i], subhintsi),
-                                                                                msg=msg)
-                    new_typecheck &= new_typechecki
-                    new_exception_text += new_exception_texti
-            else:
-                if len(subhints) == 1:    # If only 1 subhint then /possibly/ applies to all elements
-                    subhints = [subhints] * len(variable)
-                new_typecheck, new_exception_text = check_recursive_types(zip(names, variable, subhints), msg=msg)
-            typecheck &= new_typecheck
-            exception_text += new_exception_text
+                names = [name] * len(variable)   # also need to have name in there for error message
+                if issubclass(type(variable), dict):
+                    # If we're looking at dict, need to check keys and items independently
+                    lists = [variable.keys(), variable.values()]
+                    new_typecheck = typecheck
+                    new_exception_text = ''
+                    for i in range(2):
+                        subhintsi = [subhints[i]] * len(variable)
+                        new_typechecki, new_exception_texti = check_recursive_types(zip(names, lists[i], subhintsi),
+                                                                                    msg=msg)
+                        new_typecheck &= new_typechecki
+                        new_exception_text += new_exception_texti
+                else:
+                    if len(subhints) == 1:    # If only 1 subhint then /possibly/ applies to all elements
+                        subhints = [subhints] * len(variable)
+                    new_typecheck, new_exception_text = check_recursive_types(zip(names, variable, subhints), msg=msg)
+                typecheck &= new_typecheck
+                exception_text += new_exception_text
 
     return typecheck, exception_text
 

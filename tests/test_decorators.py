@@ -192,6 +192,19 @@ class DecoratorsTests(unittest.TestCase):
         except enforce.exceptions.RuntimeTypeError:
             pass
 
+    def test_recursion_slim(self):
+        @enforce.runtime_validation
+        def test(tup: typing.Tuple) -> typing.Tuple:
+            return tup
+
+        tup = (1, 2)
+        try:
+            test(tup)
+            raise AssertionError('RuntimeTypeError should have been raised')
+        except enforce.exceptions.RuntimeTypeError:
+            pass
+
+
 
 
 if __name__ == '__main__':
