@@ -20,6 +20,9 @@ def check_recursive_types(types: typing.Iterable[typing.Tuple[str, typing.Any, t
 
     Note, we don't count strings as iterable types
     (possible up for debate? can't think of a situation where you'd want to recurse on str types)
+
+    Note, this is a /huge/ slowdown for large arrays. Possibly optimizations definitely exist.
+    If it's ultra nested, yer gonna have a bad time.
     """
     error_message = "Argument '{0}' ('{1}') was not of type {2}. Actual type was {3}.\n"
     typecheck = True
@@ -31,16 +34,28 @@ def check_recursive_types(types: typing.Iterable[typing.Tuple[str, typing.Any, t
             typecheck = False
             exception_text += error_message.format(name, str(variable), hint, vartype)
         if isiterable:
-            # If we're currently examining an iterable type
-            # we need to recurse
+            # If we're currently examining an iterable type we need to recurse
             # __tuple_params__ defined on line 646 of typing.py
             # Otherwise, types inherit from GenericMeta (line 878)
-            print('\n{} => {} => {}'.format(hint, vartype, variable))
-            if issubclass(hint, typing.Tuple):
+            if issubclass(hint, typing.Tuple):   # Tuples have their own parameter for some reason
                 subhints = hint.__tuple_params__
             else:
                 subhints = hint.__parameters__
-            new_typecheck, new_exception_text = check_recursive_types(zip(variable, subhints))
+            names = [name] * len(variable)   # also need to have name in there for error message
+            if issubclass(type(variable), dict):
+                # If we're looking at dict, need to check keys and items independently
+                subhints1 = [subhints[0]] * len(variable)
+                subhints2 = [subhints[1]] * len(variable)
+                new_typecheck1, new_exception_text1 = check_recursive_types(zip(names, variable.keys(), subhints1))
+                new_typecheck2, new_exception_text2 = check_recursive_types(zip(names, variable.values(), subhints2))
+                new_typecheck      = new_typecheck1 and new_typecheck2
+                new_exception_text = new_exception_text1 + new_exception_text2
+            else:
+                if len(subhints) == 1:    # If only 1 subhint then /possibly/ applies to all elements
+                    subhints = [subhints] * len(variable)
+                new_typecheck, new_exception_text = check_recursive_types(zip(names, variable, subhints))
+            typecheck &= new_typecheck
+            exception_text += new_exception_text
 
     return typecheck, exception_text
 
