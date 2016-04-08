@@ -29,7 +29,14 @@ def check_recursive_types(types: typing.Iterable[typing.Tuple[str, typing.Any, t
     for name, variable, hint in types:
         vartype = type(variable)
         isiterable = check_iterability(vartype, hint)
-        if not issubclass(vartype, hint):
+        if issubclass(vartype, type(lambda x: x)):
+            # For callable, defined with CallableMeta on 747
+            # In order to check callable, you actually have to execute it, so we won't bother
+            # Instead we'll just check number of items matches
+            if not issubclass(hint, typing.Callable):
+                typecheck = False
+                exception_text += msg.format(name, str(variable), hint, vartype)
+        elif not issubclass(vartype, hint):
             typecheck = False
             exception_text += msg.format(name, str(variable), hint, vartype)
         if isiterable:
@@ -48,7 +55,8 @@ def check_recursive_types(types: typing.Iterable[typing.Tuple[str, typing.Any, t
                 new_exception_text = ''
                 for i in range(2):
                     subhintsi = [subhints[i]] * len(variable)
-                    new_typechecki, new_exception_texti = check_recursive_types(zip(names, lists[i], subhintsi), msg=msg)
+                    new_typechecki, new_exception_texti = check_recursive_types(zip(names, lists[i], subhintsi),
+                                                                                msg=msg)
                     new_typecheck &= new_typechecki
                     new_exception_text += new_exception_texti
             else:
@@ -102,9 +110,6 @@ def runtime_validation(func: Callable) -> Callable:
         func_name = func.__name__
         typecheck, exception_text = check_recursive_types([(func_name, result, return_hint)],
                                                           msg=return_error_message)
-        print(typecheck)
-        print('\t{} -> {}'.format(func_name, return_hint))
-        print('\t{} -> {}'.format(result, type(result)))
         if not typecheck:
             raise RuntimeTypeError(exception_text)
 

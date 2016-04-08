@@ -149,11 +149,12 @@ class DecoratorsTests(unittest.TestCase):
         def foo(func: typing.Callable[[int], str], bar: int) -> str:
             return func(bar)
 
+        foo(lambda x: str(x), 5)
+
         try:
-            foo(lambda x: str(x), 5)
+            foo(5, 7)
         except enforce.exceptions.RuntimeTypeError:
-            print('Callable Argument Raised Error!')
-            raise
+            pass
 
     def test_tuple_support(self):
         @enforce.runtime_validation
