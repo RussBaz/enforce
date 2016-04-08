@@ -20,6 +20,8 @@ def runtime_validation(func: Callable) -> Callable:
         This function will be returned by the decorator. It adds type checking before triggering
         the original function and then it checks for the output type. Only then it returns the
         output of original function.
+
+        Note on expected behavior: If type is not specified, we assume that it's None.
         """
         exception_text = ''
 
