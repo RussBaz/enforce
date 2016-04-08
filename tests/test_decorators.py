@@ -1,4 +1,5 @@
 ﻿import unittest
+import typing
 from typing import Any, Optional
 
 import enforce
@@ -140,6 +141,31 @@ class DecoratorsTests(unittest.TestCase):
 
         self.assertEqual(original_doc, test.__doc__)
         self.assertEqual(original_name, test.__name__)
+
+    def test_working_callable_argument(self):
+        @enforce.runtime_validation
+        def foo(func: typing.Callable[[int], str], bar: int) -> str:
+            return func(bar)
+
+        try:
+            foo(lambda x: str(x), 5)
+        except enforce.exceptions.RuntimeTypeError:
+            print('Callable Argument Raised Error!')
+            raise
+
+    def test_tuple_support(self):
+        @enforce.runtime_validation
+        def test(tup: typing.Tuple[int, str, float]) -> typing.Tuple[str, int]:
+            return tup[1], tup[0]
+
+        tup = ('a', 5, 3.0)
+        try:
+            test(tup)
+            raise AssertionError
+        except enforce.exceptions.RuntimeTypeError:
+            pass
+
+
 
 if __name__ == '__main__':
     unittest.main()
