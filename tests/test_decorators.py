@@ -161,7 +161,7 @@ class DecoratorsTests(unittest.TestCase):
         tup = ('a', 5, 3.0)
         try:
             test(tup)
-            raise AssertionError
+            raise AssertionError('RuntimeTypeError should have been raised')
         except enforce.exceptions.RuntimeTypeError:
             pass
 
