@@ -14,10 +14,18 @@ class Parser:
             typing.TypeVar: self._parse_type_var,
             typing.TupleMeta: self._parse_tuple,
             typing.GenericMeta: self._parse_generic,
+            typing.CallableMeta: self._parse_callable,
             complex: self._parse_complex,
             float: self._parse_float,
             bytes: self._parse_bytes
             }
+
+    def __str__(self):
+        nodes = []
+        for hint, tree in self.validator.roots.items():
+            nodes.append(str(tree))
+        repr = '[{}]'.format(', '.join(nodes))
+        return repr
 
     def parse(self, hint, hint_name):
         parsers = self._map_parser(None, hint, self)
@@ -63,6 +71,11 @@ class Parser:
 
         new_node = yield nodes.TypeVarNode()
         new_node.add_child(global_node)
+        parser.validator.all_nodes.append(new_node)
+        yield self._yield_parsing_result(node, new_node)
+
+    def _parse_callable(self, node, hint, parser):
+        new_node = yield nodes.CallableNode()
         parser.validator.all_nodes.append(new_node)
         yield self._yield_parsing_result(node, new_node)
 

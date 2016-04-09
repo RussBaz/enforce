@@ -327,7 +327,70 @@ class CallableTypesTests(unittest.TestCase):
     """
     Tests for the callable types such as functions
     """
-    pass
+    def setUp(self):
+        @runtime_validation
+        def test(func: typing.Callable[[int, int], int], x: int) -> int:
+            return func(x, x)
+        @runtime_validation
+        def test_list(
+                func: typing.Callable[
+                        [typing.Union[typing.List[typing.Any],
+                                      int]],
+                        int]) -> int:
+            return func(5)
+        self.test = test
+        self.test_list = test_list
+
+    def test_good_func_arg(self):
+        """ Test that good arguments pass """
+        def good(x: int, y: int) -> int:
+            return int(x * y)
+
+        self.test(good, 5)
+
+    def test_bad_func_return(self):
+        """
+        Test that a function being passed in with mismatching return raises
+        """
+        def bad_return(x: int, y: int) -> int:
+            return float(x * y)
+
+        with self.assertRaises(RuntimeTypeError):
+            self.test(bad_return, 5)
+
+    def test_bad_func_call(self):
+        """
+        Test that a function being passed in with mismatching callsig raises
+        """
+        def bad_callsig(x: str, y: str) -> int:
+            return int(x + y)
+
+        with self.assertRaises(RuntimeTypeError):
+            self.test(bad_callsig, 5)
+
+    def test_bad_func(self):
+        """
+        Test that passing in something that's not a function raises
+        """
+        with self.assertRaises(RuntimeTypeError):
+            self.test(5, 5)
+
+    def test_nested_func(self):
+        """
+        Test that a function with deeply nested types works
+        """
+        def nest_func(x: typing.List[typing.List[int]]) -> int:
+            return 5
+        self.test_list(nest_func)
+
+    def test_nested_bad_func(self):
+        """
+        Test that a function with bad deeply nested types fails
+        """
+        def nest_func(x: str) -> int:
+            return 5
+        with self.assertRaises(RuntimeTypeError):
+            self.test_list(nest_func)
 
 
 class GenericTypesTests(unittest.TestCase):

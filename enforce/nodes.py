@@ -14,6 +14,13 @@ class BaseNode(ABC):
         self.original_children = []
         self.children = []
 
+    def __str__(self):
+        children_nest = ', '.join([str(c) for c in self.children])
+        repr = '{}:{}'.format(str(self.data_type), self.__class__.__name__)
+        if children_nest:
+             repr += ' -> ({})'.format(children_nest)
+        return repr
+
     def validate(self, data, validator, force=False):
         valid = self.validate_data(validator, data, force)
 
@@ -22,13 +29,13 @@ class BaseNode(ABC):
             return
 
         results = []
-        propogated_data = self.map_data(validator, data)
+        propagated_data = self.map_data(validator, data)
 
         # Not using zip because it will silence a mismatch in sizes
-        # between children and propogated_data
+        # between children and propagated_data
         # And, for now, at least, I'd prefer it be explicit
         for i, child in enumerate(self.children):
-            result = yield child.validate(propogated_data[i], validator, self.type_var)
+            result = yield child.validate(propagated_data[i], validator, self.type_var)
             results.append(result)
 
         if self.strict:
@@ -50,15 +57,24 @@ class BaseNode(ABC):
         yield True
 
     @abstractmethod
-    def validate_data(self, validator, data, sticky=False):
+    def validate_data(self, validator, data, sticky=False) -> bool:
+        """
+        Responsible for determining if node is of specific type
+        """
         pass
 
     @abstractmethod
     def map_data(self, validator, data):
+        """
+        Finds the children of the type
+        """
         pass
 
     @abstractmethod
     def reduce_data(self, validator, data, old_data):
+        """
+        Return the pure form of the data?
+        """
         pass
 
     def add_child(self, child):
@@ -149,3 +165,39 @@ class TupleNode(BaseNode):
 
     def reduce_data(self, validator, data, old_data):
         return tuple(data)
+
+
+class CallableNode(BaseNode):
+    """
+    This node is used when we have a function that expects another function
+    as input. As an example:
+
+        import typing
+        def foo(func: typing.Callable[[int, int], int]) -> int:
+            return func(5, 5)
+
+    The typing.Callable type variable takes two parameters, the first being a
+    list of its expected argument types with the second being its expected
+    output type.
+    """
+
+    def __init__(self):
+        super().__init__(typing.Callable, strict=True, type_var=False)
+
+    def validate_data(self, validator, data, sticky=False):
+        # Will keep till all the debugging is over
+        print('Validation:', data, self.data_type)
+        return isinstance(data, self.data_type)
+
+    def map_data(self, validator, data):
+        """
+        My code, not baz's
+        """
+        func_hints = typing.get_type_hints(data)
+        result = [value for key, value in
+                  func_hints.items() if key != 'return']
+        result.append(func_hints['return'])
+        return result
+
+    def reduce_data(self, validator, data, old_data):
+        return old_data

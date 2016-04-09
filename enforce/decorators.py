@@ -74,6 +74,7 @@ def decorate(data, obj_instance=None):
 
     func_signature = inspect.signature(data)
 
+    # Argument hints is dict with str keys -> value types and 'return' -> type
     argument_hints = typing.get_type_hints(data)
 
     validator = get_validator(data, argument_hints, obj_instance)
@@ -95,12 +96,14 @@ def decorate(data, obj_instance=None):
         binded_arguments.apply_defaults()
 
         for name in argument_hints.keys():
+            # First, check argument types (every key not labelled 'return')
             if name != 'return':
                 argument = binded_arguments.arguments.get(name)
                 if not validator.validate(argument, name):
                     break
                 binded_arguments.arguments[name] = validator.data_out[name]
         else:
+            # Second, check return types
             result = data(*binded_arguments.args, **binded_arguments.kwargs)
             if 'return' in argument_hints.keys():
                 if not validator.validate(result, 'return'):
@@ -143,6 +146,8 @@ def init_validator(hints: typing.Dict):
         if hint is None:
             hint = type(None)
         parser.parse(hint, name)
+    # DEBUG
+    print(str(parser))
 
     return parser.validator
 

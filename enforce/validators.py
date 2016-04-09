@@ -11,8 +11,11 @@ class Validator:
         self.all_nodes = []
 
     def validate(self, data, param_name):
-        validatiors = self._validate(self.roots[param_name], data)
-        result = visit(validatiors)
+        """
+        Validate Syntax Tree using generators
+        """
+        validators = self._validate(self.roots[param_name], data)
+        result = visit(validators)
         self.data_out[param_name] = self.roots[param_name].data_out
         if not result:
             self.errors.append(param_name)
