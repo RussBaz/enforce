@@ -208,49 +208,6 @@ class SimpleTypesTests(unittest.TestCase):
             sample_bad(1)
 
 
-class UnionTypesTests(unittest.TestCase):
-    """
-    Test case for Union Types
-    """
-
-    def setUp(self):
-        @runtime_validation
-        def test_func(x: typing.Union[float, typing.List[str]]) -> int:
-            return 5
-        self.test_func = test_func
-
-    def test_basic_union(self):
-        @runtime_validation
-        def sample(data: typing.Union[int, str]) -> typing.Union[int, str]:
-            return data
-
-        @runtime_validation
-        def sample_bad(data: typing.Any) -> typing.Union[int, str]:
-            return data
-
-        self.assertEqual(sample(1), 1)
-        self.assertEqual(sample(''), '')
-        with self.assertRaises(RuntimeTypeError):
-            sample(b'')
-
-        with self.assertRaises(RuntimeTypeError):
-            sample_bad(1.0)
-
-    def test_good_nested_union(self):
-        self.test_func(5.0)
-        self.test_func(['1', '2', 'a'])
-
-    def test_bad_nested_union(self):
-        with self.assertRaises(RuntimeTypeError):
-            self.test_func([1, 2, 3, 4])
-
-        with self.assertRaises(RuntimeTypeError):
-            self.test_func('a')
-
-        with self.assertRaises(RuntimeTypeError):
-            self.test_func(['a', 4, 5])
-
-
 class ComplexTypesTests(unittest.TestCase):
     """
     Tests for the simple types which require special processing
@@ -333,6 +290,145 @@ class ComplexTypesTests(unittest.TestCase):
 
         with self.assertRaises(RuntimeTypeError):
             sample_bad(1.0)
+
+
+class ListTypesTests(unittest.TestCase):
+    def setUp(self):
+        @runtime_validation
+        def str_func(x: typing.List[str]) -> str:
+            return x[0]
+        self.str_func = str_func
+
+        @runtime_validation
+        def int_func(x: typing.List[int]) -> int:
+            return x[0]
+        self.int_func = int_func
+
+        def int_str_func(x: typing.List[typing.Union[str, int]]) -> int:
+            return int(x[0])
+        self.union_func = int_str_func
+
+    def test_str_list(self):
+        self.str_func(['a'])
+        self.str_func(['a', 'b', 'c'])
+
+        with self.assertRaises(RuntimeTypeError):
+            self.str_func(3)
+
+        with self.assertRaises(RuntimeTypeError):
+            self.str_func('3')
+
+        with self.assertRaises(RuntimeTypeError):
+            self.str_func([1, 2, 3])
+
+        with self.assertRaises(RuntimeTypeError):
+            self.str_func([1, 'b', 5.0])
+
+        with self.assertRaises(RuntimeTypeError):
+            self.str_func(['a', 1, 'b', 5.0])
+
+    def test_int_list(self):
+        self.int_func([1])
+        self.int_func([1, 2, 3])
+
+        with self.assertRaises(RuntimeTypeError):
+            self.int_func(5)
+
+        with self.assertRaises(RuntimeTypeError):
+            self.int_func('5')
+
+        with self.assertRaises(RuntimeTypeError):
+            self.int_func(['1', '2', 'a'])
+
+        with self.assertRaises(RuntimeTypeError):
+            self.int_func(['a', 1, 'b', 5.0])
+
+    def test_union_func(self):
+        self.union_func([1])
+        self.union_func([1, 2, 3])
+        self.union_func(['1'])
+        self.union_func(['1', '2', '3'])
+        self.union_func([1, '2', 3, '4'])
+        self.union_func(['1', 2, '3', 4])
+
+        with self.assertRaises(RuntimeTypeError):
+            self.int_func(1)
+
+        with self.assertRaises(RuntimeTypeError):
+            self.int_func('a')
+
+        with self.assertRaises(RuntimeTypeError):
+            self.int_func([[1, 2, 3], '4'])
+
+        with self.assertRaises(RuntimeTypeError):
+            self.int_func(['a', 'b', {3, 4, 5}])
+
+
+class UnionTypesTests(unittest.TestCase):
+    """
+    Test case for Union Types
+    """
+
+    def setUp(self):
+        @runtime_validation
+        def test_func(x: typing.Union[float, typing.List[str]]) -> int:
+            return 5
+        @runtime_validation
+        def nest_func(
+                x: typing.Union[
+                    float,
+                    typing.List[
+                        typing.Union[
+                            str,
+                            int]]]) -> int:
+            return 5
+        self.test_func = test_func
+        self.nest_func = nest_func
+
+    def test_basic_union(self):
+        @runtime_validation
+        def sample(data: typing.Union[int, str]) -> typing.Union[int, str]:
+            return data
+
+        @runtime_validation
+        def sample_bad(data: typing.Any) -> typing.Union[int, str]:
+            return data
+
+        self.assertEqual(sample(1), 1)
+        self.assertEqual(sample(''), '')
+        with self.assertRaises(RuntimeTypeError):
+            sample(b'')
+
+        with self.assertRaises(RuntimeTypeError):
+            sample_bad(1.0)
+
+    def test_good_nested_union(self):
+        self.test_func(5.0)
+        self.test_func(['1', '2', 'a'])
+
+    def test_bad_nested_union(self):
+        with self.assertRaises(RuntimeTypeError):
+            self.test_func('a')
+
+        with self.assertRaises(RuntimeTypeError):
+            self.test_func([1, 2, 3, 4])
+
+        with self.assertRaises(RuntimeTypeError):
+            self.test_func(['a', 4, 5])
+
+    def test_nested_func_good(self):
+        self.nest_func(5.0)
+        self.nest_func(['a', 'b', 'c'])
+        self.nest_func([1, 2, 3])
+        self.nest_func([1, 'a', 2, 'b'])
+
+    def test_nested_func_bad(self):
+        with self.assertRaises(RuntimeTypeError):
+            self.nest_func('a')
+        with self.assertRaises(RuntimeTypeError):
+            self.nest_func({'a': 5, 'b':6})
+        with self.assertRaises(RuntimeTypeError):
+            self.nest_func({1, 2, 3, 4})
 
 
 class ContainerTypesTests(unittest.TestCase):
@@ -449,7 +545,6 @@ class CallableTypesTests(unittest.TestCase):
             return x
         with self.assertRaises(RuntimeTypeError):
             self.union(bad_param)
-
 
 
 class GenericTypesTests(unittest.TestCase):

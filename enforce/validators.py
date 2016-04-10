@@ -1,4 +1,6 @@
-﻿from .utils import visit
+﻿import typing
+from .utils import visit
+from .nodes import BaseNode
 
 
 class Validator:
@@ -10,9 +12,9 @@ class Validator:
         self.roots = {}
         self.all_nodes = []
 
-    def validate(self, data, param_name):
+    def validate(self, data: typing.Any, param_name: str) -> bool:
         """
-        Validate Syntax Tree using generators
+        Validate Syntax Tree of given function using generators
         """
         validators = self._validate(self.roots[param_name], data)
         result = visit(validators)
@@ -21,11 +23,11 @@ class Validator:
             self.errors.append(param_name)
         return result
 
-    def reset(self):
+    def reset(self) -> None:
         self.errors = []
         self.data_out = {}
         for node in self.all_nodes:
             node.reset()
 
-    def _validate(self, node, data):
+    def _validate(self, node: BaseNode, data: typing.Any) -> typing.Generator:
         yield node.validate(data, self)

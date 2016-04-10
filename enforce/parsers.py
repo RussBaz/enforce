@@ -20,19 +20,22 @@ class Parser:
             bytes: self._parse_bytes
             }
 
-    def __str__(self):
-        nodes = []
-        for hint, tree in self.validator.roots.items():
-            nodes.append(str(tree))
-        repr = '[{}]'.format(', '.join(nodes))
-        return repr
+    def __str__(self) -> str:
+        nodes = [str(tree) for hint, tree in self.validator.roots.items() if hint != 'return']
+        str_repr = '[{}]'.format(', '.join(nodes))
+        try:
+            # If doesn't necessarily have return value, we need to not return one.
+            str_repr += ' => {}'.format(self.validator.roots['return'])
+        except KeyError:
+            pass
+        return str_repr
 
-    def parse(self, hint, hint_name):
+    def parse(self, hint: type, hint_name: str) -> None:
         parsers = self._map_parser(None, hint, self)
         tree = visit(parsers)
         self.validator.roots[hint_name] = tree
 
-    def _map_parser(self, node, hint, caller):
+    def _map_parser(self, node, hint: type, caller):
         if type(hint) == type:
             parser = self._mapping.get(hint, self._parse_default)
         else:
@@ -112,7 +115,20 @@ class Parser:
         yield self._yield_unified_node(node, hints, parser)
 
     def _parse_generic(self, node, hint, parser):
-        yield self._parse_default(node, hint, parser)
+        if issubclass(hint, typing.List):
+            yield self._parse_list(node, hint, parser)
+        else:
+            yield self._parse_default(node, hint, parser)
+
+    def _parse_list(self, node, hint, parser):
+        new_node = yield nodes.SimpleNode(hint)
+        parser.validator.all_nodes.append(new_node)
+
+        # add its type as child
+        # We can index first as Lists only ever have 1 parameter
+        yield self._map_parser(new_node, hint.__parameters__[0], parser)
+
+        yield self._yield_parsing_result(node, new_node)
 
     def _yield_unified_node(self, node, hints, parser):
         new_node = yield nodes.UnionNode()

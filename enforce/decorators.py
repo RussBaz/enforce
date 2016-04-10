@@ -109,6 +109,7 @@ def decorate(data, obj_instance=None):
                 if not validator.validate(result, 'return'):
                     exception_text = parse_errors(validator.errors, argument_hints, True)
                     raise RuntimeTypeError(exception_text)
+            # we *only* return result if all type checks passed
             return result
 
         exception_text = parse_errors(validator.errors, argument_hints)
@@ -117,12 +118,14 @@ def decorate(data, obj_instance=None):
     return wrapper
 
 
-def get_validator(func: typing.Callable, hints: typing.Dict, instance=None):
+def get_validator(func: typing.Callable, hints: typing.Dict, instance: typing.Optional[typing.Any]=None):
     """
     Checks if the function was already decorated with a type checker
     Returns new validator if it was not and creates a new attribute in the passed function
     with a new validator.
     Otherwise, returns None
+
+    TODO: Add type hinting for instance argument
     """
     if instance:
         func = instance
@@ -137,7 +140,7 @@ def get_validator(func: typing.Callable, hints: typing.Dict, instance=None):
         return func.__validator__
 
 
-def init_validator(hints: typing.Dict):
+def init_validator(hints: typing.Dict) -> Parser:
     """
     Returns a new validator instance from a given dictionary of type hints
     """
@@ -146,13 +149,14 @@ def init_validator(hints: typing.Dict):
         if hint is None:
             hint = type(None)
         parser.parse(hint, name)
-    # DEBUG
+
+    # DEBUG printing to see the TypeTree
     print(str(parser))
 
     return parser.validator
 
 
-def parse_errors(errors, hints, return_type=False):
+def parse_errors(errors: typing.List[str], hints:typing.Dict[str, type], return_type: bool=False) -> str:
     """
     Generates an exception message based on which fields failed
     """

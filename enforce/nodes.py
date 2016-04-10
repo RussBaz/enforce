@@ -24,6 +24,8 @@ class BaseNode(ABC):
     def validate(self, data, validator, force=False):
         valid = self.validate_data(validator, data, force)
 
+        print('\t{} - {} - {}'.format(data, self.data_type, valid))
+
         if not valid:
             yield False
             return
@@ -34,6 +36,7 @@ class BaseNode(ABC):
         # Not using zip because it will silence a mismatch in sizes
         # between children and propagated_data
         # And, for now, at least, I'd prefer it be explicit
+        # Note, if len(self.children) changes during iteration, errors *will* occur
         for i, child in enumerate(self.children):
             result = yield child.validate(propagated_data[i], validator, self.type_var)
             results.append(result)
@@ -103,7 +106,12 @@ class SimpleNode(BaseNode):
         return result
 
     def map_data(self, validator, data):
-        return []
+        propagated_data = []
+        if isinstance(data, list):
+            # If it's a list we need to make child for every item in list
+            propagated_data = data
+            self.children *= len(data)
+        return propagated_data
 
     def reduce_data(self, validator, data, old_data):
         return old_data
