@@ -76,7 +76,11 @@ class Parser:
 
     def _parse_callable(self, node, hint, parser):
         new_node = yield nodes.CallableNode()
-        parser.validator.all_nodes.append(new_node)
+        # Add every argument as a child
+        for element in hint.__args__:
+            yield self._map_parser(new_node, element, parser)
+        # Add return type as child
+        yield self._map_parser(new_node, hint.__result__, parser)
         yield self._yield_parsing_result(node, new_node)
 
     def _parse_tuple(self, node, hint, parser):

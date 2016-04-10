@@ -16,10 +16,10 @@ class BaseNode(ABC):
 
     def __str__(self):
         children_nest = ', '.join([str(c) for c in self.children])
-        repr = '{}:{}'.format(str(self.data_type), self.__class__.__name__)
+        str_repr = '{}:{}'.format(str(self.data_type), self.__class__.__name__)
         if children_nest:
-             repr += ' -> ({})'.format(children_nest)
-        return repr
+            str_repr += ' -> ({})'.format(children_nest)
+        return str_repr
 
     def validate(self, data, validator, force=False):
         valid = self.validate_data(validator, data, force)
@@ -38,10 +38,7 @@ class BaseNode(ABC):
             result = yield child.validate(propagated_data[i], validator, self.type_var)
             results.append(result)
 
-        if self.strict:
-            valid = all(results)
-        else:
-            valid = any(results)
+        valid = all(results) if self.strict else any(results)
 
         if not valid:
             yield False
@@ -94,8 +91,16 @@ class SimpleNode(BaseNode):
 
     def validate_data(self, validator, data, sticky=False):
         # Will keep till all the debugging is over
-        #print('Validation:', data, self.data_type)
-        return issubclass(type(data), self.data_type)
+        #print('Simple Validation: {}:{}, {}\n=> {}'.format(
+        #    data, type(data), self.data_type, issubclass(type(data),
+        #                                                 self.data_type)))
+        # This conditional is for when Callable object arguments are
+        # mapped to SimpleNodes
+        if isinstance(data, type):
+            result = issubclass(data, self.data_type)
+        else:
+            result = issubclass(type(data), self.data_type)
+        return result
 
     def map_data(self, validator, data):
         return []
@@ -186,13 +191,12 @@ class CallableNode(BaseNode):
 
     def validate_data(self, validator, data, sticky=False):
         # Will keep till all the debugging is over
-        print('Validation:', data, self.data_type)
+        #print('Callable Validation: {}:{}, {}\n=> {}'.format(data, type(data),
+        #                                       self.data_type,
+        #                                       isinstance(data, self.data_type)))
         return isinstance(data, self.data_type)
 
     def map_data(self, validator, data):
-        """
-        My code, not baz's
-        """
         func_hints = typing.get_type_hints(data)
         result = [value for key, value in
                   func_hints.items() if key != 'return']

@@ -208,12 +208,18 @@ class SimpleTypesTests(unittest.TestCase):
             sample_bad(1)
 
 
-class ComplextTypesTests(unittest.TestCase):
+class UnionTypesTests(unittest.TestCase):
     """
-    Tests for the simple types which require special processing
+    Test case for Union Types
     """
 
-    def test_union(self):
+    def setUp(self):
+        @runtime_validation
+        def test_func(x: typing.Union[float, typing.List[str]]) -> int:
+            return 5
+        self.test_func = test_func
+
+    def test_basic_union(self):
         @runtime_validation
         def sample(data: typing.Union[int, str]) -> typing.Union[int, str]:
             return data
@@ -229,6 +235,26 @@ class ComplextTypesTests(unittest.TestCase):
 
         with self.assertRaises(RuntimeTypeError):
             sample_bad(1.0)
+
+    def test_good_nested_union(self):
+        self.test_func(5.0)
+        self.test_func(['1', '2', 'a'])
+
+    def test_bad_nested_union(self):
+        with self.assertRaises(RuntimeTypeError):
+            self.test_func([1, 2, 3, 4])
+
+        with self.assertRaises(RuntimeTypeError):
+            self.test_func('a')
+
+        with self.assertRaises(RuntimeTypeError):
+            self.test_func(['a', 4, 5])
+
+
+class ComplexTypesTests(unittest.TestCase):
+    """
+    Tests for the simple types which require special processing
+    """
 
     def test_optional(self):
         @runtime_validation
@@ -338,8 +364,18 @@ class CallableTypesTests(unittest.TestCase):
                                       int]],
                         int]) -> int:
             return func(5)
+        @runtime_validation
+        def union(
+                func: typing.Callable[
+                        [typing.Union[
+                            float,
+                            int],
+                         typing.Optional[str]],
+                        int]) -> int:
+            return func(5)
         self.test = test
         self.test_list = test_list
+        self.union = union
 
     def test_good_func_arg(self):
         """ Test that good arguments pass """
@@ -352,7 +388,7 @@ class CallableTypesTests(unittest.TestCase):
         """
         Test that a function being passed in with mismatching return raises
         """
-        def bad_return(x: int, y: int) -> int:
+        def bad_return(x: int, y: int) -> float:
             return float(x * y)
 
         with self.assertRaises(RuntimeTypeError):
@@ -391,6 +427,29 @@ class CallableTypesTests(unittest.TestCase):
             return 5
         with self.assertRaises(RuntimeTypeError):
             self.test_list(nest_func)
+
+    def test_good_union_func(self):
+        def good_union(x: float) -> int:
+            return int(x)
+        self.union(good_union)
+
+    def test_bad_union_func(self):
+        def bad_union(x: str) -> int:
+            return int(x)
+        with self.assertRaises(RuntimeTypeError):
+            self.union(bad_union)
+
+    def test_good_optional_parameter_func(self):
+        def good_param(x: int, y: str = 'a') -> int:
+            return x
+        self.union(good_param)
+
+    def test_bad_optional_parameter_func(self):
+        def bad_param(x: int, y: int = 5) -> int:
+            return x
+        with self.assertRaises(RuntimeTypeError):
+            self.union(bad_param)
+
 
 
 class GenericTypesTests(unittest.TestCase):
