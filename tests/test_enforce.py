@@ -327,7 +327,22 @@ class CallableTypesTests(unittest.TestCase):
     """
     Tests for the callable types such as functions
     """
-    pass
+    
+    def test_any(self):
+        @runtime_validation
+        def return_callable(arg: typing.Callable) -> typing.Callable:
+            return arg
+
+        a = lambda x: x
+
+        result = return_callable(a)
+        self.assertTrue(result is a)
+
+        with self.assertRaises(RuntimeTypeError):
+            return_callable('not callable')
+
+    def test_with_parameters(self):
+        pass
 
 
 class GenericTypesTests(unittest.TestCase):
@@ -347,15 +362,19 @@ class GenericTypesTests(unittest.TestCase):
 
         good = Sample[int]()
         bad = Sample[str]()
-        #other = Sample()
-        #strange = Sample[T]()
+        other = Sample()
+        strange = Sample[T]()
 
-        #print('t:', type(good))
-        #print('t:', type(bad))
-        #print('t:', type(other))
+        print('t:', type(good))
+        print('t:', type(bad))
+        print('t:', type(other))
+        print('t:', type(strange))
 
-        #print(issubclass(type(good), Sample[int]))
-        #print(issubclass(type(good), typing.Generic))
+        print(issubclass(type(good), Sample[int]))
+        print(issubclass(type(good), typing.Generic))
+
+        print(isinstance(type(good), Sample[int]))
+        print(isinstance(type(good), typing.Generic))
 
         self.assertEqual(return_int(good, 1), 1)
 

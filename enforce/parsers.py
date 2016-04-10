@@ -14,6 +14,7 @@ class Parser:
             typing.TypeVar: self._parse_type_var,
             typing.TupleMeta: self._parse_tuple,
             typing.GenericMeta: self._parse_generic,
+            typing.CallableMeta: self._parse_callable,
             complex: self._parse_complex,
             float: self._parse_float,
             bytes: self._parse_bytes
@@ -70,6 +71,11 @@ class Parser:
         new_node = yield nodes.TupleNode()
         for element in hint.__tuple_params__:
             yield self._map_parser(new_node, element, parser)
+        yield self._yield_parsing_result(node, new_node)
+
+    def _parse_callable(self, node, hint, parser):
+        new_node = yield nodes.CallableNode()
+        parser.validator.all_nodes.append(new_node)
         yield self._yield_parsing_result(node, new_node)
 
     def _parse_complex(self, node, hint, parser):

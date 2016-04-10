@@ -26,7 +26,7 @@ class BaseNode(ABC):
 
         # Not using zip because it will silence a mismatch in sizes
         # between children and propogated_data
-        # And, for now, at least, I'd prefer it be explicit
+        # And, for now, at least, I'd prefer it to be explicit
         for i, child in enumerate(self.children):
             result = yield child.validate(propogated_data[i], validator, self.type_var)
             results.append(result)
@@ -78,8 +78,25 @@ class SimpleNode(BaseNode):
 
     def validate_data(self, validator, data, sticky=False):
         # Will keep till all the debugging is over
-        #print('Validation:', data, self.data_type)
+        print('Validation:', data, self.data_type)
         return issubclass(type(data), self.data_type)
+
+    def map_data(self, validator, data):
+        return []
+
+    def reduce_data(self, validator, data, old_data):
+        return old_data
+
+
+class CallableNode(BaseNode):
+
+    def __init__(self):
+        super().__init__(typing.Callable, strict=True, type_var=False)
+
+    def validate_data(self, validator, data, sticky=False):
+        # Will keep till all the debugging is over
+        print('Validation:', data, self.data_type)
+        return isinstance(data, self.data_type)
 
     def map_data(self, validator, data):
         return []
