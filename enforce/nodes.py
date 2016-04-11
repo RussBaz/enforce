@@ -24,8 +24,6 @@ class BaseNode(ABC):
     def validate(self, data, validator, force=False):
         valid = self.validate_data(validator, data, force)
 
-        print('\t{} - {} - {}'.format(data, self.data_type, valid))
-
         if not valid:
             yield False
             return

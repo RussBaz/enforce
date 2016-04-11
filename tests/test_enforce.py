@@ -374,13 +374,7 @@ class UnionTypesTests(unittest.TestCase):
         def test_func(x: typing.Union[float, typing.List[str]]) -> int:
             return 5
         @runtime_validation
-        def nest_func(
-                x: typing.Union[
-                    float,
-                    typing.List[
-                        typing.Union[
-                            str,
-                            int]]]) -> int:
+        def nest_func(x: typing.Union[float, typing.List[typing.Union[str, int]]]) -> int:
             return 5
         self.test_func = test_func
         self.nest_func = nest_func
@@ -454,20 +448,12 @@ class CallableTypesTests(unittest.TestCase):
         def test(func: typing.Callable[[int, int], int], x: int) -> int:
             return func(x, x)
         @runtime_validation
-        def test_list(
-                func: typing.Callable[
-                        [typing.Union[typing.List[typing.Any],
-                                      int]],
-                        int]) -> int:
+        def test_list(func: typing.Callable[[typing.Union[typing.List[typing.Any], int]],
+                                            int]) -> int:
             return func(5)
         @runtime_validation
-        def union(
-                func: typing.Callable[
-                        [typing.Union[
-                            float,
-                            int],
-                         typing.Optional[str]],
-                        int]) -> int:
+        def union(func: typing.Callable[[typing.Union[float, int], typing.Optional[str]],
+                                        int]) -> int:
             return func(5)
         self.test = test
         self.test_list = test_list
