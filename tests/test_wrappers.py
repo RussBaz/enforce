@@ -6,7 +6,7 @@ from enforce import runtime_validation
 from enforce.wrappers import Proxy, ListProxy
 
 
-class WrappersTest(unittest.TestCase):
+class WrapperTests(unittest.TestCase):
 
     def test_proxy_transparency(self):
         """
@@ -44,12 +44,13 @@ class WrappersTest(unittest.TestCase):
 
     def test_new(self):
         a = [1, 2]
-        b = ListProxy(None, None, a)
+        b = ListProxy(a)
         b.append(3)
         a.reverse()
 
         self.assertEqual(a, b)
         self.assertFalse(a is b)
+        self.assertTrue(a is b.__wrapped__)
         self.assertTrue(isinstance(b, list))
         self.assertTrue(isinstance(b, ObjectProxy))
 
