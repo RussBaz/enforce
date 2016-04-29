@@ -29,6 +29,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="enforce\decorators.py" />
+    <Compile Include="enforce\enforcers.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="enforce\exceptions.py" />
     <Compile Include="enforce\nodes.py">
       <SubType>Code</SubType>
@@ -49,6 +52,9 @@
     <Compile Include="setup.py" />
     <Compile Include="tests\test_decorators.py" />
     <Compile Include="tests\test_enforce.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\test_enforcers.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="tests\test_exceptions.py" />

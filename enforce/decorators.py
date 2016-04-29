@@ -9,11 +9,12 @@ from wrapt import decorator
 from .exceptions import RuntimeTypeError
 from .parsers import Parser
 from .validators import Validator
+from .enforcers import apply_enforcer, Parameters
 
 
 def runtime_validation(data):
     """
-    This decorator enforces runtime parameter and return value validation
+    This decorator enforces runtime parameter and return value type checking validation
     It uses the standard Python 3.5 syntax for type hinting declaration
     """
 
@@ -52,20 +53,14 @@ def runtime_validation(data):
 
 def decorate(data, obj_instance=None) -> typing.Callable:
     """
-    Performs the function decoration
+    Performs the function decoration with a type checking wrapper
+
+    Works only if '__annotations__' are defined on the passed object
     """
     if not hasattr(data, '__annotations__'):
         return data
 
-    func_signature = inspect.signature(data)
-
-    # Argument hints is dict with str keys -> value types and 'return' -> type
-    argument_hints = typing.get_type_hints(data)
-
-    validator = get_validator(data, argument_hints, obj_instance)
-
-    if not validator:
-        return data
+    apply_enforcer(data)
 
     @decorator
     def universal(wrapped, instance, args, kwargs):
@@ -74,101 +69,32 @@ def decorate(data, obj_instance=None) -> typing.Callable:
         the original function and then it checks for the output type. Only then it returns the
         output of original function.
         """
+        enforcer = data.__enforcer__
+
         # In order to avoid problems with TypeVar-s, validator must be reset
-        validator.reset()
+        enforcer.reset()
 
         instance_method = False
         if instance is not None and not inspect.isclass(instance):
             instance_method = True
 
         if instance_method:
-            binded_arguments = func_signature.bind(instance, *args, **kwargs)
+            parameters = Parameters([instance, *args], kwargs)
         else:
-            binded_arguments = func_signature.bind(*args, **kwargs)
+            parameters = Parameters(args, kwargs)
 
-        binded_arguments.apply_defaults()
+        # First, check argument types (every key not labelled 'return')
+        _args, _kwargs = enforcer.validate_inputs(parameters)
 
-        for name in argument_hints.keys():
-            # First, check argument types (every key not labelled 'return')
-            if name != 'return':
-                argument = binded_arguments.arguments.get(name)
-                if not validator.validate(argument, name):
-                    break
-                binded_arguments.arguments[name] = validator.data_out[name]
-        else:
-            _args = binded_arguments.args
-            _kwargs = binded_arguments.kwargs
-            if instance_method:
-                if len(_args) > 1:
-                    _args = _args[1:]
-                else:
-                    _args = tuple()
-            result = wrapped(*_args, **_kwargs)
-            if 'return' in argument_hints.keys():
-                if not validator.validate(result, 'return'):
-                    exception_text = parse_errors(validator.errors, argument_hints, True)
-                    raise RuntimeTypeError(exception_text)
-            # we *only* return result if all type checks passed
-            return result
+        if instance_method:
+            if len(_args) > 1:
+                _args = _args[1:]
+            else:
+                _args = tuple()
 
-        exception_text = parse_errors(validator.errors, argument_hints)
-        raise RuntimeTypeError(exception_text)
+        result = wrapped(*_args, **_kwargs)
+
+        # we *only* return result if all type checks passed
+        return enforcer.validate_outputs(result)
 
     return universal(data)
-
-
-def get_validator(func: typing.Callable, hints: typing.Dict, instance: typing.Optional[typing.Any]=None):
-    """
-    Checks if the function was already decorated with a type checker
-    Returns new validator if it was not and creates a new attribute in the passed function
-    with a new validator.
-    Otherwise, returns None
-
-    TODO: Add type hinting for instance argument
-    """
-    if instance:
-        func = instance
-    try:
-        if isinstance(func.__validator__, Validator):
-            return None
-        else:
-            func.__validator__ = init_validator(hints)
-            return func.__validator__
-    except AttributeError:
-        func.__validator__ = init_validator(hints)
-        return func.__validator__
-
-
-def init_validator(hints: typing.Dict) -> Parser:
-    """
-    Returns a new validator instance from a given dictionary of type hints
-    """
-    parser = Parser()
-    for name, hint in hints.items():
-        if hint is None:
-            hint = type(None)
-        parser.parse(hint, name)
-
-    # DEBUG printing to see the TypeTree
-    print(str(parser))
-
-    return parser.validator
-
-
-def parse_errors(errors: typing.List[str], hints:typing.Dict[str, type], return_type: bool=False) -> str:
-    """
-    Generates an exception message based on which fields failed
-    """
-    error_message = "       Argument '{0}' was not of type {1}."
-    return_error_message = "        Return value was not of type {0}."
-    output = "\n  The following runtime type errors were encountered:"
-
-    for error in errors:
-        hint = hints.get(error, type(None))
-        if hint is None:
-            hint = type(None)
-        if return_type:
-            output += '\n' + return_error_message.format(hint)
-        else:
-            output += '\n' +  error_message.format(error, hint)
-    return output
