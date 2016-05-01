@@ -67,6 +67,13 @@ class Proxy(ObjectProxy):
             del(self._self_pass_through)
 
 
+class EnforceProxy(ObjectProxy):
+    """
+    A proxy object for safe addition of runtime type enforcement without mutating the original object
+    """
+    __enforcer__ = None
+
+
 class ListProxy(ObjectProxy):
     # Convention: List input parameter is called 'item'
 
