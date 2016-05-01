@@ -30,8 +30,8 @@ class Parser:
             pass
         return str_repr
 
-    def parse(self, hint: type, hint_name: str) -> None:
-        parsers = self._map_parser(None, hint, self)
+    def parse(self, hint_type: type, hint_name: str) -> None:
+        parsers = self._map_parser(None, hint_type, self)
         tree = visit(parsers)
         self.validator.roots[hint_name] = tree
 

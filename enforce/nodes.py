@@ -64,14 +64,14 @@ class BaseNode(ABC):
     @abstractmethod
     def map_data(self, validator, data):
         """
-        Finds the children of the type
+        Maps the input data to the nested type nodes
         """
         pass
 
     @abstractmethod
     def reduce_data(self, validator, data, old_data):
         """
-        Return the pure form of the data?
+        Combines the data from the nested type nodes into a current node expected data type
         """
         pass
 
