@@ -3,7 +3,7 @@ import inspect
 from collections import namedtuple
 
 from .exceptions import RuntimeTypeError
-from .parsers import Parser
+from .parsers import init_validator
 
 
 # This TypeVar is used to indicate that he result of output validation
@@ -109,19 +109,6 @@ def apply_enforcer(func: typing.Callable) -> typing.Callable:
         func.__enforcer__ = generate_new_enforcer()
 
     return func
-
-
-def init_validator(hints: typing.Dict) -> Parser:
-    """
-    Returns a new validator instance from a given dictionary of type hints
-    """
-    parser = Parser()
-    for name, hint in hints.items():
-        if hint is None:
-            hint = type(None)
-        parser.parse(hint, name)
-
-    return parser.validator
 
 
 def parse_errors(errors: typing.List[str], hints:typing.Dict[str, type], return_type: bool=False) -> str:

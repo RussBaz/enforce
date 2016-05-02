@@ -547,7 +547,8 @@ class CallableTypesTests(unittest.TestCase):
             self.test_list(nest_func)
 
     def test_good_union_func(self):
-        def good_union(x: float) -> int:
+        def good_union(x: float, a: typing.Optional[str]=None) -> int:
+            print(a)
             return int(x)
         self.union(good_union)
 

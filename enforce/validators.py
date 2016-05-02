@@ -1,4 +1,5 @@
 ﻿import typing
+
 from .utils import visit
 from .nodes import BaseNode
 

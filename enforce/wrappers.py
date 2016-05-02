@@ -1,10 +1,10 @@
 import typing
 from collections import UserList, MutableSequence
 
-from wrapt import ObjectProxy
+from wrapt import CallableObjectProxy, ObjectProxy
 
-from enforce.validators import Validator
-from enforce.exceptions import RuntimeTypeError
+#from .validators import Validator
+from .exceptions import RuntimeTypeError
 
 
 class Proxy(ObjectProxy):
@@ -67,7 +67,7 @@ class Proxy(ObjectProxy):
             del(self._self_pass_through)
 
 
-class EnforceProxy(ObjectProxy):
+class EnforceProxy(CallableObjectProxy):
     """
     A proxy object for safe addition of runtime type enforcement without mutating the original object
     """
@@ -77,7 +77,7 @@ class EnforceProxy(ObjectProxy):
 class ListProxy(ObjectProxy):
     # Convention: List input parameter is called 'item'
 
-    def __init__(self, wrapped: typing.List, validator: typing.Optional[Validator]=None) -> None:
+    def __init__(self, wrapped: typing.List, validator: typing.Optional['Validator']=None) -> None:
         self._self_validator = validator
         super().__init__(wrapped)
 

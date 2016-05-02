@@ -1,5 +1,6 @@
 import unittest
 import typing
+import inspect
 
 from wrapt import ObjectProxy
 
@@ -71,6 +72,8 @@ class WrapperTests(unittest.TestCase):
 
         self.assertEquals(foo_proxy.__enforcer__, temp_number)
         self.assertFalse(hasattr(foo, '__enforcer__'))
+
+        inspect.signature(foo_proxy)
 
 
 if __name__ == '__main__':

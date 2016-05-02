@@ -1,6 +1,6 @@
 import typing
 
-import enforce.nodes as nodes
+from enforce import nodes
 from .validators import Validator
 from .utils import visit
 
@@ -21,8 +21,8 @@ class Parser:
             }
 
     def __str__(self) -> str:
-        nodes = [str(tree) for hint, tree in self.validator.roots.items() if hint != 'return']
-        str_repr = '[{}]'.format(', '.join(nodes))
+        local_nodes = [str(tree) for hint, tree in self.validator.roots.items() if hint != 'return']
+        str_repr = '[{}]'.format(', '.join(local_nodes))
         try:
             # If doesn't necessarily have return value, we need to not return one.
             str_repr += ' => {}'.format(self.validator.roots['return'])
@@ -93,7 +93,7 @@ class Parser:
         yield self._yield_parsing_result(node, new_node)
 
     def _parse_callable(self, node, hint, parser):
-        new_node = yield nodes.CallableNode()
+        new_node = yield nodes.CallableNode(hint)
         parser.validator.all_nodes.append(new_node)
         yield self._yield_parsing_result(node, new_node)
 
@@ -150,3 +150,16 @@ class Parser:
             node.add_child(new_node)
         else:
             yield new_node
+
+
+def init_validator(hints: typing.Dict) -> Parser:
+    """
+    Returns a new validator instance from a given dictionary of type hints
+    """
+    parser = Parser()
+    for name, hint in hints.items():
+        if hint is None:
+            hint = type(None)
+        parser.parse(hint, name)
+
+    return parser.validator

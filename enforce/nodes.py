@@ -1,5 +1,8 @@
 import typing
 from abc import ABC, abstractmethod
+import inspect
+
+from .wrappers import EnforceProxy
 
 
 class BaseNode(ABC):
@@ -22,14 +25,15 @@ class BaseNode(ABC):
         return str_repr
 
     def validate(self, data, validator, force=False):
-        valid = self.validate_data(validator, data, force)
+        clean_data = self.preprocess_data(data)
+        valid = self.validate_data(validator, clean_data, force)
 
         if not valid:
             yield False
             return
 
         results = []
-        propagated_data = self.map_data(validator, data)
+        propagated_data = self.map_data(validator, clean_data)
 
         # Not using zip because it will silence a mismatch in sizes
         # between children and propagated_data
@@ -46,13 +50,27 @@ class BaseNode(ABC):
             return
 
         returned_data = [a.data_out for a in self.children]
-        self.data_out = self.reduce_data(validator, returned_data, data)
+        reduced_data = self.reduce_data(validator, returned_data, clean_data)
+
+        self.data_out = self.postprocess_data(reduced_data)
 
         if results and force:
             self.children = [self.children[results.index(True)]]
 
-        self.last_type = type(data)
+        self.last_type = type(self.data_out)
         yield True
+
+    def preprocess_data(self, data):
+        """
+        Prepares data for the other stages if needed
+        """
+        return data
+
+    def postprocess_data(self, data):
+        """
+        Clears or updates data if needed after it was processed by all other stages
+        """
+        return data
 
     @abstractmethod
     def validate_data(self, validator, data, sticky=False) -> bool:
@@ -110,23 +128,6 @@ class SimpleNode(BaseNode):
             propagated_data = data
             self.children *= len(data)
         return propagated_data
-
-    def reduce_data(self, validator, data, old_data):
-        return old_data
-
-
-class CallableNode(BaseNode):
-
-    def __init__(self):
-        super().__init__(typing.Callable, strict=True, type_var=False)
-
-    def validate_data(self, validator, data, sticky=False):
-        # Will keep till all the debugging is over
-        print('Validation:', data, self.data_type)
-        return isinstance(data, self.data_type)
-
-    def map_data(self, validator, data):
-        return []
 
     def reduce_data(self, validator, data, old_data):
         return old_data
@@ -209,22 +210,64 @@ class CallableNode(BaseNode):
     output type.
     """
 
-    def __init__(self):
-        super().__init__(typing.Callable, strict=True, type_var=False)
+    def __init__(self, data_type):
+        super().__init__(data_type, strict=True, type_var=False)
+
+    def preprocess_data(self, data):
+        from .enforcers import Enforcer, apply_enforcer
+
+        if not inspect.isfunction(data):
+            return data
+
+        try:
+            enforcer = data.__enforcer__
+        except AttributeError:
+            proxy = EnforceProxy(data)
+            return apply_enforcer(proxy)
+        else:
+            if isinstance(enforcer, Enforcer):
+                return data
+            else:
+                return apply_enforcer(data)
 
     def validate_data(self, validator, data, sticky=False):
         # Will keep till all the debugging is over
         #print('Callable Validation: {}:{}, {}\n=> {}'.format(data, type(data),
         #                                       self.data_type,
         #                                       isinstance(data, self.data_type)))
-        return isinstance(data, self.data_type)
+        try:
+            callable_signature = data.__enforcer__.callable_signature
+
+            expected_params = self.data_type.__args__
+            actual_params = callable_signature.__args__
+            params_match = False
+
+            if expected_params is None or expected_params is Ellipsis:
+                params_match = True
+            elif len(expected_params) == len(actual_params):
+                for i, param_type in enumerate(expected_params):
+                    if not issubclass(actual_params[i], param_type):
+                        break
+                else:
+                    params_match = True
+
+            expected_result = self.data_type.__result__
+            actual_result = callable_signature.__result__
+            result_match = False
+
+            if expected_result is None or expected_result is Ellipsis:
+                result_match = True
+            else:
+                result_match = issubclass(actual_result, expected_result)
+
+            is_callable = params_match and result_match
+
+            return is_callable
+        except AttributeError:
+            return False
 
     def map_data(self, validator, data):
-        func_hints = typing.get_type_hints(data)
-        result = [value for key, value in
-                  func_hints.items() if key != 'return']
-        result.append(func_hints['return'])
-        return result
+        return []
 
     def reduce_data(self, validator, data, old_data):
         return old_data
