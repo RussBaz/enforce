@@ -1,19 +1,19 @@
-from setuptools import setup
-from codecs import open
 from os import path
+import codecs
+from setuptools import setup
 
-here = path.abspath(path.dirname(__file__))
+ROOT = path.abspath(path.dirname(__file__))
 
-with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
-    long_description = f.read()
+with codecs.open(path.join(ROOT, 'README.rst'), encoding='utf-8') as f:
+    LONG_DESCRIPTION = f.read()
 
 setup(
     name='enforce',
 
     version='0.1.0',
 
-    description='A simple Python project for enforcing runtime validation of function input and output data',
-    long_description=long_description,
+    description='A Python library for enforcing runtime validation of function inputs and outputs',
+    long_description=LONG_DESCRIPTION,
 
     # The project's main homepage.
     url='https://github.com/RussBaz/enforce',
@@ -31,5 +31,8 @@ setup(
         'Programming Language :: Python :: 3.5',
     ],
     keywords='type validation',
-    packages=['enforce']
+    packages=['enforce'],
+    install_requires=[
+          'wrapt',
+    ]
 )
