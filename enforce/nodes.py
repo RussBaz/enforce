@@ -246,7 +246,7 @@ class CallableNode(BaseNode):
                 params_match = True
             elif len(expected_params) == len(actual_params):
                 for i, param_type in enumerate(expected_params):
-                    if not issubclass(actual_params[i], param_type):
+                    if actual_params[i] != param_type:
                         break
                 else:
                     params_match = True

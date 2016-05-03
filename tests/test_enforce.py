@@ -533,7 +533,7 @@ class CallableTypesTests(unittest.TestCase):
         """
         Test that a function with deeply nested types works
         """
-        def nest_func(x: typing.List[typing.List[int]]) -> int:
+        def nest_func(x: typing.Union[int, typing.List[typing.Any]]) -> int:
             return 5
         self.test_list(nest_func)
 
@@ -541,30 +541,30 @@ class CallableTypesTests(unittest.TestCase):
         """
         Test that a function with bad deeply nested types fails
         """
-        def nest_func(x: str) -> int:
+        def nest_func(x: typing.List[typing.List[int]]) -> int:
             return 5
         with self.assertRaises(RuntimeTypeError):
             self.test_list(nest_func)
 
     def test_good_union_func(self):
-        def good_union(x: float, a: typing.Optional[str]=None) -> int:
+        def good_union(x: typing.Union[float, int], a: typing.Optional[str]=None) -> int:
             print(a)
             return int(x)
         self.union(good_union)
 
     def test_bad_union_func(self):
-        def bad_union(x: str) -> int:
+        def bad_union(x: float, a=None) -> int:
             return int(x)
         with self.assertRaises(RuntimeTypeError):
             self.union(bad_union)
 
     def test_good_optional_parameter_func(self):
-        def good_param(x: int, y: str = 'a') -> int:
+        def good_param(x: typing.Union[float, int], y: typing.Optional[str] = 'a') -> int:
             return x
         self.union(good_param)
 
     def test_bad_optional_parameter_func(self):
-        def bad_param(x: int, y: int = 5) -> int:
+        def bad_param(x: typing.Union[float, int], y: str = 'b') -> int:
             return x
         with self.assertRaises(RuntimeTypeError):
             self.union(bad_param)
