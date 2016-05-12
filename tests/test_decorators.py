@@ -1,8 +1,9 @@
 ﻿import unittest
 import typing
 
+import enforce
 from enforce import runtime_validation
-from enforce.exceptions import RuntimeTypeError
+from enforce.exceptions import RuntimeTypeError, EnforceConfigurationError
 
 
 class DecoratorsTests(unittest.TestCase):
@@ -259,6 +260,104 @@ class DecoratorsTests(unittest.TestCase):
             pass
 
 
+class DecoratorArgumentsTests(unittest.TestCase):
+
+    def test_config_validation(self):
+        with self.assertRaises(EnforceConfigurationError):
+            @enforce.runtime_validation(recursion_limit='a')
+            def foo1(a: typing.Any) -> typing.Any: return a
+
+        with self.assertRaises(EnforceConfigurationError):
+            @enforce.runtime_validation(recursion_limit=-5)
+            def foo2(a: typing.Any) -> typing.Any: return a
+
+        with self.assertRaises(EnforceConfigurationError):
+            @enforce.runtime_validation(iterable_size=-5)
+            def foo3(a: typing.Any) -> typing.Any: return a
+
+        with self.assertRaises(EnforceConfigurationError):
+            @enforce.runtime_validation(iterable_size='a')
+            def foo4(a: typing.Any) -> typing.Any: return a
+
+        with self.assertRaises(EnforceConfigurationError):
+            @enforce.runtime_validation(group=5)
+            def foo5(a: typing.Any) -> typing.Any: return a
+
+        with self.assertRaises(EnforceConfigurationError):
+            @enforce.runtime_validation(enable=5)
+            def foo6(a: typing.Any) -> typing.Any: return a
+
+    def test_basic_arguments(self):
+        @enforce.runtime_validation
+        def test1(foo: typing.Any): return foo
+
+        @enforce.runtime_validation(recursion_limit=5, iterable_size='first', group='foo', enable=True)
+        def test2(foo: typing.Any): return foo
+
+        test1(5)
+        test2(5)
+
+    def test_enable(self):
+        @runtime_validation(enable=True)
+        def test1(a: typing.List[str]): return a
+
+        @runtime_validation(enable=False)
+        def test2(a: typing.List[str]): return a
+
+        with self.assertRaises(RuntimeTypeError):
+            test1(5)
+
+        # This should work with that decorator disabled
+        test2(5)
+
+    def test_groups(self):
+        """ TODO: This """
+        enforce.config(enable=False)
+        enforce.set_group('foo', True)
+
+        @runtime_validation(group='foo')
+        def test1(a: typing.List[str]): return a
+
+        @runtime_validation(group='foo')
+        def test2(a: typing.List[str]): return a
+
+        @runtime_validation(group='bar')
+        def test3(a: typing.List[str]): return a
+
+        with self.assertRaises(RuntimeTypeError):
+            test1(5)
+
+        with self.assertRaises(RuntimeTypeError):
+            test2(5)
+
+        test3(5)
+
+        enforce.config(enable=True)
+
+    def test_global_enable(self):
+        enforce.config(enable=False)
+
+        @runtime_validation
+        def test1(a: typing.List[str]): return a
+
+        @runtime_validation(enable=True)
+        def test2(a: typing.List[str]): return a
+
+        @runtime_validation(enable=False)
+        def test3(a: typing.List[str]): return a
+
+        try:
+            test1(5)  # Should work with disabled
+
+            with self.assertRaises(RuntimeTypeError):
+                test2(5)
+
+            test3(5)  # Should work with disabled
+        except:
+            # NEED TO RE-ENABLE
+            enforce.config(enable=True)
+            raise
+        enforce.config(enable=True)
 
 
 if __name__ == '__main__':

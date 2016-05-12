@@ -13,6 +13,7 @@ T = typing.TypeVar('T')
 # Convenience type for storing all incoming arguments in a single container
 Parameters = namedtuple('Parameters', ['args', 'kwargs'])
 
+
 class Enforcer:
     """
     A container for storing type checking logic of functions
@@ -129,6 +130,7 @@ def parse_errors(errors: typing.List[str], hints:typing.Dict[str, type], return_
             output += '\n' +  error_message.format(error, hint)
     return output
 
+
 def generate_type_from_signature(signature):
     """
     Generates a type from a signature of Callable object
@@ -164,3 +166,5 @@ def generate_type_from_signature(signature):
             result = typing.Callable[positional_arguments, return_type]
 
     return result
+
+

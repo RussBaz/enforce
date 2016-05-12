@@ -1,21 +1,29 @@
 import inspect
 import typing
+import functools
 from inspect import ismethoddescriptor
 from functools import wraps
 from pprint import pprint
 
 from wrapt import decorator
 
+import enforce
 from .enforcers import apply_enforcer, Parameters
 
 
-def runtime_validation(data):
+def runtime_validation(data=None, **kwargs):
     """
     This decorator enforces runtime parameter and return value type checking validation
     It uses the standard Python 3.5 syntax for type hinting declaration
     """
+    # see https://wrapt.readthedocs.io/en/latest/decorators.html#decorators-with-optional-arguments
+    if data is None:
+        return functools.partial(runtime_validation, **kwargs)
 
-    @decorator
+    configuration = enforce.Config(enforce.user_configuration)
+    configuration.set(**kwargs)
+
+    @decorator(enabled=configuration)
     def build_wrapper(wrapped, instance, args, kwargs):
         if instance is None:
             if inspect.isclass(wrapped):
@@ -25,7 +33,7 @@ def runtime_validation(data):
                         if attr_name == '__class__':
                             raise AttributeError
                         old_attr = getattr(data, attr_name)
-                        new_attr = decorate(old_attr, None)
+                        new_attr = decorate(old_attr, configuration, None)
                         setattr(data, attr_name, new_attr)
                     except AttributeError:
                         pass
@@ -33,22 +41,28 @@ def runtime_validation(data):
             else:
                 # Decorator was applied to a function or staticmethod.
                 if issubclass(type(data), staticmethod):
-                    return staticmethod(decorate(data.__func__, None))
-                return decorate(data, None)
+                    return staticmethod(decorate(data.__func__, configuration, None))
+                return decorate(data, configuration, None)
         else:
             if inspect.isclass(instance):
                 # Decorator was applied to a classmethod.
                 print('class method')
-                return decorate(data, None)
+                return decorate(data, configuration, None)
             else:
                 # Decorator was applied to an instancemethod.
                 print('instance method')
-                return decorate(data, instance)
+                return decorate(data, configuration, instance)
 
     generate_decorated = build_wrapper(data)
-    return generate_decorated()
+    # If the decorator is disabled, then just return the function
+    # NOT the function wrapper that is otherwise
+    if not bool(configuration):
+        return generate_decorated
+    else:
+        return generate_decorated()
 
-def decorate(data, obj_instance=None) -> typing.Callable:
+
+def decorate(data, configuration, obj_instance=None) -> typing.Callable:
     """
     Performs the function decoration with a type checking wrapper
 
