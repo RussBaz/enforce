@@ -204,12 +204,17 @@ class DecoratorsTests(unittest.TestCase):
         def foo(func: typing.Callable[[int], str], bar: int) -> str:
             return func(bar)
 
-        foo(lambda x: str(x), 5)
+        # Lambda cannot be annotated with type hints
+        # Hence, it cannot be more specific than typing.Callable
+        # func = lambda x: str(x)
 
-        try:
+        def bar(data: int) -> str:
+            return str(data)
+
+        foo(bar, 5)
+
+        with self.assertRaises(RuntimeTypeError):
             foo(5, 7)
-        except enforce.exceptions.RuntimeTypeError:
-            pass
 
     def test_tuple_support(self):
         @enforce.runtime_validation
@@ -252,12 +257,13 @@ class DecoratorsTests(unittest.TestCase):
         def test(tup: typing.Tuple) -> typing.Tuple:
             return tup
 
-        tup = (1, 2)
-        try:
-            test(tup)
-            raise AssertionError('RuntimeTypeError should have been raised')
-        except enforce.exceptions.RuntimeTypeError:
-            pass
+        good = (1, 2)
+        bad = 1
+
+        test(good)
+
+        with self.assertRaises(RuntimeTypeError):
+            test(bad)
 
 
 class DecoratorArgumentsTests(unittest.TestCase):

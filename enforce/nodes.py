@@ -258,12 +258,15 @@ class CallableNode(BaseNode):
             if expected_result is None or expected_result is Ellipsis:
                 result_match = True
             else:
-                result_match = issubclass(actual_result, expected_result)
+                result_match = type(actual_result) == type(expected_result)
 
             is_callable = params_match and result_match
 
             return is_callable
         except AttributeError:
+            return False
+        except TypeError:
+            # Can occur in case of typing.Callable having no parameters
             return False
 
     def map_data(self, validator, data):

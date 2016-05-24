@@ -240,6 +240,14 @@ class ComplexTypesTests(unittest.TestCase):
         def sample_bad(data: typing.Any) -> typing.Tuple[int, str]:
             return data
 
+        @runtime_validation
+        def sample_any_in(data: typing.Tuple) -> typing.Tuple:
+            return data
+
+        @runtime_validation
+        def sample_any_out(data: typing.Any) -> typing.Tuple:
+            return data
+
         self.assertEqual(sample((1, '')), (1, ''))
         with self.assertRaises(RuntimeTypeError):
             sample((1, 1))
@@ -252,6 +260,39 @@ class ComplexTypesTests(unittest.TestCase):
 
         with self.assertRaises(RuntimeTypeError):
             sample_bad((''))
+
+        self.assertEqual(sample_any_in((1, '')), (1, ''))
+        with self.assertRaises(RuntimeTypeError):
+            sample_any_in(1)
+
+        self.assertEqual(sample_any_out((1,)), (1,))
+        with self.assertRaises(RuntimeTypeError):
+            sample_any_out(1)
+
+    def test_variable_length_tuple(self):
+        # TODO: What is tuple is empty?
+        @runtime_validation
+        def sample_in(data: typing.Tuple[int, ...]) -> typing.Any:
+            return data
+
+        @runtime_validation
+        def sample_out(data: typing.Any) -> typing.Tuple[int, ...]:
+            return data
+        
+        good = (1, 3, 4)
+        bad = (1, 'a', 2)
+        empty = ()
+
+        self.assertEqual(sample_in(good), good)
+        self.assertEqual(sample_out(good), good)
+        self.assertEqual(sample_in(empty), empty)
+        self.assertEqual(sample_out(empty), empty)
+
+        with self.assertRaises(RuntimeTypeError):
+            sample_in(bad)
+
+        with self.assertRaises(RuntimeTypeError):
+            sample_out(bad)
 
     def test_simple_unbounded_type_var(self):
         A = typing.TypeVar('A')

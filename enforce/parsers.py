@@ -87,10 +87,13 @@ class Parser:
         yield self._yield_parsing_result(node, new_node)
 
     def _parse_tuple(self, node, hint, parser):
-        new_node = yield nodes.TupleNode()
-        for element in hint.__tuple_params__:
-            yield self._map_parser(new_node, element, parser)
-        yield self._yield_parsing_result(node, new_node)
+        if hint.__tuple_params__ is None:
+            yield self._parse_default(node, hint, parser)
+        else:
+            new_node = yield nodes.TupleNode()
+            for element in hint.__tuple_params__:
+                yield self._map_parser(new_node, element, parser)
+            yield self._yield_parsing_result(node, new_node)
 
     def _parse_callable(self, node, hint, parser):
         new_node = yield nodes.CallableNode(hint)
