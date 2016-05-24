@@ -17,13 +17,15 @@ class Enforcer:
     """
     A container for storing type checking logic of functions
     """
-    def __init__(self, validator, signature, hints, parent=None):
+    def __init__(self, validator, signature, hints, root=None):
         self.validator = validator
         self.signature = signature
         self.hints = hints
-        self.parent = parent
+        self.root = root
         self.enabled = True
         self.settings = None
+        
+        self.globals = {}
 
         self._callable_signature = None
 
@@ -86,7 +88,9 @@ class Enforcer:
         self.validator.reset()
 
 
-def apply_enforcer(func: typing.Callable) -> typing.Callable:
+def apply_enforcer(func: typing.Callable,
+                   empty: bool=False,
+                   parent_root: typing.Optional[typing.Dict]=None) -> typing.Callable:
     """
     Adds an Enforcer instance to the passed function if it doesn't yet exist
     or if it is not an instance of Enforcer
@@ -97,15 +101,23 @@ def apply_enforcer(func: typing.Callable) -> typing.Callable:
         """
         Private function for generating new Enforcer instances for the incoming function
         """
-        signature = inspect.signature(func)
-        hints = typing.get_type_hints(func)
-        validator = init_validator(hints)
+        if empty:
+            signature = None
+            hints = None
+            validator = None
+            root = {}
+        else:
+            signature = inspect.signature(func)
+            hints = typing.get_type_hints(func)
+            validator = init_validator(hints)
+            root = parent_root
 
-        return Enforcer(validator, signature, hints)
+        return Enforcer(validator, signature, hints, root)
 
     if not hasattr(func, '__enforcer__'):
         func.__enforcer__ = generate_new_enforcer()
     elif not isinstance(func.__enforcer__, Enforcer):
+        # Replaces 'incorrect' enforcers
         func.__enforcer__ = generate_new_enforcer()
 
     return func

@@ -20,35 +20,41 @@ def runtime_validation(data):
         if instance is None:
             if inspect.isclass(wrapped):
                 # Decorator was applied to a class
-                for attr_name in dir(data):
+                root = None
+
+                if issubclass(wrapped, typing.Generic):
+                    wrapped = apply_enforcer(wrapped, empty=True)
+                    root = wrapped.__enforcer__.root
+
+                for attr_name in dir(wrapped):
                     try:
                         if attr_name == '__class__':
                             raise AttributeError
-                        old_attr = getattr(data, attr_name)
-                        new_attr = decorate(old_attr, None)
-                        setattr(data, attr_name, new_attr)
+                        old_attr = getattr(wrapped, attr_name)
+                        new_attr = decorate(old_attr, obj_instance=None, parent_root=root)
+                        setattr(wrapped, attr_name, new_attr)
                     except AttributeError:
                         pass
-                return data
+                return wrapped
             else:
                 # Decorator was applied to a function or staticmethod.
-                if issubclass(type(data), staticmethod):
-                    return staticmethod(decorate(data.__func__, None))
-                return decorate(data, None)
+                if issubclass(type(wrapped), staticmethod):
+                    return staticmethod(decorate(wrapped.__func__, None))
+                return decorate(wrapped, None)
         else:
             if inspect.isclass(instance):
                 # Decorator was applied to a classmethod.
                 print('class method')
-                return decorate(data, None)
+                return decorate(wrapped, None)
             else:
                 # Decorator was applied to an instancemethod.
                 print('instance method')
-                return decorate(data, instance)
+                return decorate(wrapped, instance)
 
     generate_decorated = build_wrapper(data)
     return generate_decorated()
 
-def decorate(data, obj_instance=None) -> typing.Callable:
+def decorate(data, obj_instance=None, parent_root=None) -> typing.Callable:
     """
     Performs the function decoration with a type checking wrapper
 
@@ -57,7 +63,7 @@ def decorate(data, obj_instance=None) -> typing.Callable:
     if not hasattr(data, '__annotations__'):
         return data
 
-    apply_enforcer(data)
+    apply_enforcer(data, parent_root=parent_root)
 
     @decorator
     def universal(wrapped, instance, args, kwargs):
