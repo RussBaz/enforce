@@ -12,7 +12,7 @@
     <OutputPath>.</OutputPath>
     <Name>enforce</Name>
     <RootNamespace>enforce</RootNamespace>
-    <InterpreterId>{55974fb7-fa0d-456e-baca-e6ec647db8ec}</InterpreterId>
+    <InterpreterId>{d31d605e-585e-443b-aad7-cb37a2e90f19}</InterpreterId>
     <InterpreterVersion>3.5</InterpreterVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -29,11 +29,50 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="enforce\decorators.py" />
+    <Compile Include="enforce\enforcers.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="enforce\exceptions.py" />
+    <Compile Include="enforce\nodes.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="enforce\parsers.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="enforce\utils.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="enforce\validators.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="enforce\wrappers.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="enforce\__init__.py" />
     <Compile Include="setup.py" />
     <Compile Include="tests\test_decorators.py" />
+    <Compile Include="tests\test_enforce.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\test_enforcers.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="tests\test_exceptions.py" />
+    <Compile Include="tests\test_nodes.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\test_parsers.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\test_utils.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\test_validators.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\test_wrappers.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="enforce\" />
@@ -41,10 +80,11 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="README.rst" />
+    <Content Include="requirements.txt" />
   </ItemGroup>
   <ItemGroup>
     <Interpreter Include="env\">
-      <Id>{55974fb7-fa0d-456e-baca-e6ec647db8ec}</Id>
+      <Id>{d31d605e-585e-443b-aad7-cb37a2e90f19}</Id>
       <BaseInterpreter>{9a7a9026-48c1-4688-9d5d-e5699d47d074}</BaseInterpreter>
       <Version>3.5</Version>
       <Description>env (Python 64-bit 3.5)</Description>
