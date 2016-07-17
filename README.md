@@ -85,10 +85,13 @@ fixed. At a high level, this means that it's not quite supported to dynamically
 disable checking at runtime, and this toggle feature works best manually for
 now.
 
-Currently the type checker will examine every object in a list, or a dictionary.
-This means that for large structures performance can be a nightmare. A known
-feature request (that is in the works) is to set the recursion limit as well as
-length limit, as to not have to check every item in some arbitrary object
+We are still working on deciding the best approach for iterables, please
+reference [PR #15](https://github.com/RussBaz/enforce/pull/15) for context.
+
+Currently the type checker will examine every object in a list.  This means that
+for large structures performance can be a nightmare. A known feature request
+(that is in the works) is to set the recursion limit as well as length
+limit, as to not have to check every item in some arbitrary object
 (essentially trading performance for type safety).
 
 Generics and containers are NOT yet supported. Callables and TypeVars should be
