@@ -9,6 +9,7 @@ from wrapt import decorator
 
 import enforce
 from .enforcers import apply_enforcer, Parameters
+from .types import is_type_of_type
 
 
 def runtime_validation(data=None, **kwargs):
@@ -23,14 +24,15 @@ def runtime_validation(data=None, **kwargs):
     configuration = enforce.Config(enforce.user_configuration)
     configuration.set(**kwargs)
 
+    print(id(data))
+
     @decorator(enabled=configuration)
     def build_wrapper(wrapped, instance, args, kwargs):
         if instance is None:
             if inspect.isclass(wrapped):
                 # Decorator was applied to a class
                 root = None
-
-                if issubclass(wrapped, typing.Generic):
+                if is_type_of_type(wrapped, typing.Generic, covariant=True):
                     wrapped = apply_enforcer(wrapped, empty=True)
                     root = wrapped.__enforcer__.root
 

@@ -178,5 +178,3 @@ def generate_type_from_signature(signature):
             result = typing.Callable[positional_arguments, return_type]
 
     return result
-
-
