@@ -1,17 +1,33 @@
 import unittest
+from typing import TypeVar, Any
 
 from enforce.types import is_type_of_type
 
 
 class Animal:
-        pass
-
-
-class Pet(Animal):
+    """
+    Dummy class
+    """
     pass
 
 
-class TestTypes(unittest.TestCase):
+class Pet(Animal):
+    """
+    Dummy subclass of Animal
+    """
+    pass
+
+class Chihuahua(Pet):
+    """
+    Dummy subclass of Pet
+    """
+    pass
+
+
+class TestTypesChecking(unittest.TestCase):
+    """
+    Tests for the type checking function
+    """
     
     def check_covariant(self, type_a, type_b, local_variables=None, global_variables=None):
         self.assertTrue(is_type_of_type(type_a,
@@ -93,7 +109,7 @@ class TestTypes(unittest.TestCase):
                                         local_variables=local_variables,
                                         global_variables=global_variables))
 
-    def check_default_behaviour(self, type_a, type_b, local_variables=None, global_variables=None):
+    def check_default_invariant_behaviour(self, type_a, type_b, local_variables=None, global_variables=None):
         self.assertFalse(is_type_of_type(type_a,
                                         type_b,
                                         local_variables=local_variables,
@@ -120,7 +136,86 @@ class TestTypes(unittest.TestCase):
         self.check_bivariant(Pet, Animal)
 
     def test_default_behaviour(self):
-        self.check_default_behaviour(Pet, Animal)
+        self.check_default_invariant_behaviour(Pet, Animal)
+
+    def test_none(self):
+        self.assertTrue(is_type_of_type(None, None))
+
+    def test_any(self):
+        self.assertTrue(is_type_of_type(Animal, Any))
+        self.assertTrue(is_type_of_type(None, Any))
+
+    def test_type_var_default(self):
+        T = TypeVar('T')
+        self.assertTrue(is_type_of_type(Animal, T))
+        self.assertTrue(is_type_of_type(None, T))
+
+    def test_type_var_constrained(self):
+        T = TypeVar('T', Animal, int)
+        self.assertTrue(is_type_of_type(Animal, T))
+        self.assertTrue(is_type_of_type(int, T))
+        self.assertFalse(is_type_of_type(None, T))
+
+    def test_type_var_covariant(self):
+        T = TypeVar('T', Animal, int, covariant=True)
+        self.assertTrue(is_type_of_type(Animal, T))
+        self.assertTrue(is_type_of_type(Pet, T))
+        self.assertTrue(is_type_of_type(Chihuahua, T))
+        self.assertTrue(is_type_of_type(int, T))
+        self.assertFalse(is_type_of_type(None, T))
+
+    def test_type_var_contravariant(self):
+        T = TypeVar('T', Pet, int, contravariant=True)
+        self.assertTrue(is_type_of_type(Animal, T))
+        self.assertTrue(is_type_of_type(Pet, T))
+        self.assertFalse(is_type_of_type(Chihuahua, T))
+        self.assertTrue(is_type_of_type(int, T))
+        self.assertFalse(is_type_of_type(None, T))
+
+    @unittest.skip('Standard TypeVars cannot be bivariant')
+    def test_type_var_bivariant(self):
+        T = TypeVar('T', Pet, int, covariant=True, contravariant=True)
+        self.assertTrue(is_type_of_type(Animal, T))
+        self.assertTrue(is_type_of_type(Pet, T))
+        self.assertTrue(is_type_of_type(Chihuahua, T))
+        self.assertTrue(is_type_of_type(int, T))
+        self.assertFalse(is_type_of_type(None, T))
+
+    def test_type_var_bounded(self):
+        T = TypeVar('T', bound=Animal)
+        self.assertTrue(is_type_of_type(Animal, T))
+        self.assertFalse(is_type_of_type(Pet, T))
+        self.assertFalse(is_type_of_type(Chihuahua, T))
+        self.assertFalse(is_type_of_type(int, T))
+        self.assertFalse(is_type_of_type(None, T))
+
+        T = TypeVar('T', covariant=True, bound=Animal)
+        self.assertTrue(is_type_of_type(Animal, T))
+        self.assertTrue(is_type_of_type(Pet, T))
+        self.assertTrue(is_type_of_type(Chihuahua, T))
+        self.assertFalse(is_type_of_type(int, T))
+        self.assertFalse(is_type_of_type(None, T))
+
+        T = TypeVar('T', contravariant=True, bound=Pet)
+        self.assertTrue(is_type_of_type(Animal, T))
+        self.assertTrue(is_type_of_type(Pet, T))
+        self.assertFalse(is_type_of_type(Chihuahua, T))
+        self.assertFalse(is_type_of_type(int, T))
+        self.assertFalse(is_type_of_type(None, T))
+        
+        # Bivariant TypeVars are not supported by default 
+        #T = TypeVar('T', covariant=True, contravariant=True, bound=Pet)
+        #self.assertTrue(is_type_of_type(Animal, T))
+        #self.assertTrue(is_type_of_type(Pet, T))
+        #self.assertTrue(is_type_of_type(Chihuahua, T))
+        #self.assertFalse(is_type_of_type(int, T))
+        #self.assertFalse(is_type_of_type(None, T))
+
+    def test_any_from_str(self):
+        self.assertTrue(is_type_of_type(Animal, 'Any'))
+
+    def test_none_from_str(self):
+        self.assertTrue(is_type_of_type(None, 'None'))
 
     def test_covariant_from_str(self):
         self.check_covariant('Pet', 'Animal', local_variables=locals(), global_variables=globals())
@@ -135,7 +230,14 @@ class TestTypes(unittest.TestCase):
         self.check_bivariant('Pet', 'Animal', local_variables=locals(), global_variables=globals())
 
     def test_default_behaviour_from_str(self):
-        self.check_default_behaviour('Pet', 'Animal', local_variables=locals(), global_variables=globals())
+        self.check_default_invariant_behaviour('Pet', 'Animal', local_variables=locals(), global_variables=globals())
+
+
+class TestTypesEnhanced(unittest.TestCase):
+    """
+    Tests for the Enhanced TypeVar class
+    """
+    pass
 
 
 if __name__ == '__main__':
