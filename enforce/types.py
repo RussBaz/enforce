@@ -5,6 +5,11 @@ from typing import Optional, Union, Any, TypeVar
 
 
 class EnahncedTypeVar:
+    """
+    Utility wrapper for adding extra properties to default TypeVars
+    Allows TypeVars to be bivariant
+    Can be constructed as any other TypeVar or from existing TypeVars
+    """
     
     def __init__(self,
                  name: str,
@@ -21,19 +26,19 @@ class EnahncedTypeVar:
             self.__contravariant__ = type_var.__contravariant__
             self.__constraints__ = type_var.__constraints__
         else:
-            self.type_var = TypeVar(name, constraints, bound)
+            self.type_var = TypeVar(name, *constraints, bound=bound)
             self.__name__ = name
             self.__bound__ = bound
             self.__covariant__ = covariant
             self.__contravariant__ = contravariant
             self.__constraints__ = constraints
 
-        self.__evaluated__ = False
-        self.__value__ = None
-
     def __repr__(self):
+        """
+        Further enhances TypeVar representation through addition of bi-variant symbol
+        """
         if self.__covariant__ and self.__contravariant__:
-            prefix = '+-'
+            prefix = '*'
         elif self.__covariant__:
             prefix = '+'
         elif self.__contravariant__:
@@ -78,7 +83,7 @@ def is_type_of_type(data: Union[type, str, None],
     if data_type is None:
         data_type = type(None)
 
-    is_type_var = data_type.__class__ is TypeVar
+    is_type_var = data_type.__class__ is TypeVar or data_type.__class__ is EnahncedTypeVar
 
     if is_type_var:
         if data_type.__bound__:
