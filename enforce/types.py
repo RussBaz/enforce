@@ -1,7 +1,8 @@
 import builtins
 import typing
+import numbers
 from collections import ChainMap
-from typing import Optional, Union, Any, TypeVar
+from typing import Optional, Union, Any, TypeVar, Tuple
 
 
 class EnahncedTypeVar:
@@ -48,6 +49,41 @@ class EnahncedTypeVar:
         return prefix + self.__name__
 
 
+# According to https://docs.python.org/3/reference/datamodel.html,
+# there are two types of integers - int and bool, but the 'PEP 3141 -- A Type Hierarchy for Numbers'
+# (https://www.python.org/dev/peps/pep-3141/)
+# makes no such distinction.
+# As I could not find required base classes to differentiate between two types of integers,
+# I decided to add my own classes.
+# If I am wrong, please let me know
+
+
+class Integer(numbers.Integral):
+    """
+    Integer stub class
+    """
+    pass
+
+
+class Boolean(numbers.Integral):
+    """
+    Boolean stub class
+    """
+    pass
+
+
+TYPE_ALIASES = {
+    tuple: Tuple,
+    int: Integer,
+    bool: Boolean,
+    float: numbers.Real,
+    complex: numbers.Complex,
+    dict: typing.Dict,
+    list: typing.List,
+    None: type(None)
+}
+
+
 def is_type_of_type(data: Union[type, str, None],
                     data_type: Union[type, str, TypeVar, EnahncedTypeVar, None],
                     covariant: bool=False,
@@ -77,13 +113,12 @@ def is_type_of_type(data: Union[type, str, None],
     if isinstance(data, str):
         data = calling_scope[data]
 
-    if data is None:
-        data = type(None)
-
-    if data_type is None:
-        data_type = type(None)
-
     is_type_var = data_type.__class__ is TypeVar or data_type.__class__ is EnahncedTypeVar
+
+    # Checks if the type is in the list of type aliases
+    # And replaces it (if found) with a base form
+    data = TYPE_ALIASES.get(data, data)
+    data_type = TYPE_ALIASES.get(data_type, data_type)
 
     if is_type_var:
         if data_type.__bound__:
@@ -97,6 +132,8 @@ def is_type_of_type(data: Union[type, str, None],
 
     if not constraints:
         constraints = [Any]
+
+    constraints = [TYPE_ALIASES.get(constraint, constraint) for constraint in constraints]
     
     if Any in constraints:
         return True

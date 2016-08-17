@@ -21,7 +21,7 @@ class Validator:
         result = visit(validators)
         self.data_out[param_name] = self.roots[param_name].data_out
         if not result:
-            self.errors.append(param_name)
+            self.errors.append((param_name, type(data)))
         return result
 
     def reset(self) -> None:

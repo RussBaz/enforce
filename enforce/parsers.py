@@ -61,36 +61,29 @@ class Parser:
 
     def _parse_type_var(self, node, hint, parser):
         try:
-            global_node = parser.validator.globals[hint.__name__]
+            new_node = parser.validator.globals[hint.__name__]
         except KeyError:
-            global_node = yield nodes.UnionNode()
-            if hint.__constraints__:
+            covariant = hint.__covariant__
+            contravariant = hint.__contravariant__
+            new_node = yield nodes.TypeVarNode(covariant=covariant, contravariant=contravariant)
+            if hint.__bound__ is not None:
+                yield self._map_parser(new_node, hint.__bound__, parser)
+            elif hint.__constraints__:
                 for constraint in hint.__constraints__:
-                    yield self._map_parser(global_node, constraint, parser)
+                    yield self._map_parser(new_node, constraint, parser)
             else:
-                yield self._map_parser(global_node, typing.Any, parser)
-            parser.validator.globals[hint.__name__] = global_node
-            parser.validator.all_nodes.append(global_node)
+                yield self._map_parser(new_node, typing.Any, parser)
+            parser.validator.globals[hint.__name__] = new_node
+            parser.validator.all_nodes.append(new_node)
 
-        new_node = yield nodes.TypeVarNode()
-        new_node.add_child(global_node)
         parser.validator.all_nodes.append(new_node)
-        yield self._yield_parsing_result(node, new_node)
-
-    def _parse_callable(self, node, hint, parser):
-        new_node = yield nodes.CallableNode()
-        # Add every argument as a child
-        for element in hint.__args__:
-            yield self._map_parser(new_node, element, parser)
-        # Add return type as child
-        yield self._map_parser(new_node, hint.__result__, parser)
         yield self._yield_parsing_result(node, new_node)
 
     def _parse_tuple(self, node, hint, parser):
         if hint.__tuple_params__ is None:
             yield self._parse_default(node, hint, parser)
         else:
-            new_node = yield nodes.TupleNode()
+            new_node = yield nodes.TupleNode(variable_length=hint.__tuple_use_ellipsis__)
             for element in hint.__tuple_params__:
                 yield self._map_parser(new_node, element, parser)
             yield self._yield_parsing_result(node, new_node)
@@ -134,7 +127,10 @@ class Parser:
 
         # add its type as child
         # We can index first as Lists only ever have 1 parameter
-        yield self._map_parser(new_node, hint.__parameters__[0], parser)
+        if hint.__args__:
+            yield self._map_parser(new_node, hint.__args__[0], parser)
+        else:
+            yield self._map_parser(new_node, typing.Any, parser)
 
         yield self._yield_parsing_result(node, new_node)
 

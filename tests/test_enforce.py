@@ -1,7 +1,9 @@
 import typing
 import unittest
+import numbers
 
 from enforce import runtime_validation
+from enforce.types import EnahncedTypeVar
 from enforce.exceptions import RuntimeTypeError
 
 
@@ -213,6 +215,22 @@ class ComplexTypesTests(unittest.TestCase):
     """
     Tests for the simple types which require special processing
     """
+    def get_type_var_func(self, configurable=False, type_var=None):
+        if type_var is None:
+            A = typing.TypeVar('A')
+        else:
+            A = type_var
+
+        def type_var_func(data: A) -> A:
+            return data
+
+        def configurable_type_var_func(data: typing.Any, type_option: A) -> A:
+            return data
+
+        if configurable:
+            return runtime_validation(configurable_type_var_func)
+        else:
+            return runtime_validation(type_var_func)
 
     def test_optional(self):
         @runtime_validation
@@ -295,43 +313,93 @@ class ComplexTypesTests(unittest.TestCase):
             sample_out(bad)
 
     def test_simple_unbounded_type_var(self):
-        A = typing.TypeVar('A')
+        type_var_func = self.get_type_var_func()
+        bad_type_var_func = self.get_type_var_func(configurable=True)
 
-        @runtime_validation
-        def sample(data: A) -> A:
-            return data
-
-        @runtime_validation
-        def sample_bad(data: typing.Any, option: A) -> A:
-            return data
-
-        self.assertEqual(sample(1), 1)
-        self.assertEqual(sample_bad('', 'hello world'), '')
+        self.assertEqual(type_var_func(1), 1)
+        self.assertEqual(bad_type_var_func('', 'hello world'), '')
 
         with self.assertRaises(RuntimeTypeError):
-            sample_bad('', 1)
+            bad_type_var_func('', 1)
 
     def test_simple_bounded_type_var(self):
+        # Invariant case
         A = typing.TypeVar('A', int, str)
 
-        @runtime_validation
-        def sample(data: A) -> A:
-            return data
+        type_var_func = self.get_type_var_func(type_var=A)
+        bad_type_var_func = self.get_type_var_func(configurable=True, type_var=A)
 
-        @runtime_validation
-        def sample_bad(data: typing.Any) -> A:
-            return data
-
-        self.assertEqual(sample(1), 1)
-        self.assertEqual(sample(''), '')
-        self.assertEqual(sample_bad(1), 1)
-        self.assertEqual(sample_bad(''), '')
+        self.assertEqual(type_var_func(1), 1)
+        self.assertEqual(type_var_func(''), '')
+        self.assertEqual(bad_type_var_func(1, 1), 1)
+        self.assertEqual(bad_type_var_func('', ''), '')
 
         with self.assertRaises(RuntimeTypeError):
-            sample(1.0)
+            type_var_func(1.0)
 
         with self.assertRaises(RuntimeTypeError):
-            sample_bad(1.0)
+            bad_type_var_func(1.0, 1)
+
+    def test_covariant_type_var(self):
+        A = typing.TypeVar('A', bound=numbers.Number, covariant=True)
+
+        type_var_func = self.get_type_var_func(type_var=A)
+
+        self.assertEqual(type_var_func(1), 1)
+        self.assertEqual(type_var_func(1.0), 1.0)
+        self.assertEqual(type_var_func(1+1j), 1+1j)
+
+        with self.assertRaises(RuntimeTypeError):
+            type_var_func('bad')
+
+    def test_contravariant_type_var(self):
+        class B:
+            pass
+
+        class C(B):
+            pass
+
+        class D(C):
+            pass
+
+        A = typing.TypeVar('A', bound=C, contravariant=True)
+
+        b = B()
+        c = C()
+        d = D()
+
+        type_var_func = self.get_type_var_func(type_var=A)
+
+        self.assertIs(type_var_func(c), c)
+        self.assertIs(type_var_func(b), b)
+
+        with self.assertRaises(RuntimeTypeError):
+            type_var_func(d)
+
+    def test_bivariant_type_var(self):
+        class B:
+            pass
+
+        class C(B):
+            pass
+
+        class D(C):
+            pass
+
+        A = EnahncedTypeVar('A', bound=C, covariant=True, contravariant=True)
+
+        b = B()
+        c = C()
+        d = D()
+
+        type_var_func = self.get_type_var_func(type_var=A)
+
+        self.assertIs(type_var_func(c), c)
+        self.assertIs(type_var_func(b), b)
+        self.assertIs(type_var_func(d), d)
+
+        with self.assertRaises(RuntimeTypeError):
+            type_var_func('bad')
 
 
 class ListTypesTests(unittest.TestCase):

@@ -1,7 +1,8 @@
 import unittest
-from typing import TypeVar, Any
+import numbers
+from typing import TypeVar, Any, Tuple, Dict, List
 
-from enforce.types import is_type_of_type, EnahncedTypeVar
+from enforce.types import is_type_of_type, EnahncedTypeVar, Integer, Boolean
 
 
 class Animal:
@@ -323,6 +324,30 @@ class TestTypesChecking(unittest.TestCase):
         that it works as expected when types are given as strings with type names
         """
         self.check_default_invariant_behaviour('Pet', 'Animal', local_variables=locals(), global_variables=globals())
+
+    def test_in_built_types(self):
+        """
+        Tests an unusual result found while testing tuples
+        """
+        a = (1, 1)  # Tuple
+        b = 1  # Int
+        c = 1.1  # Float
+        d = 1 + 1j  # Complex
+        e = None  # NoneType
+        f = True  # Boolean
+        g = {}  # Dictionary
+        h = []  # List
+        i = ''  # String
+
+        self.assertTrue(is_type_of_type(type(a), Tuple))
+        self.assertTrue(is_type_of_type(type(b), Integer))
+        self.assertTrue(is_type_of_type(type(c), numbers.Real))
+        self.assertTrue(is_type_of_type(type(d), numbers.Complex))
+        self.assertTrue(is_type_of_type(type(e), type(None)))
+        self.assertTrue(is_type_of_type(type(f), Boolean))
+        self.assertTrue(is_type_of_type(type(g), Dict))
+        self.assertTrue(is_type_of_type(type(h), List))
+        self.assertTrue(is_type_of_type(type(i), str))
 
 
 class TestTypesEnhanced(unittest.TestCase):
