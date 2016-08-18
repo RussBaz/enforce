@@ -122,15 +122,13 @@ class Parser:
             yield self._parse_default(node, hint, parser)
 
     def _parse_list(self, node, hint, parser):
-        new_node = yield nodes.SimpleNode(hint)
+        new_node = yield nodes.SimpleNode(hint.__extra__)
         parser.validator.all_nodes.append(new_node)
 
         # add its type as child
         # We can index first as Lists only ever have 1 parameter
         if hint.__args__:
             yield self._map_parser(new_node, hint.__args__[0], parser)
-        else:
-            yield self._map_parser(new_node, typing.Any, parser)
 
         yield self._yield_parsing_result(node, new_node)
 

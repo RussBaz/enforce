@@ -679,6 +679,7 @@ class CallableTypesTests(unittest.TestCase):
             self.union(bad_param)
 
 
+@unittest.skip('Will not be implemented during this release')
 class GenericTypesTests(unittest.TestCase):
     """
     Tests for the generic types
@@ -704,11 +705,11 @@ class GenericTypesTests(unittest.TestCase):
         print('t:', type(other))
         print('t:', type(strange))
 
-        print(issubclass(type(good), Sample[int]))
-        print(issubclass(type(good), typing.Generic))
+        #print(issubclass(type(good), Sample[int]))
+        #print(issubclass(type(good), typing.Generic))
 
-        print(isinstance(type(good), Sample[int]))
-        print(isinstance(type(good), typing.Generic))
+        #print(isinstance(type(good), Sample[int]))
+        #print(isinstance(type(good), typing.Generic))
 
         self.assertEqual(return_int(good, 1), 1)
 
