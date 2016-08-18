@@ -13,14 +13,14 @@ give it a try.
 
 ##Installation
 
-Stable 0.1 - Missing many features like grouping, callable support, etc.
+Stable 0.2 - Already suitable for majority of applications.
 
     pip install enforce
 
 Dev current - "Bleeding edge" features that, while are fairly consistent, may
-change. This README reflects features in dev.
+change.
 
-    pip install git+https://github.com/RussBaz/enforce.git
+    pip install git+https://github.com/RussBaz/enforce.git@dev
 
 ## Usage
 
@@ -45,7 +45,7 @@ def foo(text: str) -> None:
 ```
 * Decorator Configuration
 ```python
-@runtime_validation(recursion_depth=0, iterable_size='first', group='best group', enable=True)
+@runtime_validation(group='best group', enable=True)
 def foo(a: List[str]):
     pass
 ```
@@ -79,8 +79,7 @@ individually or as a group (using 'group' tags).
 
 ### Caveats
 
-Enabling/Disabling type checking via group tags is done at the interpreter
-level, *not* at runtime. This is a known issue that is in the process of being
+Enabling/Disabling type checking via group tags is done at initialisation, *not* at runtime. This is a known issue that is in the process of being
 fixed. At a high level, this means that it's not quite supported to dynamically
 disable checking at runtime, and this toggle feature works best manually for
 now.
@@ -88,14 +87,15 @@ now.
 We are still working on deciding the best approach for iterables, please
 reference [PR #15](https://github.com/RussBaz/enforce/pull/15) for context.
 
-Currently the type checker will examine every object in a list.  This means that
+Currently the type checker will examine every object in a list. This means that
 for large structures performance can be a nightmare. A known feature request
-(that is in the works) is to set the recursion limit as well as length
+(that is in the works) is to set the recursion limit as well as a maximum size
 limit, as to not have to check every item in some arbitrary object
-(essentially trading performance for type safety).
+(essentially trading performance for type safety). Another viable option is to check the
+contents of lists lazily. This is a preferred method and would become a default one when implemented.
 
 Generics and containers are NOT yet supported. Callables and TypeVars should be
-generally supported.
+generally supported (including covariacne and contravariance).
 
 ## Contributing
 

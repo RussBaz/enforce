@@ -4,13 +4,13 @@ from setuptools import setup
 
 ROOT = path.abspath(path.dirname(__file__))
 
-with codecs.open(path.join(ROOT, 'README.rst'), encoding='utf-8') as f:
+with codecs.open(path.join(ROOT, 'README.md'), encoding='utf-8') as f:
     LONG_DESCRIPTION = f.read()
 
 setup(
     name='enforce',
 
-    version='0.1.0',
+    version='0.2.0',
 
     description='A Python library for enforcing runtime validation of function inputs and outputs',
     long_description=LONG_DESCRIPTION,
