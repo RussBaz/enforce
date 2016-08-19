@@ -34,6 +34,6 @@ setup(
     packages=['enforce'],
     install_requires=[
         'wrapt',
-        'typings'
+        'typing'
     ]
 )
