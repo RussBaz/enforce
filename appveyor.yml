@@ -6,4 +6,4 @@ install:
 build: off
 
 test_script:
-  - ps: py.test ./tests
+  - ps: C:\Python35-x64\python.exe -m pytest ./tests
