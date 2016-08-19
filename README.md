@@ -1,7 +1,7 @@
 |  Branch	| Status  |
 | :-------:	| :--- 	  |
-|  Master: 	| [![Build Status](https://travis-ci.org/RussBaz/enforce.svg?branch=master)](https://travis-ci.org/RussBaz/enforce) [![Coverage Status](https://coveralls.io/repos/github/RussBaz/enforce/badge.svg?branch=master)](https://coveralls.io/github/RussBaz/enforce?branch=master)	|
-|   Dev:  	| [![Build Status](https://travis-ci.org/RussBaz/enforce.svg?branch=dev)](https://travis-ci.org/RussBaz/enforce) [![Coverage Status](https://coveralls.io/repos/github/RussBaz/enforce/badge.svg?branch=dev)](https://coveralls.io/github/RussBaz/enforce?branch=dev)	|
+|  Master: 	| [![Build Status](https://img.shields.io/travis/RussBaz/enforce/master.svg)](https://travis-ci.org/RussBaz/enforce) [![Coverage Status](https://img.shields.io/coveralls/RussBaz/enforce/master.svg)](https://coveralls.io/github/RussBaz/enforce?branch=master) [![Requirements Status](https://img.shields.io/requires/github/RussBaz/enforce/master.svg)](https://requires.io/github/RussBaz/enforce/requirements/?branch=master) [![PyPI version](https://img.shields.io/pypi/v/enforce.svg)](https://pypi.python.org/pypi/enforce)	|
+|   Dev:  	| [![Build Status](https://img.shields.io/travis/RussBaz/enforce/dev.svg)](https://travis-ci.org/RussBaz/enforce) [![Coverage Status](https://img.shields.io/coveralls/RussBaz/enforce/dev.svg)](https://coveralls.io/github/RussBaz/enforce?branch=dev) [![Requirements Status](https://img.shields.io/requires/github/RussBaz/enforce/dev.svg)](https://requires.io/github/RussBaz/enforce/requirements/?branch=dev)	|
 
 #Enforce
 
