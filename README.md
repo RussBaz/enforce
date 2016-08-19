@@ -1,4 +1,7 @@
-[![Build Status](https://travis-ci.org/RussBaz/enforce.svg?branch=dev)](https://travis-ci.org/RussBaz/enforce) [![Coverage Status](https://coveralls.io/repos/github/RussBaz/enforce/badge.svg?branch=master)](https://coveralls.io/github/RussBaz/enforce?branch=master)
+| Branch	| Status  |
+|:-------:	| :-   	  |
+| Master: 	|   [![Build Status](https://travis-ci.org/RussBaz/enforce.svg?branch=master)](https://travis-ci.org/RussBaz/enforce) [![Coverage Status](https://coveralls.io/repos/github/RussBaz/enforce/badge.svg?branch=master)](https://coveralls.io/github/RussBaz/enforce?branch=master)	|
+|   Dev:  	|   [![Build Status](https://travis-ci.org/RussBaz/enforce.svg?branch=dev)](https://travis-ci.org/RussBaz/enforce) [![Coverage Status](https://coveralls.io/repos/github/RussBaz/enforce/badge.svg?branch=dev)](https://coveralls.io/github/RussBaz/enforce?branch=dev)	|
 
 #Enforce
 
