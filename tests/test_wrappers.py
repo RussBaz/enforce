@@ -70,7 +70,7 @@ class WrapperTests(unittest.TestCase):
         temp_number = 1
         foo_proxy.__enforcer__ = temp_number
 
-        self.assertEquals(foo_proxy.__enforcer__, temp_number)
+        self.assertEqual(foo_proxy.__enforcer__, temp_number)
         self.assertFalse(hasattr(foo, '__enforcer__'))
 
         inspect.signature(foo_proxy)

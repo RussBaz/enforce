@@ -33,6 +33,7 @@ setup(
     keywords='type validation',
     packages=['enforce'],
     install_requires=[
-          'wrapt',
+        'wrapt',
+        'typings'
     ]
 )

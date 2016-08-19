@@ -85,6 +85,7 @@
     <Folder Include="tests\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include=".travis.yml" />
     <Content Include="README.md" />
     <Content Include="requirements.txt" />
   </ItemGroup>

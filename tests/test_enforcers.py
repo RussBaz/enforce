@@ -42,40 +42,40 @@ class EnforcerTests(unittest.TestCase):
     def test_callable_simple_type(self):
         func_type = self.get_function_type(self.func_int___none)
 
-        self.assertEquals(func_type, Callable[[int], None])
+        self.assertEqual(func_type, Callable[[int], None])
 
     def test_callable_missing_annotation(self):
         func_type = self.get_function_type(self.func_int_empty___none)
 
-        self.assertEquals(func_type, Callable[[int, Any], None])
+        self.assertEqual(func_type, Callable[[int, Any], None])
 
         func_type = self.get_function_type(self.func_int_empty___empty)
 
-        self.assertEquals(func_type, Callable[[int, Any], Any])
+        self.assertEqual(func_type, Callable[[int, Any], Any])
 
         func_type = self.get_function_type(self.func_empty_int_empty___empty)
 
-        self.assertEquals(func_type, Callable[[Any, int, Any], Any])
+        self.assertEqual(func_type, Callable[[Any, int, Any], Any])
 
     def test_with_kwargs(self):
         func_type = self.get_function_type(self.func_args_kwargs__empty)
 
-        self.assertEquals(func_type, Callable)
+        self.assertEqual(func_type, Callable)
 
     def test_any_positional_only(self):
         func_type = self.get_function_type(self.func_args__empty)
 
-        self.assertEquals(func_type, Callable)
+        self.assertEqual(func_type, Callable)
 
     def test_any_extra_positional_only(self):
         func_type = self.get_function_type(self.func_empty_args__empty)
 
-        self.assertEquals(func_type, Callable)
+        self.assertEqual(func_type, Callable)
 
     def test_any_positional_with_return(self):
         func_type = self.get_function_type(self.func_any_args__none)
 
-        self.assertEquals(func_type, Callable[..., None])
+        self.assertEqual(func_type, Callable[..., None])
 
     def get_function_type(self, func):
         wrapped = apply_enforcer(func)
