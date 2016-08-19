@@ -1,4 +1,9 @@
 language: python
 python:
   - "3.5"
-script: python -m unittest discover ./tests
+install:
+  - pip install -r requirements.txt
+  - pip install coveralls
+script: coverage run --source ./enforce -m unittest discover ./tests
+after_success:
+  - coveralls

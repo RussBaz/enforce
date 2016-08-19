@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/RussBaz/enforce.svg?branch=dev)](https://travis-ci.org/RussBaz/enforce) [![Coverage Status](https://coveralls.io/repos/github/RussBaz/enforce/badge.svg?branch=master)](https://coveralls.io/github/RussBaz/enforce?branch=master)
+
 #Enforce
 
 Enforce is a simple Python 3.5 (or higher) application for enforcing a runtime
