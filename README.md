@@ -38,9 +38,14 @@ Note, this behavior means that for a large nested structure, every item in that
 structure will be checked. This may be a nightmare for performance! See
 [caveats](#caveats) for more details.
 
+You can also apply the `runtime_validation` decorator around a class, and it
+will enforce the types of every method in that class. **Note**, this is a
+development feature and is not as thoroughly tested as the function decorators.
+
 ###Examples
 
 * Basic example:
+
 ```python
 import enforce
 
@@ -54,7 +59,9 @@ def foo(text: str) -> None:
 def foo(a: List[str]):
     pass
 ```
+
 * Group Tags
+
 ```python
 enforce.config(enable=False)
 enforce.set_group('foo', True)
@@ -82,6 +89,30 @@ enforce.config(enable=True)
 Also, you can deactivate at runtime all 'enforcers', each one of them
 individually or as a group (using 'group' tags).
 
+* Callables
+
+```python
+@runtime_validation
+def foo(a: typing.Callable[[int, int], str]) -> str:
+    return a(5, 6)
+
+def bar(a: int, b: int) -> str:
+    return str(a * b)
+foo(bar)
+```
+
+* Class Decorator
+
+```python
+@runtime_validation
+class DoTheThing(object):
+    def __init__(self):
+        self.do_the_stuff(5, 6.0)
+
+    def do_the_stuff(self, a: int, b: float) -> str:
+        return str(a * b)
+```
+
 ### Caveats
 
 Enabling/Disabling type checking via group tags is done at initialisation, *not* at runtime. This is a known issue that is in the process of being
@@ -101,6 +132,10 @@ contents of lists lazily. This is a preferred method and would become a default 
 
 Generics and containers are NOT yet supported. Callables and TypeVars should be
 generally supported (including covariacne and contravariance).
+
+Class decorators are not as well tested, and you may encounter a bug or two.
+Please report an issue if you do find one and we'll try to fix it as quickly as
+possible.
 
 ## Contributing
 
