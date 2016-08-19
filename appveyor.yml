@@ -1,0 +1,12 @@
+environment:
+
+  matrix:
+    - PYTHON: "C:\Python35-x64"
+
+install:
+  - "%PYTHON%\\python.exe -m pip install -r requiremments.txt"
+
+build: off
+
+test_script:
+  - "%PYTHON%\\python.exe -m unittest discover ./tests"
