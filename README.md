@@ -8,9 +8,6 @@
 Enforce is a simple Python 3.5 (or higher) application for enforcing a runtime
 type checking based on type hints (PEP 484).
 
-This project is not quite yet ready for production but we will be happy if you
-give it a try.
-
 * [Installation](#installation)
 * [Usage](#usage)
 * [Contributing](#contributing)
