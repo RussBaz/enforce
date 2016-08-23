@@ -8,9 +8,6 @@
 Enforce is a simple Python 3.5 (or higher) application for enforcing a runtime
 type checking based on type hints (PEP 484).
 
-This project is not quite yet ready for production but we will be happy if you
-give it a try.
-
 * [Installation](#installation)
 * [Usage](#usage)
 * [Contributing](#contributing)
@@ -42,29 +39,42 @@ You can also apply the `runtime_validation` decorator around a class, and it
 will enforce the types of every method in that class. **Note**, this is a
 development feature and is not as thoroughly tested as the function decorators.
 
-###Examples
+### Features
 
-* Basic example:
+#### Basic type hint enforcement
 
 ```python
-import enforce
-
-@enforce.runtime_validation
-def foo(text: str) -> None:
-    print(text)
+>>> import enforce
+>>> @enforce.runtime_validation
+... def foo(text: str) -> None:
+...     print(text)
+>>> foo('Hello World')
+Hello World
+>>> foo(5)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/home/william/.local/lib/python3.5/site-packages/enforce/decorators.py", line 106, in universal
+    _args, _kwargs = enforcer.validate_inputs(parameters)
+  File "/home/william/.local/lib/python3.5/site-packages/enforce/enforcers.py", line 69, in validate_inputs
+    raise RuntimeTypeError(exception_text)
+enforce.exceptions.RuntimeTypeError: 
+  The following runtime type errors were encountered:
+       Argument 'text' was not of type <class 'str'>. Actual type was <class 'int'>.
 ```
-* Decorator Configuration
+
+#### Decorator Configuration
+
+You can assign functions to groups, and apply options on the group level.
+
 ```python
+# Basic Example
 @runtime_validation(group='best group', enable=True)
 def foo(a: List[str]):
     pass
-```
 
-* Group Tags
-
-```python
-enforce.config(enable=False)
-enforce.set_group('foo', True)
+# Group Configuration
+enforce.config(enable=False)  # Disables all checks
+enforce.set_group('foo', True)  # Enables the foo group
 
 @runtime_validation(group='foo')
 def test1(a: typing.List[str]): return a
@@ -83,13 +93,10 @@ with self.assertRaises(RuntimeTypeError):
 
 test3(5)
 
-enforce.config(enable=True)
+enforce.config(enable=True)  # Re-enables all checks
 ```
 
-Also, you can deactivate at runtime all 'enforcers', each one of them
-individually or as a group (using 'group' tags).
-
-* Callables
+#### Callable Support
 
 ```python
 @runtime_validation
@@ -101,7 +108,10 @@ def bar(a: int, b: int) -> str:
 foo(bar)
 ```
 
-* Class Decorator
+#### Class Decorator
+
+Applying this decorator to a class will automatically apply the decorator to
+every method in the class.
 
 ```python
 @runtime_validation
@@ -115,10 +125,10 @@ class DoTheThing(object):
 
 ### Caveats
 
-Enabling/Disabling type checking via group tags is done at initialisation, *not* at runtime. This is a known issue that is in the process of being
-fixed. At a high level, this means that it's not quite supported to dynamically
-disable checking at runtime, and this toggle feature works best manually for
-now.
+Enabling/Disabling type checking via group tags is done at initialisation, *not*
+at runtime. This is a known issue that is in the process of being fixed. At a
+high level, this means that it's not quite supported to dynamically disable
+checking at runtime, and this toggle feature works best manually for now.
 
 We are still working on deciding the best approach for iterables, please
 reference [PR #15](https://github.com/RussBaz/enforce/pull/15) for context.
