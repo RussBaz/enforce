@@ -24,7 +24,7 @@ def runtime_validation(data=None, **kwargs):
     configuration = enforce.Config(enforce.user_configuration)
     configuration.set(**kwargs)
 
-    print(id(data))
+    #print(id(data))
 
     @decorator(enabled=configuration)
     def build_wrapper(wrapped, instance, args, kwargs):

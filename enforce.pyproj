@@ -45,9 +45,6 @@
     <Compile Include="enforce\utils.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="enforce\validators.py">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="enforce\wrappers.py">
       <SubType>Code</SubType>
     </Compile>
@@ -73,9 +70,6 @@
     <Compile Include="tests\test_utils.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="tests\test_validators.py">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="tests\test_wrappers.py">
       <SubType>Code</SubType>
     </Compile>
@@ -86,6 +80,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include=".travis.yml" />
+    <Content Include="appveyor.yml" />
     <Content Include="README.md" />
     <Content Include="requirements.txt" />
   </ItemGroup>

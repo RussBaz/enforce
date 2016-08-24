@@ -1,7 +1,7 @@
 import unittest
 from typing import Any, Callable
 
-from enforce.enforcers import apply_enforcer, Enforcer
+from enforce.enforcers import apply_enforcer, Enforcer, GenericProxy
 
 
 class EnforcerTests(unittest.TestCase):

@@ -2,6 +2,8 @@ import typing
 import inspect
 from collections import namedtuple
 
+from wrapt import CallableObjectProxy
+
 from .exceptions import RuntimeTypeError
 from .parsers import init_validator
 
@@ -18,15 +20,15 @@ class Enforcer:
     """
     A container for storing type checking logic of functions
     """
-    def __init__(self, validator, signature, hints, root=None):
+    def __init__(self, validator, signature, hints, root=None, generic=False):
         self.validator = validator
         self.signature = signature
         self.hints = hints
         self.root = root
         self.enabled = True
         self.settings = None
-        
-        self.globals = {}
+
+        self.generic = generic
 
         self._callable_signature = None
 
@@ -89,8 +91,31 @@ class Enforcer:
         self.validator.reset()
 
 
+class GenericProxy(CallableObjectProxy):
+    """
+    A proxy object for typing.Generics user defined subclassses which always returns proxied objects
+    """
+    __enforcer__ = None
+
+    def __init__(self, wrapped):
+        """
+        Creates an enforcer instance on a just wrapped user defined Generic
+        """
+        super().__init__(wrapped)
+        apply_enforcer(self, generic=True)
+
+    def __getitem__(self, param):
+        """
+        Wraps a normal typed Generic in another proxy and applies enforcers for generics on it
+        """
+        new_generic = GenericProxy(self.__wrapped__.__getitem__(param))
+        # An origin attribute must point to a proxy, and not the original Generic
+        new_generic.__origin__ = self
+        return apply_enforcer(new_generic, generic=True)
+
+
 def apply_enforcer(func: typing.Callable,
-                   empty: bool=False,
+                   generic: bool=False,
                    parent_root: typing.Optional[typing.Dict]=None) -> typing.Callable:
     """
     Adds an Enforcer instance to the passed function if it doesn't yet exist
@@ -102,7 +127,7 @@ def apply_enforcer(func: typing.Callable,
         """
         Private function for generating new Enforcer instances for the incoming function
         """
-        if empty:
+        if generic:
             signature = None
             hints = None
             validator = None
@@ -113,7 +138,7 @@ def apply_enforcer(func: typing.Callable,
             validator = init_validator(hints)
             root = parent_root
 
-        return Enforcer(validator, signature, hints, root)
+        return Enforcer(validator, signature, hints, root, generic)
 
     if not hasattr(func, '__enforcer__'):
         func.__enforcer__ = generate_new_enforcer()

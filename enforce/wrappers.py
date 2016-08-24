@@ -1,9 +1,7 @@
 import typing
-from collections import UserList, MutableSequence
 
 from wrapt import CallableObjectProxy, ObjectProxy
 
-#from .validators import Validator
 from .exceptions import RuntimeTypeError
 
 
@@ -74,57 +72,57 @@ class EnforceProxy(CallableObjectProxy):
     __enforcer__ = None
 
 
-class ListProxy(ObjectProxy):
-    # Convention: List input parameter is called 'item'
+#class ListProxy(ObjectProxy):
+#    # Convention: List input parameter is called 'item'
 
-    def __init__(self, wrapped: typing.List, validator: typing.Optional['Validator']=None) -> None:
-        self._self_validator = validator
-        super().__init__(wrapped)
+#    def __init__(self, wrapped: typing.List, validator: typing.Optional['Validator']=None) -> None:
+#        self._self_validator = validator
+#        super().__init__(wrapped)
 
-    def __contains__(self, item):
-        func = lambda: self.__wrapped__.__contains__(item)
-        return self.__clean_input(item, func)
+#    def __contains__(self, item):
+#        func = lambda: self.__wrapped__.__contains__(item)
+#        return self.__clean_input(item, func)
 
-    def __getitem__(self, i):
-        return self.__clean_output(lambda: self.__wrapped__.__getitem__(i))
+#    def __getitem__(self, i):
+#        return self.__clean_output(lambda: self.__wrapped__.__getitem__(i))
 
-    def __setitem__(self, i, item):
-        func = lambda: self.__wrapped__.__setitem__(i, item)
-        return self.__clean_input(item, func)
+#    def __setitem__(self, i, item):
+#        func = lambda: self.__wrapped__.__setitem__(i, item)
+#        return self.__clean_input(item, func)
 
-    def __delitem__(self, i):
-        return self.__wrapped__.__delitem__(i)
+#    def __delitem__(self, i):
+#        return self.__wrapped__.__delitem__(i)
     
-    def __add__(self, other):
-        return self.__wrapped__.__add__(other)
-    def __radd__(self, other): return self.__wrapped__.__radd__(other)
-    def __iadd__(self, other): return self.__wrapped__.__iadd__(other)
+#    def __add__(self, other):
+#        return self.__wrapped__.__add__(other)
+#    def __radd__(self, other): return self.__wrapped__.__radd__(other)
+#    def __iadd__(self, other): return self.__wrapped__.__iadd__(other)
 
-    def append(self, item): self.__wrapped__.append(item)
-    def insert(self, i, item): self.__wrapped__.insert(i, item)
+#    def append(self, item): self.__wrapped__.append(item)
+#    def insert(self, i, item): self.__wrapped__.insert(i, item)
 
-    def pop(self, i=-1): return self.__wrapped__.pop(i)
-    def remove(self, item): self.__wrapped__.remove(item)
+#    def pop(self, i=-1): return self.__wrapped__.pop(i)
+#    def remove(self, item): self.__wrapped__.remove(item)
 
-    def count(self, item): return self.__wrapped__.count(item)
-    def index(self, item, *args): return self.__wrapped__.index(item, *args)
+#    def count(self, item): return self.__wrapped__.count(item)
+#    def index(self, item, *args): return self.__wrapped__.index(item, *args)
 
-    def extend(self, other): self.__wrapped__.extend(other)
+#    def extend(self, other): self.__wrapped__.extend(other)
 
-    def __clean_input(self, item: typing.Any, func: typing.Callable):
-        try:
-            if self._self_validator.validate(item, 'item'):
-                return func()
-            else:
-                raise RuntimeTypeError('Unsupported input type')
-        except AttributeError:
-            return func()
+#    def __clean_input(self, item: typing.Any, func: typing.Callable):
+#        try:
+#            if self._self_validator.validate(item, 'item'):
+#                return func()
+#            else:
+#                raise RuntimeTypeError('Unsupported input type')
+#        except AttributeError:
+#            return func()
 
-    def __clean_output(self, func: typing.Callable):
-        result = func()
-        try:
-            if not self._self_validator.validate(result, 'return'):
-                raise RuntimeTypeError('Unsupported return type')
-        except AttributeError:
-            pass
-        return result
+#    def __clean_output(self, func: typing.Callable):
+#        result = func()
+#        try:
+#            if not self._self_validator.validate(result, 'return'):
+#                raise RuntimeTypeError('Unsupported return type')
+#        except AttributeError:
+#            pass
+#        return result

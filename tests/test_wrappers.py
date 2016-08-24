@@ -5,7 +5,7 @@ import inspect
 from wrapt import ObjectProxy
 
 from enforce import runtime_validation
-from enforce.wrappers import Proxy, ListProxy, EnforceProxy
+from enforce.wrappers import Proxy, EnforceProxy # , ListProxy
 
 
 class WrapperTests(unittest.TestCase):
@@ -44,17 +44,17 @@ class WrapperTests(unittest.TestCase):
         self.assertEqual(proxy_a.b, 3)
         self.assertEqual(proxy_a._self_b, 2)
 
-    def test_list_proxy(self):
-        a = [1, 2]
-        b = ListProxy(a)
-        b.append(3)
-        a.reverse()
+    #def test_list_proxy(self):
+    #    a = [1, 2]
+    #    b = ListProxy(a)
+    #    b.append(3)
+    #    a.reverse()
 
-        self.assertEqual(a, b)
-        self.assertFalse(a is b)
-        self.assertTrue(a is b.__wrapped__)
-        self.assertTrue(isinstance(b, list))
-        self.assertTrue(isinstance(b, ObjectProxy))
+    #    self.assertEqual(a, b)
+    #    self.assertFalse(a is b)
+    #    self.assertTrue(a is b.__wrapped__)
+    #    self.assertTrue(isinstance(b, list))
+    #    self.assertTrue(isinstance(b, ObjectProxy))
 
     def test_enforceable_proxy(self):
         def foo(input: typing.Any) -> typing.Any:
