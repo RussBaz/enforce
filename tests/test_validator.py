@@ -1,7 +1,7 @@
 import unittest
 
 
-class ParsersTests(unittest.TestCase):
+class ValidatorTests(unittest.TestCase):
     pass
 
 

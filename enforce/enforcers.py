@@ -5,7 +5,7 @@ from collections import namedtuple
 from wrapt import CallableObjectProxy
 
 from .exceptions import RuntimeTypeError
-from .parsers import init_validator
+from .validator import init_validator
 
 
 # This TypeVar is used to indicate that he result of output validation

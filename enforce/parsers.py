@@ -1,191 +1,148 @@
 import typing
 
-from enforce import nodes
-from .utils import visit
+from . import nodes
 
 
-class Parser:
-
-    def __init__(self):
-        self.validator = Validator()
-        self._mapping = {
-            typing.UnionMeta: self._parse_union,
-            typing.TypeVar: self._parse_type_var,
-            typing.TupleMeta: self._parse_tuple,
-            typing.GenericMeta: self._parse_generic,
-            typing.CallableMeta: self._parse_callable,
-            complex: self._parse_complex,
-            float: self._parse_float,
-            bytes: self._parse_bytes
-            }
-
-    def __str__(self) -> str:
-        local_nodes = [str(tree) for hint, tree in self.validator.roots.items() if hint != 'return']
-        str_repr = '[{}]'.format(', '.join(local_nodes))
-        try:
-            # If doesn't necessarily have return value, we need to not return one.
-            str_repr += ' => {}'.format(self.validator.roots['return'])
-        except KeyError:
-            pass
-        return str_repr
-
-    def parse(self, hint_type: type, hint_name: str) -> None:
-        parsers = self._map_parser(None, hint_type, self)
-        tree = visit(parsers)
-        self.validator.roots[hint_name] = tree
-
-    def _map_parser(self, node, hint: type, caller):
-        if type(hint) == type:
-            parser = self._mapping.get(hint, self._parse_default)
-        else:
-            parser = self._mapping.get(type(hint), self._parse_default)
-        yield parser(node, hint, caller)
-
-    def _parse_default(self, node, hint, parser):
-        new_node = yield nodes.SimpleNode(hint)
-        parser.validator.all_nodes.append(new_node)
-        yield self._yield_parsing_result(node, new_node)
-
-    def _parse_union(self, node, hint, parser):
-        """
-        Parses Union type
-        Union type has to be parsed into multiple nodes
-        in order to enable further validation of nested types
-        """
-        new_node = yield nodes.UnionNode()
-        parser.validator.all_nodes.append(new_node)
-        for element in hint.__union_params__:
-            yield self._map_parser(new_node, element, parser)
-        yield self._yield_parsing_result(node, new_node)
-
-    def _parse_type_var(self, node, hint, parser):
-        try:
-            new_node = parser.validator.globals[hint.__name__]
-        except KeyError:
-            covariant = hint.__covariant__
-            contravariant = hint.__contravariant__
-            new_node = yield nodes.TypeVarNode(covariant=covariant, contravariant=contravariant)
-            if hint.__bound__ is not None:
-                yield self._map_parser(new_node, hint.__bound__, parser)
-            elif hint.__constraints__:
-                for constraint in hint.__constraints__:
-                    yield self._map_parser(new_node, constraint, parser)
-            else:
-                yield self._map_parser(new_node, typing.Any, parser)
-            parser.validator.globals[hint.__name__] = new_node
-            parser.validator.all_nodes.append(new_node)
-
-        parser.validator.all_nodes.append(new_node)
-        yield self._yield_parsing_result(node, new_node)
-
-    def _parse_tuple(self, node, hint, parser):
-        if hint.__tuple_params__ is None:
-            yield self._parse_default(node, hint, parser)
-        else:
-            new_node = yield nodes.TupleNode(variable_length=hint.__tuple_use_ellipsis__)
-            for element in hint.__tuple_params__:
-                yield self._map_parser(new_node, element, parser)
-            yield self._yield_parsing_result(node, new_node)
-
-    def _parse_callable(self, node, hint, parser):
-        new_node = yield nodes.CallableNode(hint)
-        parser.validator.all_nodes.append(new_node)
-        yield self._yield_parsing_result(node, new_node)
-
-    def _parse_complex(self, node, hint, parser):
-        """
-        In Python both float and integer numbers can be used in place where
-        complex numbers are expected
-        """
-        hints = [complex, int, float]
-        yield self._yield_unified_node(node, hints, parser)
-
-    def _parse_float(self, node, hint, parser):
-        """
-        Floats should accept integers as well, but not otherwise
-        """
-        hints = [int, float]
-        yield self._yield_unified_node(node, hints, parser)
-
-    def _parse_bytes(self, node, hint, parser):
-        """
-        Floats should accept integers as well, but not otherwise
-        """
-        hints = [bytearray, memoryview, bytes]
-        yield self._yield_unified_node(node, hints, parser)
-
-    def _parse_generic(self, node, hint, parser):
-        if issubclass(hint, typing.List):
-            yield self._parse_list(node, hint, parser)
-        else:
-            yield self._parse_default(node, hint, parser)
-
-    def _parse_list(self, node, hint, parser):
-        new_node = yield nodes.SimpleNode(hint.__extra__)
-        parser.validator.all_nodes.append(new_node)
-
-        # add its type as child
-        # We can index first as Lists only ever have 1 parameter
-        if hint.__args__:
-            yield self._map_parser(new_node, hint.__args__[0], parser)
-
-        yield self._yield_parsing_result(node, new_node)
-
-    def _yield_unified_node(self, node, hints, parser):
-        new_node = yield nodes.UnionNode()
-        parser.validator.all_nodes.append(new_node)
-        for element in hints:
-            yield self._parse_default(new_node, element, parser)
-        yield self._yield_parsing_result(node, new_node)
-
-    def _yield_parsing_result(self, node, new_node):
-        # Potentially reducing the runtime efficiency
-        # Need some evidences to decide what to do
-        # with this piece of code next
-        if node:
-            node.add_child(new_node)
-        else:
-            yield new_node
-
-
-class Validator:
-
-    def __init__(self):
-        self.errors = []
-        self.globals = {}
-        self.data_out = {}
-        self.roots = {}
-        self.all_nodes = []
-
-    def validate(self, data: typing.Any, param_name: str) -> bool:
-        """
-        Validate Syntax Tree of given function using generators
-        """
-        validators = self._validate(self.roots[param_name], data)
-        result = visit(validators)
-        self.data_out[param_name] = self.roots[param_name].data_out
-        if not result:
-            self.errors.append((param_name, type(data)))
-        return result
-
-    def reset(self) -> None:
-        self.errors = []
-        self.data_out = {}
-        for node in self.all_nodes:
-            node.reset()
-
-    def _validate(self, node: nodes.BaseNode, data: typing.Any) -> typing.Generator:
-        yield node.validate(data, self)
-
-
-def init_validator(hints: typing.Dict) -> Parser:
+def get_parser(node, hint, validator, parsers=None):
     """
-    Returns a new validator instance from a given dictionary of type hints
+    Yields a parser function for a given type hint
     """
-    parser = Parser()
-    for name, hint in hints.items():
-        if hint is None:
-            hint = type(None)
-        parser.parse(hint, name)
+    if parsers is None:
+        parsers = TYPE_PARSERS
 
-    return parser.validator
+    if type(hint) == type:
+        parser = parsers.get(hint, _parse_default)
+    else:
+        parser = parsers.get(type(hint), _parse_default)
+
+    yield parser(node, hint, validator, parsers)
+
+
+def _parse_default(node, hint, validator, parsers):
+    new_node = yield nodes.SimpleNode(hint)
+    validator.all_nodes.append(new_node)
+    yield _yield_parsing_result(node, new_node)
+
+
+def _parse_union(node, hint, validator, parsers):
+    """
+    Parses Union type
+    Union type has to be parsed into multiple nodes
+    in order to enable further validation of nested types
+    """
+    new_node = yield nodes.UnionNode()
+    validator.all_nodes.append(new_node)
+    for element in hint.__union_params__:
+        yield get_parser(new_node, element, validator, parsers)
+    yield _yield_parsing_result(node, new_node)
+
+
+def _parse_type_var(node, hint, validator, parsers):
+    try:
+        new_node = validator.globals[hint.__name__]
+    except KeyError:
+        covariant = hint.__covariant__
+        contravariant = hint.__contravariant__
+        new_node = yield nodes.TypeVarNode(covariant=covariant, contravariant=contravariant)
+        if hint.__bound__ is not None:
+            yield get_parser(new_node, hint.__bound__, validator, parsers)
+        elif hint.__constraints__:
+            for constraint in hint.__constraints__:
+                yield get_parser(new_node, constraint, validator, parsers)
+        else:
+            yield get_parser(new_node, typing.Any, validator, parsers)
+        validator.globals[hint.__name__] = new_node
+        validator.all_nodes.append(new_node)
+
+    validator.all_nodes.append(new_node)
+    yield _yield_parsing_result(node, new_node)
+
+
+def _parse_tuple(node, hint, validator, parsers):
+    if hint.__tuple_params__ is None:
+        yield _parse_default(node, hint, validator, parsers)
+    else:
+        new_node = yield nodes.TupleNode(variable_length=hint.__tuple_use_ellipsis__)
+        for element in hint.__tuple_params__:
+            yield get_parser(new_node, element, validator, parsers)
+        yield _yield_parsing_result(node, new_node)
+
+
+def _parse_callable(node, hint, validator, parsers):
+    new_node = yield nodes.CallableNode(hint)
+    validator.all_nodes.append(new_node)
+    yield _yield_parsing_result(node, new_node)
+
+
+def _parse_complex(node, hint, validator, parsers):
+    """
+    In Python both float and integer numbers can be used in place where
+    complex numbers are expected
+    """
+    hints = [complex, int, float]
+    yield _yield_unified_node(node, hints, validator, parsers)
+
+
+def _parse_float(node, hint, validator, parsers):
+    """
+    Floats should accept integers as well, but not otherwise
+    """
+    hints = [int, float]
+    yield _yield_unified_node(node, hints, validator, parsers)
+
+
+def _parse_bytes(node, hint, validator, parsers):
+    """
+    Floats should accept integers as well, but not otherwise
+    """
+    hints = [bytearray, memoryview, bytes]
+    yield _yield_unified_node(node, hints, validator, parsers)
+
+
+def _parse_generic(node, hint, validator, parsers):
+    if issubclass(hint, typing.List):
+        yield _parse_list(node, hint, validator, parsers)
+    else:
+        yield _parse_default(node, hint, validator, parsers)
+
+
+def _parse_list(node, hint, validator, parsers):
+    new_node = yield nodes.SimpleNode(hint.__extra__)
+    validator.all_nodes.append(new_node)
+
+    # add its type as child
+    # We can index first as Lists only ever have 1 parameter
+    if hint.__args__:
+        yield get_parser(new_node, hint.__args__[0], validator, parsers)
+
+    yield _yield_parsing_result(node, new_node)
+
+
+def _yield_unified_node(node, hints, validator, parsers):
+    new_node = yield nodes.UnionNode()
+    validator.all_nodes.append(new_node)
+    for element in hints:
+        yield _parse_default(new_node, element, validator, parsers)
+    yield _yield_parsing_result(node, new_node)
+
+
+def _yield_parsing_result(node, new_node):
+    # Potentially reducing the runtime efficiency
+    # Need some evidences to decide what to do
+    # with this piece of code next
+    if node:
+        node.add_child(new_node)
+    else:
+        yield new_node
+
+
+TYPE_PARSERS = {
+    typing.UnionMeta: _parse_union,
+    typing.TypeVar: _parse_type_var,
+    typing.TupleMeta: _parse_tuple,
+    typing.GenericMeta: _parse_generic,
+    typing.CallableMeta: _parse_callable,
+    complex: _parse_complex,
+    float: _parse_float,
+    bytes: _parse_bytes
+    }
