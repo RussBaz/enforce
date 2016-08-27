@@ -7,7 +7,8 @@ from .utils import visit
 
 class Validator:
 
-    def __init__(self):
+    def __init__(self, parent: typing.Optional['Validator']=None):
+        self.parent = parent
         self.errors = []
         self.globals = {}
         self.data_out = {}
@@ -37,6 +38,8 @@ class Validator:
         self.data_out = {}
         for node in self.all_nodes:
             node.reset()
+        if self.parent is not None:
+            self.parent.reset()
 
     def __str__(self) -> str:
         """
@@ -52,11 +55,11 @@ class Validator:
         return str_repr
 
 
-def init_validator(hints: typing.Dict) -> Validator:
+def init_validator(hints: typing.Dict, parent: typing.Optional[Validator]=None) -> Validator:
     """
     Returns a new validator instance from a given dictionary of type hints
     """
-    validator = Validator()
+    validator = Validator(parent)
 
     for name, hint in hints.items():
         if hint is None:

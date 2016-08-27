@@ -3,7 +3,7 @@ import unittest
 import numbers
 
 from enforce import runtime_validation
-from enforce.types import EnahncedTypeVar
+from enforce.types import EnhancedTypeVar
 from enforce.exceptions import RuntimeTypeError
 
 
@@ -386,7 +386,7 @@ class ComplexTypesTests(unittest.TestCase):
         class D(C):
             pass
 
-        A = EnahncedTypeVar('A', bound=C, covariant=True, contravariant=True)
+        A = EnhancedTypeVar('A', bound=C, covariant=True, contravariant=True)
 
         b = B()
         c = C()
@@ -679,14 +679,18 @@ class CallableTypesTests(unittest.TestCase):
             self.union(bad_param)
 
 
-@unittest.skip('Will not be implemented during this release')
 class GenericTypesTests(unittest.TestCase):
     """
     Tests for the generic types
     """
     
     def test_custom_generic(self):
+        """
+        Verifies that user defined generic can be used as a type hint
+        """
         T = typing.TypeVar('T')
+
+        @runtime_validation
         class Sample(typing.Generic[T]):
             def get(self, data: T) -> T:
                 return data
@@ -700,21 +704,16 @@ class GenericTypesTests(unittest.TestCase):
         other = Sample()
         strange = Sample[T]()
 
-        print('t:', type(good))
-        print('t:', type(bad))
-        print('t:', type(other))
-        print('t:', type(strange))
-
-        #print(issubclass(type(good), Sample[int]))
-        #print(issubclass(type(good), typing.Generic))
-
-        #print(isinstance(type(good), Sample[int]))
-        #print(isinstance(type(good), typing.Generic))
-
         self.assertEqual(return_int(good, 1), 1)
 
         with self.assertRaises(RuntimeTypeError):
             return_int(bad, 1)
+
+        with self.assertRaises(RuntimeTypeError):
+            return_int(other, 1)
+
+        with self.assertRaises(RuntimeTypeError):
+            return_int(strange, 1)
 
 
 class NestedTypesTests(unittest.TestCase):

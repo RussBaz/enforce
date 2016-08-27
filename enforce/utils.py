@@ -20,17 +20,3 @@ def visit(generator):
         except StopIteration:
             stack.pop()
     return last_result
-
-
-def generic(cls: typing.Generic) -> typing.Generic:
-    klass = cls
-    params = klass.__parameters__
-    origi_init = klass.__init__
-    print(params)
-    def init(self, *args, **kwargs):
-        print('A')
-        origi_init(self, args, kwargs)
-        self.__parameters__ = params
-
-    klass.__init__ = init
-    return klass

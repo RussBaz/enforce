@@ -2,10 +2,12 @@ import builtins
 import typing
 import numbers
 from collections import ChainMap
-from typing import Optional, Union, Any, TypeVar, Tuple
+from typing import Optional, Union, UnionMeta, Any, TypeVar, Tuple
+
+from .utils import visit
 
 
-class EnahncedTypeVar:
+class EnhancedTypeVar:
     """
     Utility wrapper for adding extra properties to default TypeVars
     Allows TypeVars to be bivariant
@@ -19,20 +21,43 @@ class EnahncedTypeVar:
                  covariant: Optional[bool]=False,
                  contravariant: Optional[bool]=False,
                  type_var: Optional[TypeVar]=None):
-        if type_var:
-            self.type_var = type_var
+        if type_var is not None:
             self.__name__ = type_var.__name__
             self.__bound__ = type_var.__bound__
             self.__covariant__ = type_var.__covariant__
             self.__contravariant__ = type_var.__contravariant__
-            self.__constraints__ = type_var.__constraints__
+            self.__constraints__ = tuple(type_var.__constraints__)
         else:
-            self.type_var = TypeVar(name, *constraints, bound=bound)
             self.__name__ = name
             self.__bound__ = bound
             self.__covariant__ = covariant
             self.__contravariant__ = contravariant
-            self.__constraints__ = constraints
+            self.__constraints__ = tuple(constraints)
+            if len(self.__constraints__) == 1:
+                raise TypeError('A single constraint is not allowed')
+
+    def __eq__(self, data):
+        """
+        Allows comparing Enhanced Type Var to other type variables (enhanced or not)
+        """
+        name = getattr(data, '__name__', None) == self.__name__
+        bound = getattr(data, '__bound__', None) == self.__bound__
+        covariant = getattr(data, '__covariant__', None) == self.__covariant__
+        contravariant = getattr(data, '__contravariant__', None) == self.__contravariant__
+        constraints = getattr(data, '__constraints__', None) == self.__constraints__
+        return all((name, bound, covariant, contravariant, constraints))
+
+    def __hash__(self):
+        """
+        Provides hashing for use in dictionaries
+        """
+        name = hash(self.__name__)
+        bound = hash(self.__bound__)
+        covariant = hash(self.__covariant__)
+        contravariant = hash(self.__contravariant__)
+        constraints = hash(self.__constraints__)
+
+        return name ^ bound ^ covariant ^ contravariant ^ constraints
 
     def __repr__(self):
         """
@@ -85,7 +110,7 @@ TYPE_ALIASES = {
 
 
 def is_type_of_type(data: Union[type, str, None],
-                    data_type: Union[type, str, TypeVar, EnahncedTypeVar, None],
+                    data_type: Union[type, str, TypeVar, EnhancedTypeVar, None],
                     covariant: bool=False,
                     contravariant: bool=False,
                     local_variables: Optional[dict] = None,
@@ -113,12 +138,10 @@ def is_type_of_type(data: Union[type, str, None],
     if isinstance(data, str):
         data = calling_scope[data]
 
-    is_type_var = data_type.__class__ is TypeVar or data_type.__class__ is EnahncedTypeVar
+    data_type = visit(sort_and_flat_type(data_type))
+    data = visit(sort_and_flat_type(data))
 
-    # Checks if the type is in the list of type aliases
-    # And replaces it (if found) with a base form
-    data = TYPE_ALIASES.get(data, data)
-    data_type = TYPE_ALIASES.get(data_type, data_type)
+    is_type_var = data_type.__class__ is TypeVar or data_type.__class__ is EnhancedTypeVar
 
     if is_type_var:
         if data_type.__bound__:
@@ -144,4 +167,37 @@ def is_type_of_type(data: Union[type, str, None],
     elif contravariant:
         return any(data in d.__mro__ for d in constraints)
     else:
-        return any(data is d for d in constraints)
+        tmp = any(data == d for d in constraints)
+        return tmp
+
+
+def sort_and_flat_type(type_in):
+    """
+    Recursively sorts Union and TypeVar constraints in alphabetical order
+    and replaces type aliases with their ABC counterparts
+    """
+    # Checks if the type is in the list of type aliases
+    # And replaces it (if found) with a base form
+    type_in = TYPE_ALIASES.get(type_in, type_in)
+
+    if type_in.__class__ is UnionMeta:
+        nested_types_in = type_in.__union_params__
+        nested_types_out = []
+        for t in nested_types_in:
+            t = yield sort_and_flat_type(t)
+            nested_types_out.append(t)
+        nested_types_out = sorted(nested_types_out, key=repr)
+        type_out = Union[tuple(nested_types_out)]
+    elif type_in.__class__ is TypeVar or type_in.__class__ is EnhancedTypeVar:
+        nested_types_in = type_in.__constraints__
+        nested_types_out = []
+        for t in nested_types_in:
+            t = yield sort_and_flat_type(t)
+            nested_types_out.append(t)
+        nested_types_out = sorted(nested_types_out, key=repr)
+        type_out = EnhancedTypeVar(type_in.__name__, type_var=type_in)
+        type_out.__constraints__ = nested_types_out
+    else:
+        type_out = type_in
+
+    yield type_out

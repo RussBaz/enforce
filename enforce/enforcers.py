@@ -1,11 +1,12 @@
 import typing
 import inspect
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 
-from wrapt import CallableObjectProxy
+from wrapt import ObjectProxy
 
+from .types import EnhancedTypeVar, is_type_of_type
 from .exceptions import RuntimeTypeError
-from .validator import init_validator
+from .validator import init_validator, Validator
 
 
 # This TypeVar is used to indicate that he result of output validation
@@ -20,15 +21,15 @@ class Enforcer:
     """
     A container for storing type checking logic of functions
     """
-    def __init__(self, validator, signature, hints, root=None, generic=False):
+    def __init__(self, validator, signature, hints, generic=False, bound=False):
         self.validator = validator
         self.signature = signature
         self.hints = hints
-        self.root = root
         self.enabled = True
         self.settings = None
 
         self.generic = generic
+        self.bound = bound
 
         self._callable_signature = None
 
@@ -39,9 +40,16 @@ class Enforcer:
         If it is None, then it generates a new Callable type from the object's signature
         """
         if self._callable_signature is None:
-            self._callable_signature = generate_type_from_signature(self.signature)
+            self._callable_signature = generate_callable_from_signature(self.signature)
 
         return self._callable_signature
+
+    @property
+    def type_signature(self):
+        if self.generic:
+            return self.signature
+        else:
+            return self.callable_signature
 
     def validate_inputs(self, input_data: Parameters) -> Parameters:
         """
@@ -91,7 +99,7 @@ class Enforcer:
         self.validator.reset()
 
 
-class GenericProxy(CallableObjectProxy):
+class GenericProxy(ObjectProxy):
     """
     A proxy object for typing.Generics user defined subclassses which always returns proxied objects
     """
@@ -101,52 +109,101 @@ class GenericProxy(CallableObjectProxy):
         """
         Creates an enforcer instance on a just wrapped user defined Generic
         """
+        if not is_type_of_type(type(wrapped), typing.GenericMeta):
+            raise TypeError('Only generics can be wrapped in GenericProxy')
+
         super().__init__(wrapped)
+
         apply_enforcer(self, generic=True)
+
+    def __call__(self, *args, **kwargs):
+        return apply_enforcer(self.__wrapped__(*args, **kwargs), generic=True, instance_of=self)
 
     def __getitem__(self, param):
         """
         Wraps a normal typed Generic in another proxy and applies enforcers for generics on it
         """
-        new_generic = GenericProxy(self.__wrapped__.__getitem__(param))
-        # An origin attribute must point to a proxy, and not the original Generic
-        new_generic.__origin__ = self
-        return apply_enforcer(new_generic, generic=True)
+        return GenericProxy(self.__wrapped__.__getitem__(param))
 
 
 def apply_enforcer(func: typing.Callable,
                    generic: bool=False,
-                   parent_root: typing.Optional[typing.Dict]=None) -> typing.Callable:
+                   parent_root: typing.Optional[Validator]=None,
+                   instance_of: typing.Optional[GenericProxy]=None) -> typing.Callable:
     """
-    Adds an Enforcer instance to the passed function if it doesn't yet exist
+    Adds an Enforcer instance to the passed function/generic if it doesn't yet exist
     or if it is not an instance of Enforcer
 
     Such instance is added as '__enforcer__'
     """
-    def generate_new_enforcer():
-        """
-        Private function for generating new Enforcer instances for the incoming function
-        """
-        if generic:
-            signature = None
-            hints = None
-            validator = None
-            root = {}
-        else:
-            signature = inspect.signature(func)
-            hints = typing.get_type_hints(func)
-            validator = init_validator(hints)
-            root = parent_root
-
-        return Enforcer(validator, signature, hints, root, generic)
-
-    if not hasattr(func, '__enforcer__'):
-        func.__enforcer__ = generate_new_enforcer()
-    elif not isinstance(func.__enforcer__, Enforcer):
+    if not hasattr(func, '__enforcer__') or not isinstance(func.__enforcer__, Enforcer):
         # Replaces 'incorrect' enforcers
-        func.__enforcer__ = generate_new_enforcer()
+        func.__enforcer__ = generate_new_enforcer(func, generic, parent_root, instance_of)
 
     return func
+
+
+def generate_new_enforcer(func, generic, parent_root, instance_of):
+    """
+    Private function for generating new Enforcer instances for the incoming function
+    """
+    if parent_root is not None:
+        if type(parent_root) is not Validator:
+            raise TypeError('Parent validator must be a Validator')
+
+    if instance_of is not None:
+        if type(instance_of) is not GenericProxy:
+            raise TypeError('Instance of a generic must be derived from a valid Generic Proxy')
+
+    if generic:
+        hints = OrderedDict()
+
+        if instance_of:
+            func = instance_of
+            func_type = type(func.__wrapped__)
+        else:
+            func_type = type(func)
+
+        has_origin = func.__origin__ is not None
+
+        # Collects generic's parameters - TypeVar-s specified on itself or on origin (if constrained)
+        if not func.__parameters__ and (not has_origin or not func.__origin__.__parameters__):
+            raise TypeError('User defined generic is invalid')
+
+        parameters = func.__parameters__ if func.__parameters__ else func.__origin__.__parameters__
+
+        # Maps parameter names to parameters, while preserving the order of their definition
+        for param in parameters:
+            hints[param.__name__] = EnhancedTypeVar(param.__name__, type_var=param)
+
+        # Verifies that constraints do not contradict generic's parameter definition
+        # and bounds parameters to constraints (if constrained)
+        bound = bool(func.__args__)
+        if bound:
+            for i, param in enumerate(hints.values()):
+                arg = func.__args__[i]
+                if is_type_of_type(arg, param):
+                    param.__bound__ = arg
+                else:
+                    raise TypeError('User defined generic does not accept provided constraints')
+
+        # NOTE:
+        # Signature in generics should always point to the original unconstrained generic
+        # This applies even to the instances of such Generics
+
+        if has_origin:
+            signature = func.__origin__
+        else:
+            signature = func if func_type == typing.GenericMeta else func_type
+
+        validator = init_validator(hints, parent_root)
+    else:
+        bound = False
+        signature = inspect.signature(func)
+        hints = typing.get_type_hints(func)
+        validator = init_validator(hints, parent_root)
+
+    return Enforcer(validator, signature, hints, generic, bound)
 
 
 def parse_errors(errors: typing.List[str], hints:typing.Dict[str, type], return_type: bool=False) -> str:
@@ -169,7 +226,7 @@ def parse_errors(errors: typing.List[str], hints:typing.Dict[str, type], return_
     return output
 
 
-def generate_type_from_signature(signature):
+def generate_callable_from_signature(signature):
     """
     Generates a type from a signature of Callable object
     """

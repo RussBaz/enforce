@@ -1,8 +1,8 @@
 import unittest
 import numbers
-from typing import TypeVar, Any, Tuple, Dict, List
+from typing import TypeVar, Any, Tuple, Dict, List, Union, Optional
 
-from enforce.types import is_type_of_type, EnahncedTypeVar, Integer, Boolean
+from enforce.types import is_type_of_type, EnhancedTypeVar, Integer, Boolean
 
 
 class Animal:
@@ -25,7 +25,7 @@ class Chihuahua(Pet):
     pass
 
 
-class TestTypesChecking(unittest.TestCase):
+class TypesCheckingTests(unittest.TestCase):
     """
     Tests for the type checking function
     """
@@ -188,7 +188,7 @@ class TestTypesChecking(unittest.TestCase):
         Verifies that type checking behaves exactly the same with an Enhanced TypeVar
         as it would with a default TypeVar
         """
-        T = EnahncedTypeVar('T', str, int, Animal)
+        T = EnhancedTypeVar('T', str, int, Animal)
         self.assertTrue(is_type_of_type(Animal, T))
         self.assertTrue(is_type_of_type(int, T))
         self.assertTrue(is_type_of_type(str, T))
@@ -240,7 +240,7 @@ class TestTypesChecking(unittest.TestCase):
         Default TypeVars cannot be bivariant
         This test verifies if an Enhanced version of it will properly checked
         """
-        T = EnahncedTypeVar('T', Pet, int, covariant=True, contravariant=True)
+        T = EnhancedTypeVar('T', Pet, int, covariant=True, contravariant=True)
         self.assertTrue(is_type_of_type(Animal, T))
         self.assertTrue(is_type_of_type(Pet, T))
         self.assertTrue(is_type_of_type(Chihuahua, T))
@@ -275,7 +275,7 @@ class TestTypesChecking(unittest.TestCase):
         
         # Bivariant TypeVars are not supported by default
         # Therefore, testing it with an Enhanced version of TypeVar
-        T = EnahncedTypeVar('T', covariant=True, contravariant=True, bound=Pet)
+        T = EnhancedTypeVar('T', covariant=True, contravariant=True, bound=Pet)
         self.assertTrue(is_type_of_type(Animal, T))
         self.assertTrue(is_type_of_type(Pet, T))
         self.assertTrue(is_type_of_type(Chihuahua, T))
@@ -338,6 +338,7 @@ class TestTypesChecking(unittest.TestCase):
         g = {}  # Dictionary
         h = []  # List
         i = ''  # String
+        k = b''  # Bytes
 
         self.assertTrue(is_type_of_type(type(a), Tuple))
         self.assertTrue(is_type_of_type(type(b), Integer))
@@ -348,9 +349,30 @@ class TestTypesChecking(unittest.TestCase):
         self.assertTrue(is_type_of_type(type(g), Dict))
         self.assertTrue(is_type_of_type(type(h), List))
         self.assertTrue(is_type_of_type(type(i), str))
+        self.assertTrue(is_type_of_type(type(k), bytes))
+
+    def test_complex_type_var(self):
+        """
+        Verifies that nested types, such as Unions, can be compared
+        """
+        T = TypeVar('T', Union[int, str], bytes)
+        K = TypeVar('K', Optional[int], str)
+        
+        self.assertTrue(is_type_of_type(Union[str, int], T))
+        self.assertTrue(is_type_of_type(bytes, T))
+
+        self.assertFalse(is_type_of_type(Union[int, str, bytes], T))
+        self.assertFalse(is_type_of_type(int, T))
+        self.assertFalse(is_type_of_type(bytearray, T))
+
+        self.assertTrue(is_type_of_type(Optional[int], K))
+        self.assertTrue(is_type_of_type(Union[None, int], K))
+        self.assertTrue(is_type_of_type(str, K))
+
+        self.assertFalse(is_type_of_type(int, K))
 
 
-class TestTypesEnhanced(unittest.TestCase):
+class EnhancedTypeVarTests(unittest.TestCase):
     """
     Tests for the Enhanced TypeVar class
     """
@@ -361,13 +383,12 @@ class TestTypesEnhanced(unittest.TestCase):
         or directly from an existing TypeVar
         """
         T = TypeVar('T')
-        ET = EnahncedTypeVar('T', type_var=T)
+        ET = EnhancedTypeVar('T', type_var=T)
         self.assertEqual(T.__name__, ET.__name__)
         self.assertEqual(T.__bound__, ET.__bound__)
         self.assertEqual(T.__covariant__, ET.__covariant__)
         self.assertEqual(T.__contravariant__, ET.__contravariant__)
         self.assertEqual(T.__constraints__, ET.__constraints__)
-        self.assertIs(T, ET.type_var)
         self.assertEqual(repr(T), repr(ET))
 
         name = 'ET'
@@ -375,19 +396,18 @@ class TestTypesEnhanced(unittest.TestCase):
         contravariant = False
         bound = None
         constraints = (str, int)
-        ET = EnahncedTypeVar(name, *constraints, covariant=covariant, contravariant=contravariant, bound=bound)
+        ET = EnhancedTypeVar(name, *constraints, covariant=covariant, contravariant=contravariant, bound=bound)
         self.assertEqual(ET.__name__, name)
         self.assertEqual(ET.__bound__, bound)
         self.assertEqual(ET.__covariant__, covariant)
         self.assertEqual(ET.__contravariant__, contravariant)
         self.assertEqual(ET.__constraints__, constraints)
-        self.assertIsNotNone(ET.type_var)
 
     def test_bivariant_type_var(self):
         """
         Verifies that it is possible to initialise a bivariant Enhanced TypeVar
         """
-        ET = EnahncedTypeVar('ET', covariant=True, contravariant=True)
+        ET = EnhancedTypeVar('ET', covariant=True, contravariant=True)
         self.assertTrue(ET.__covariant__)
         self.assertTrue(ET.__contravariant__)
 
@@ -396,14 +416,38 @@ class TestTypesEnhanced(unittest.TestCase):
         Verifies that a consistent with TypeVar representation is shown when an Enhanced TypeVar is used
         The symbol for bivariant was randomly chosen as '*'
         """
-        ET = EnahncedTypeVar('ET', covariant=True, contravariant=True)
+        ET = EnhancedTypeVar('ET', covariant=True, contravariant=True)
         self.assertEqual(repr(ET), '*ET')
-        ET = EnahncedTypeVar('ET', covariant=True)
+        ET = EnhancedTypeVar('ET', covariant=True)
         self.assertEqual(repr(ET), '+ET')
-        ET = EnahncedTypeVar('ET', contravariant=True)
+        ET = EnhancedTypeVar('ET', contravariant=True)
         self.assertEqual(repr(ET), '-ET')
-        ET = EnahncedTypeVar('ET')
+        ET = EnhancedTypeVar('ET')
         self.assertEqual(repr(ET), '~ET')
+
+    def test_equality(self):
+        """
+        Verifies that enhanced type variable can be compared to other enhanced variables
+        """
+        ETA = EnhancedTypeVar('ET', int, str, covariant=True, contravariant=True)
+        ETB = EnhancedTypeVar('ET', int, str, covariant=True, contravariant=True)
+        ETC = EnhancedTypeVar('ET', int, str, covariant=True, contravariant=False)
+        ETD = TypeVar('ET', int, str, covariant=True, contravariant=False)
+
+        self.assertEqual(ETA, ETB)
+        self.assertNotEqual(ETA, ETC)
+        self.assertNotEqual(ETB, ETC)
+
+        self.assertEqual(ETC, ETD)
+
+    def test_single_constraint(self):
+        """
+        Verifies that a single constraint is not allowed and TypeError is raised
+        """
+        ET = EnhancedTypeVar('ET')
+        ET = EnhancedTypeVar('ET', int, str)
+        with self.assertRaises(TypeError):
+            ET = EnhancedTypeVar('ET', int)
 
 
 if __name__ == '__main__':

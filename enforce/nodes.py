@@ -9,8 +9,8 @@ from .types import is_type_of_type
 class BaseNode(ABC):
 
     def __init__(self, data_type, is_sequence, type_var=False, covariant=False, contravariant=False):
-        # is_sequence specifies if it the sequence node
-        # If it is not, then it must a choice node, i.e. every children is a potential alternative
+        # is_sequence specifies if it is a sequence node
+        # If it is not, then it must be a choice node, i.e. every children is a potential alternative
         # And at least one has to be satisfied
         # Sequence nodes implies all children must be satisfied
         self.data_type = data_type
@@ -29,15 +29,22 @@ class BaseNode(ABC):
         self.original_children = []
         self.children = []
 
-    def __str__(self):
-        children_nest = ', '.join([str(c) for c in self.children])
-        str_repr = '{}:{}'.format(str(self.data_type), self.__class__.__name__)
-        if children_nest:
-            str_repr += ' -> ({})'.format(children_nest)
-        return str_repr
-
     def validate(self, data, validator, force=False):
+        """
+        Triggers all the stages of data validation, returning true or false as a result
+        """
+        # Validation steps:
+        # 1. Pre-process (clean) incoming data
+        # 2. Validate data
+        # 3. If validated, map (distribute) data to child nodes. Otherwise - FAIL.
+        # 4. Validate data at each node
+        # 5. If sequence, all nodes must successfully validate date. Otherwise, at least one.
+        # 6. If validated, reduce (collect) data from child nodes. Otherwise - FAIL.
+        # 7. Post-process (clean) the resultant data
+        # 8. Sets the output data for the node
+        # 9. INdicate validation SUCCESS
         clean_data = self.preprocess_data(data)
+
         valid = self.validate_data(validator, clean_data, force)
 
         if not valid:
@@ -65,11 +72,11 @@ class BaseNode(ABC):
     def validate_children(self, propagated_data, validator):
         """
         Performs the validation of child nodes and collects their results
-        This is a default implementation and it requries the size of incoming values to match the number of children
+        This is a default implementation and it requires the size of incoming values to match the number of children
         """
         # Not using zip because it will silence a mismatch in sizes
         # between children and propagated_data
-        # And, for now, at least, I'd prefer it be explicit
+        # And, for now, at least, I'd prefer it being explicit
         # Note, if len(self.children) changes during iteration, errors *will* occur
         children_validation_results = []
         children_data_out = []
@@ -109,19 +116,17 @@ class BaseNode(ABC):
         """
         pass
 
-    @abstractmethod
     def map_data(self, validator, data):
         """
         Maps the input data to the nested type nodes
         """
-        pass
+        return []
 
-    @abstractmethod
     def reduce_data(self, validator, data, old_data):
         """
         Combines the data from the nested type nodes into a current node expected data type
         """
-        pass
+        return old_data
 
     def add_child(self, child):
         """
@@ -141,6 +146,13 @@ class BaseNode(ABC):
         self.out_type = None
         self.children = [a for a in self.original_children]
 
+    def __str__(self):
+        children_nest = ', '.join([str(c) for c in self.children])
+        str_repr = '{}:{}'.format(str(self.data_type), self.__class__.__name__)
+        if children_nest:
+            str_repr += ' -> ({})'.format(children_nest)
+        return str_repr
+
 
 class SimpleNode(BaseNode):
 
@@ -159,6 +171,7 @@ class SimpleNode(BaseNode):
         else:
             data_type = self.data_type
 
+        # TODO: Is everything we are interested in converting to type, is an instance of Type?
         if not isinstance(data, type):
             data = type(data)
 
@@ -171,9 +184,6 @@ class SimpleNode(BaseNode):
             propagated_data = data
             self.children *= len(data)
         return propagated_data
-
-    def reduce_data(self, validator, data, old_data):
-        return old_data
 
 
 class UnionNode(BaseNode):
@@ -213,6 +223,7 @@ class TypeVarNode(BaseNode):
         return [data for _ in self.children]
 
     def reduce_data(self, validator, data, old_data):
+        # Returns first non-None element, or None if every element is None
         return next((element for element in data if element is not None), None)
 
     def validate_children(self, propagated_data, validator):
@@ -356,8 +367,59 @@ class CallableNode(BaseNode):
             # Can occur in case of typing.Callable having no parameters
             return False
 
-    def map_data(self, validator, data):
-        return []
 
-    def reduce_data(self, validator, data, old_data):
-        return old_data
+class GenericNode(BaseNode):
+
+    def __init__(self, data_type, **kwargs):
+        from .enforcers import Enforcer, GenericProxy
+
+        try:
+            enforcer = data_type.__enforcer__
+        except AttributeError:
+            enforcer =  GenericProxy(data_type).__enforcer__
+        else:
+            if not is_type_of_type(type(enforcer),
+                                   Enforcer,
+                                   covariant=self.covariant,
+                                   contravariant=self.contravariant):
+                enforcer =  GenericProxy(data_type).__enforcer__
+
+        super().__init__(enforcer, is_sequence=True, type_var=False, **kwargs)
+
+    def preprocess_data(self, data):
+        from .enforcers import Enforcer, GenericProxy
+
+        try:
+            enforcer = data.__enforcer__
+        except AttributeError:
+            return GenericProxy(data)
+        else:
+            if is_type_of_type(type(enforcer), Enforcer, covariant=self.covariant, contravariant=self.contravariant):
+                return data
+            else:
+                return GenericProxy(data)
+
+    def validate_data(self, validator, data, sticky=False):
+        enforcer = data.__enforcer__
+
+        if not is_type_of_type(enforcer.signature,
+                               self.data_type.signature,
+                               covariant=self.covariant,
+                               contravariant=self.contravariant):
+            return False
+
+        if len(enforcer.hints) != len(self.data_type.hints):
+            return False
+
+        if self.data_type.bound:
+            if not enforcer.bound:
+                return False
+            for hint_name, hint_value in enforcer.hints.items():
+                if self.data_type.hints[hint_name] != hint_value:
+                    break
+            else:
+                return True
+
+            return False
+
+        return True
