@@ -44,13 +44,6 @@ class Enforcer:
 
         return self._callable_signature
 
-    @property
-    def type_signature(self):
-        if self.generic:
-            return self.signature
-        else:
-            return self.callable_signature
-
     def validate_inputs(self, input_data: Parameters) -> Parameters:
         """
         Calls a validator for each function argument
@@ -65,7 +58,7 @@ class Enforcer:
         binded_arguments.apply_defaults()
 
         for name in self.hints.keys():
-            # First, check argument types (every key not labelled 'return')
+            # First, check argument types (every key not labeled 'return')
             if name != 'return':
                 argument = binded_arguments.arguments.get(name)
                 if not self.validator.validate(argument, name):
@@ -101,7 +94,7 @@ class Enforcer:
 
 class GenericProxy(ObjectProxy):
     """
-    A proxy object for typing.Generics user defined subclassses which always returns proxied objects
+    A proxy object for typing.Generics user defined subclasses which always returns proxied objects
     """
     __enforcer__ = None
 

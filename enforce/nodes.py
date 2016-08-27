@@ -1,12 +1,11 @@
 import typing
-from abc import ABC, abstractmethod
 import inspect
 
 from .wrappers import EnforceProxy
 from .types import is_type_of_type
 
 
-class BaseNode(ABC):
+class BaseNode:
 
     def __init__(self, data_type, is_sequence, type_var=False, covariant=False, contravariant=False):
         # is_sequence specifies if it is a sequence node
@@ -109,12 +108,11 @@ class BaseNode(ABC):
         """
         return data
 
-    @abstractmethod
     def validate_data(self, validator, data, sticky=False) -> bool:
         """
         Responsible for determining if node is of specific type
         """
-        pass
+        return False
 
     def map_data(self, validator, data):
         """
@@ -146,12 +144,12 @@ class BaseNode(ABC):
         self.out_type = None
         self.children = [a for a in self.original_children]
 
-    def __str__(self):
-        children_nest = ', '.join([str(c) for c in self.children])
-        str_repr = '{}:{}'.format(str(self.data_type), self.__class__.__name__)
-        if children_nest:
-            str_repr += ' -> ({})'.format(children_nest)
-        return str_repr
+    #def __str__(self):
+    #    children_nest = ', '.join([str(c) for c in self.children])
+    #    str_repr = '{}:{}'.format(str(self.data_type), self.__class__.__name__)
+    #    if children_nest:
+    #        str_repr += ' -> ({})'.format(children_nest)
+    #    return str_repr
 
 
 class SimpleNode(BaseNode):
