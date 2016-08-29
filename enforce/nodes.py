@@ -370,7 +370,7 @@ class GenericNode(BaseNode):
 
     def __init__(self, data_type, **kwargs):
         from .enforcers import Enforcer, GenericProxy
-
+        print(data_type)
         try:
             enforcer = data_type.__enforcer__
         except AttributeError:
@@ -381,6 +381,8 @@ class GenericNode(BaseNode):
                                    covariant=self.covariant,
                                    contravariant=self.contravariant):
                 enforcer =  GenericProxy(data_type).__enforcer__
+
+        print(enforcer.signature)
 
         super().__init__(enforcer, is_sequence=True, type_var=False, **kwargs)
 
@@ -400,24 +402,27 @@ class GenericNode(BaseNode):
     def validate_data(self, validator, data, sticky=False):
         enforcer = data.__enforcer__
 
+        print('Signature:', enforcer.signature, self.data_type.signature)
+
         if not is_type_of_type(enforcer.signature,
                                self.data_type.signature,
                                covariant=self.covariant,
                                contravariant=self.contravariant):
             return False
 
+        if self.data_type.bound != enforcer.bound:
+            return False
+
         if len(enforcer.hints) != len(self.data_type.hints):
             return False
 
-        if self.data_type.bound:
-            if not enforcer.bound:
-                return False
-            for hint_name, hint_value in enforcer.hints.items():
-                if self.data_type.hints[hint_name] != hint_value:
-                    break
-            else:
-                return True
-
-            return False
+        for hint_name, hint_value in enforcer.hints.items():
+            hint = self.data_type.hints[hint_name]
+            if hint != hint_value:
+                for constraint in hint_value.constraints:
+                    if is_type_of_type(constraint, hint, covariant=self.covariant, contravariant=self.contravariant):
+                        break
+                else:
+                    return False
 
         return True

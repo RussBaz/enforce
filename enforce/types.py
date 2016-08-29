@@ -36,6 +36,16 @@ class EnhancedTypeVar:
             if len(self.__constraints__) == 1:
                 raise TypeError('A single constraint is not allowed')
 
+    @property
+    def constraints(self):
+        """
+        Returns constrains further constrained by the __bound__ value
+        """
+        if self.__bound__:
+            return (self.__bound__, )
+        else:
+            return self.__constraints__
+
     def __eq__(self, data):
         """
         Allows comparing Enhanced Type Var to other type variables (enhanced or not)

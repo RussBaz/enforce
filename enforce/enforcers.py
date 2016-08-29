@@ -102,12 +102,16 @@ class GenericProxy(ObjectProxy):
         """
         Creates an enforcer instance on a just wrapped user defined Generic
         """
-        if not is_type_of_type(type(wrapped), typing.GenericMeta):
+        wrapped_type = type(wrapped)
+
+        if is_type_of_type(wrapped_type, GenericProxy):
+            super().__init__(wrapped.__wrapped__)
+            apply_enforcer(self, generic=True, instance_of=self)
+        elif is_type_of_type(wrapped_type, typing.GenericMeta):
+            super().__init__(wrapped)
+            apply_enforcer(self, generic=True)
+        else:
             raise TypeError('Only generics can be wrapped in GenericProxy')
-
-        super().__init__(wrapped)
-
-        apply_enforcer(self, generic=True)
 
     def __call__(self, *args, **kwargs):
         return apply_enforcer(self.__wrapped__(*args, **kwargs), generic=True, instance_of=self)
@@ -153,9 +157,8 @@ def generate_new_enforcer(func, generic, parent_root, instance_of):
 
         if instance_of:
             func = instance_of
-            func_type = type(func.__wrapped__)
-        else:
-            func_type = type(func)
+
+        func_type = type(func)
 
         has_origin = func.__origin__ is not None
 
@@ -187,7 +190,7 @@ def generate_new_enforcer(func, generic, parent_root, instance_of):
         if has_origin:
             signature = func.__origin__
         else:
-            signature = func if func_type == typing.GenericMeta else func_type
+            signature = func.__wrapped__ if func_type is GenericProxy else func
 
         validator = init_validator(hints, parent_root)
     else:

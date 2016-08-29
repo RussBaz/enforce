@@ -400,6 +400,7 @@ sftp-config.json
 
 #################################################
 ## Visual Studio Code
+.vscode/*
 .settings
 
 #################################################
@@ -428,10 +429,5 @@ xcuserdata
 *.moved-aside
 *.xcuserstate
 
-
 ###############################################
 ## Custom
-
-static/
-env_exp/
-argusfront/argusfront/settings/secrets.json

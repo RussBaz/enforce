@@ -122,6 +122,26 @@ class GenericProxyTests(unittest.TestCase):
         self.assertFalse(hasattr(AG, '__enforcer__'))
         self.assertFalse(hasattr(BG, '__enforcer__'))
 
+    def test_applying_to_another_proxy(self):
+        """
+        Verifies that applying Generic Proxy to another Generic Proxy
+        will result in a new generic proxy of wrapped object being returned
+        """
+        T = TypeVar('T')
+
+        class AG(Generic[T]):
+            pass
+
+        AGTA = GenericProxy(AG)
+        AGTB = GenericProxy(AGTA)
+
+        self.assertIsNot(AGTA, AGTB)
+        self.assertIs(AGTA.__wrapped__, AG)
+        self.assertIs(AGTB.__wrapped__, AG)
+
+        self.assertIs(AGTA.__enforcer__.signature, AG)
+        self.assertIs(AGTB.__enforcer__.signature, AG)
+
     def test_typed_generic_is_proxied(self):
         """
         Verifies that when Generic Proxy is constrained, the returned generic is also wrapped in a Generic Proxy
@@ -223,8 +243,8 @@ class GenericProxyTests(unittest.TestCase):
         self.assertTrue(hasattr(apt, '__enforcer__'))
 
         # Signature in generics should always point to the original unconstrained generic
-        self.assertEqual(ap.__enforcer__.signature, AP.__wrapped__)
-        self.assertEqual(apt.__enforcer__.signature, AP.__wrapped__)
+        self.assertEqual(ap.__enforcer__.signature, AG)
+        self.assertEqual(apt.__enforcer__.signature, AG)
 
         self.assertEqual(ap.__enforcer__.generic, AP.__enforcer__.generic)
         self.assertEqual(apt.__enforcer__.generic, APT.__enforcer__.generic)

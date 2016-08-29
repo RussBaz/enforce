@@ -403,6 +403,32 @@ class EnhancedTypeVarTests(unittest.TestCase):
         self.assertEqual(ET.__contravariant__, contravariant)
         self.assertEqual(ET.__constraints__, constraints)
 
+    def test_bound_and_constrained(self):
+        """
+        Verifies that the Enhanced Type Variable can be both bound and constrained
+        """
+        ET = EnhancedTypeVar('T', int, str, bound=Boolean)
+
+    def test_constraints(self):
+        """
+        Verifies that enhanced variable can return its constraints further constrained by the __bound__ value
+        Also verifies that the result is always as a tuple
+        """
+        ETA = EnhancedTypeVar('ETA')
+        ETB = EnhancedTypeVar('ETB', int, str)
+        ETC = EnhancedTypeVar('ETC', bound=int)
+        ETD = EnhancedTypeVar('ETD', int, str, bound=Boolean)
+
+        self.assertEqual(ETA.constraints, tuple())
+        self.assertEqual(ETB.constraints, (int, str))
+        self.assertEqual(ETC.constraints, (int, ))
+        self.assertEqual(ETD.constraints, (Boolean, ))
+
+        self.assertIs(type(ETA.constraints), tuple)
+        self.assertIs(type(ETB.constraints), tuple)
+        self.assertIs(type(ETC.constraints), tuple)
+        self.assertIs(type(ETD.constraints), tuple)
+
     def test_bivariant_type_var(self):
         """
         Verifies that it is possible to initialise a bivariant Enhanced TypeVar
