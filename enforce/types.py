@@ -2,7 +2,7 @@ import builtins
 import typing
 import numbers
 from collections import ChainMap
-from typing import Optional, Union, UnionMeta, Any, TypeVar, Tuple
+from typing import Optional, Union, UnionMeta, Any, TypeVar, Tuple, Generic
 
 from .utils import visit
 
@@ -119,6 +119,15 @@ TYPE_ALIASES = {
 }
 
 
+REVERSED_TYPE_ALIASES = {v: k for k, v in TYPE_ALIASES.items()}
+
+
+# Tells the type checking method to ignore __subclasscheck__ on the following types and their subclasses
+IGNORED_SUBCLASSCHECKS = [
+    Generic
+]
+
+
 def is_type_of_type(data: Union[type, str, None],
                     data_type: Union[type, str, TypeVar, EnhancedTypeVar, None],
                     covariant: bool=False,
@@ -151,34 +160,87 @@ def is_type_of_type(data: Union[type, str, None],
     data_type = visit(sort_and_flat_type(data_type))
     data = visit(sort_and_flat_type(data))
 
+    subclasscheck_enabled = True
     is_type_var = data_type.__class__ is TypeVar or data_type.__class__ is EnhancedTypeVar
 
+    # TypeVars have a list of constraints and it can be bound to a specific constraint (which takes precedence)
     if is_type_var:
         if data_type.__bound__:
             constraints = [data_type.__bound__]
         else:
             constraints = data_type.__constraints__
+        # TypeVars ignore original covariant and contravariant options
+        # They always use their own
         covariant = data_type.__covariant__
         contravariant = data_type.__contravariant__
     else:
+        subclasscheck_enabled = not any(data_type.__class__ is t or t in data_type.__mro__ for t in IGNORED_SUBCLASSCHECKS)
         constraints = [data_type]
 
     if not constraints:
         constraints = [Any]
 
     constraints = [TYPE_ALIASES.get(constraint, constraint) for constraint in constraints]
-    
+
     if Any in constraints:
         return True
-    elif covariant and contravariant:
-        return any((d in data.__mro__) or (data in d.__mro__) for d in constraints)
-    elif covariant:
-        return any(d in data.__mro__ for d in constraints)
-    elif contravariant:
-        return any(data in d.__mro__ for d in constraints)
     else:
-        tmp = any(data == d for d in constraints)
-        return tmp
+        if not covariant and not contravariant:
+            return any(data == d for d in constraints)
+        else:
+            subclass_check = None
+
+            if not is_type_var and subclasscheck_enabled:
+                subclass_check = perform_subclasscheck(data, data_type, covariant, contravariant)
+
+            if subclass_check is not None:
+                return subclass_check
+
+            if covariant and contravariant:
+                return any((d in data.__mro__) or (data in d.__mro__) for d in constraints)
+
+            if covariant:
+                return any(d in data.__mro__ for d in constraints)
+
+            if contravariant:
+                return any(data in d.__mro__ for d in constraints)
+
+
+def perform_subclasscheck(data, data_type, covariant, contravariant):
+    """
+    Calls a __subclasscheck__ method with provided types according to the covariant and contravariant property
+
+    Also, if a type is type alias, it tries to call its original version in case of subclass check failure
+    """
+    results = []
+
+    if covariant:
+        reversed_data = REVERSED_TYPE_ALIASES.get(data, data)
+        result = data_type.__subclasscheck__(data)
+
+        if data is not reversed_data:
+            result = result or data_type.__subclasscheck__(reversed_data)
+
+        if result != NotImplemented:
+            results.append(result)
+
+    if contravariant:
+        reversed_data_type = REVERSED_TYPE_ALIASES.get(data_type, data_type)
+        result = data.__subclasscheck__(data_type)
+
+        if data_type is not reversed_data_type:
+            result = result or data.__subclasscheck__(reversed_data_type)
+
+        if result != NotImplemented:
+            results.append(result)
+
+    if any(results):
+        return True
+
+    if not all(results):
+        return False
+
+    return None
 
 
 def sort_and_flat_type(type_in):
