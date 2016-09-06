@@ -25,7 +25,6 @@ class Enforcer:
         self.validator = validator
         self.signature = signature
         self.hints = hints
-        self.enabled = True if settings is None else settings.enabled
         self.settings = settings
 
         self.generic = generic
@@ -48,7 +47,7 @@ class Enforcer:
         """
         Calls a validator for each function argument
         """
-        if not self.enabled:
+        if self.settings is not None and not self.settings.enabled:
             return input_data
 
         args = input_data.args
@@ -75,7 +74,7 @@ class Enforcer:
         """
         Calls a validator on a function return value
         """
-        if not self.enabled:
+        if self.settings is not None and not self.settings.enabled:
             return output_data
 
         if 'return' in self.hints.keys():

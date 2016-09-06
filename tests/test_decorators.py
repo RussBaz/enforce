@@ -320,11 +320,17 @@ class DecoratorArgumentsTests(unittest.TestCase):
         @runtime_validation(group='foo')
         def test1(a: typing.List[str]): return a
 
-        @runtime_validation(group='foo')
+        @runtime_validation(group='foo', enabled=True)
         def test2(a: typing.List[str]): return a
 
         @runtime_validation(group='bar')
         def test3(a: typing.List[str]): return a
+
+        @runtime_validation(group='bar', enabled=True)
+        def test4(a: typing.List[str]): return a
+
+        @runtime_validation(group='foo', enabled=False)
+        def test5(a: typing.List[str]): return a
 
         with self.assertRaises(RuntimeTypeError):
             test1(5)
@@ -333,6 +339,18 @@ class DecoratorArgumentsTests(unittest.TestCase):
             test2(5)
 
         test3(5)
+
+        with self.assertRaises(RuntimeTypeError):
+            test4(5)
+
+        test5(5)
+
+        config({'groups': {'set': {'foo': False}}})
+
+        test1(5)
+
+        with self.assertRaises(RuntimeTypeError):
+            test2(5)
 
     def test_global_enable(self):
         config({'enabled': False})
@@ -348,6 +366,16 @@ class DecoratorArgumentsTests(unittest.TestCase):
 
         test1(5)
         test2(5)
+        test3(5)
+
+        config({'enabled': True})
+
+        with self.assertRaises(RuntimeTypeError):
+            test1(5)
+
+        with self.assertRaises(RuntimeTypeError):
+            test2(5)
+
         test3(5)
 
 
