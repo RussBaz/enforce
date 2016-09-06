@@ -65,6 +65,8 @@ class SimpleTypesTests(unittest.TestCase):
             return data
 
         self.assertIsNone(sample(None))
+
+
         with self.assertRaises(RuntimeTypeError):
             sample_bad(1)
 
@@ -78,6 +80,7 @@ class SimpleTypesTests(unittest.TestCase):
             return data
 
         self.assertFalse(sample(True))
+
         with self.assertRaises(RuntimeTypeError):
             sample(1)
 

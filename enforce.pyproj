@@ -39,6 +39,9 @@
     <Compile Include="enforce\parsers.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="enforce\settings.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="enforce\validator.py">
       <SubType>Code</SubType>
     </Compile>
@@ -65,6 +68,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="tests\test_parsers.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\test_settings.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="tests\test_validator.py">

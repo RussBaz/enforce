@@ -1,6 +1,7 @@
 import unittest
 import numbers
 from abc import ABC
+from collections.abc import Sized
 from typing import TypeVar, Any, Tuple, Dict, List, Union, Optional, Generic
 
 from enforce.types import is_type_of_type, EnhancedTypeVar, Integer, Boolean
@@ -668,6 +669,14 @@ class TypesCheckingTests(unittest.TestCase):
         self.assertFalse(is_type_of_type(A, E, contravariant=True))
         self.assertFalse(is_type_of_type(E, A, covariant=True, contravariant=True))
         self.assertFalse(is_type_of_type(A, E, covariant=True, contravariant=True))
+
+    def test_abc_protocols(self):
+        """
+        Verifies that ABC protocols are respected and working as expected
+        """
+        some_list = [1]
+        list_type = type(some_list)
+        self.assertTrue(is_type_of_type(list_type, Sized, covariant=True))
 
 
 class EnhancedTypeVarTests(unittest.TestCase):

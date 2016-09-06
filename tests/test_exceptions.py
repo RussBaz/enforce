@@ -8,7 +8,7 @@ class ExceptionsTests(unittest.TestCase):
     A container for custom exceptions related tests
     """
 
-    def test_raises(self):
+    def test_raises_runtime_type_error(self):
         """
         Verifies that an exception can be raised and it returns a correct message
         """

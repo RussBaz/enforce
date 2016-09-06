@@ -1,4 +1,5 @@
 import typing
+from copy import deepcopy
 
 
 def visit(generator):
@@ -19,4 +20,22 @@ def visit(generator):
                 last_result = stack.pop()
         except StopIteration:
             stack.pop()
+
     return last_result
+
+
+def merge_dictionaries(original_data, update, merge_lists=False):
+    """
+    Recursively merges values of two dictionaries
+    """
+    merged_data = deepcopy(original_data)
+
+    for key, value in update.items():
+        if isinstance(value, dict):
+            merged_data[key] = merge_dictionaries(merged_data.get(key, {}), value)
+        elif merge_lists and isinstance(merged_data[key], list) and isinstance(value, list):
+            merged_data[key] = merged_data[key] + value
+        else:
+            merged_data[key] = value
+
+    return merged_data

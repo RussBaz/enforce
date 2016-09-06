@@ -1,30 +1,36 @@
 import inspect
 import typing
 import functools
-from inspect import ismethoddescriptor
 from functools import wraps
-from pprint import pprint
 
 from wrapt import decorator
 
-import enforce
+from .settings import Settings
 from .enforcers import apply_enforcer, Parameters, GenericProxy
 from .types import is_type_of_type
 
 
-def runtime_validation(data=None, **kwargs):
+def runtime_validation(data=None, *, enabled=None, group=None):
     """
     This decorator enforces runtime parameter and return value type checking validation
     It uses the standard Python 3.5 syntax for type hinting declaration
     """
+    if enabled is not None and not isinstance(enabled, bool):
+        raise TypeError('Enabled parameter must be boolean')
+
+    if group is not None and not isinstance(group, str):
+        raise TypeError('Group parameter must be string')
+
+    if enabled is None and group is None:
+        enabled = True
+
     # see https://wrapt.readthedocs.io/en/latest/decorators.html#decorators-with-optional-arguments
     if data is None:
-        return functools.partial(runtime_validation, **kwargs)
+        return functools.partial(runtime_validation, enabled=enabled, group=group)
 
-    configuration = enforce.Config(enforce.user_configuration)
-    configuration.set(**kwargs)
+    configuration = Settings(enabled=enabled, group=group)
 
-    @decorator(enabled=configuration)
+    @decorator
     def build_wrapper(wrapped, instance, args, kwargs):
         if instance is None:
             if inspect.isclass(wrapped):
@@ -60,12 +66,7 @@ def runtime_validation(data=None, **kwargs):
                 return decorate(wrapped, configuration, instance)
 
     generate_decorated = build_wrapper(data)
-    # If the decorator is disabled, then just return the function
-    # NOT the function wrapper that is otherwise
-    if not bool(configuration):
-        return generate_decorated
-    else:
-        return generate_decorated()
+    return generate_decorated()
 
 
 def decorate(data, configuration, obj_instance=None, parent_root=None) -> typing.Callable:
@@ -77,7 +78,7 @@ def decorate(data, configuration, obj_instance=None, parent_root=None) -> typing
     if not hasattr(data, '__annotations__'):
         return data
 
-    apply_enforcer(data, parent_root=parent_root)
+    apply_enforcer(data, parent_root=parent_root, settings=configuration)
 
     @decorator
     def universal(wrapped, instance, args, kwargs):

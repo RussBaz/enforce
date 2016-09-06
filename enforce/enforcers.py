@@ -21,12 +21,12 @@ class Enforcer:
     """
     A container for storing type checking logic of functions
     """
-    def __init__(self, validator, signature, hints, generic=False, bound=False):
+    def __init__(self, validator, signature, hints, generic=False, bound=False, settings=None):
         self.validator = validator
         self.signature = signature
         self.hints = hints
-        self.enabled = True
-        self.settings = None
+        self.enabled = True if settings is None else settings.enabled
+        self.settings = settings
 
         self.generic = generic
         self.bound = bound
@@ -125,6 +125,7 @@ class GenericProxy(ObjectProxy):
 
 def apply_enforcer(func: typing.Callable,
                    generic: bool=False,
+                   settings = None,
                    parent_root: typing.Optional[Validator]=None,
                    instance_of: typing.Optional[GenericProxy]=None) -> typing.Callable:
     """
@@ -135,12 +136,12 @@ def apply_enforcer(func: typing.Callable,
     """
     if not hasattr(func, '__enforcer__') or not isinstance(func.__enforcer__, Enforcer):
         # Replaces 'incorrect' enforcers
-        func.__enforcer__ = generate_new_enforcer(func, generic, parent_root, instance_of)
+        func.__enforcer__ = generate_new_enforcer(func, generic, parent_root, instance_of, settings)
 
     return func
 
 
-def generate_new_enforcer(func, generic, parent_root, instance_of):
+def generate_new_enforcer(func, generic, parent_root, instance_of, settings):
     """
     Private function for generating new Enforcer instances for the incoming function
     """
@@ -199,7 +200,7 @@ def generate_new_enforcer(func, generic, parent_root, instance_of):
         hints = typing.get_type_hints(func)
         validator = init_validator(hints, parent_root)
 
-    return Enforcer(validator, signature, hints, generic, bound)
+    return Enforcer(validator, signature, hints, generic, bound, settings)
 
 
 def parse_errors(errors: typing.List[str], hints:typing.Dict[str, type], return_type: bool=False) -> str:
