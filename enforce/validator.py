@@ -41,18 +41,18 @@ class Validator:
         if self.parent is not None:
             self.parent.reset()
 
-    def __str__(self) -> str:
-        """
-        Returns a debugging info abuot the validator's current status
-        """
-        local_nodes = [str(tree) for hint, tree in self.roots.items() if hint != 'return']
-        str_repr = '[{}]'.format(', '.join(local_nodes))
-        try:
-            # If doesn't necessarily have return value, we need to not return one.
-            str_repr += ' => {}'.format(self.roots['return'])
-        except KeyError:
-            pass
-        return str_repr
+    #def __str__(self) -> str:
+    #    """
+    #    Returns a debugging info abuot the validator's current status
+    #    """
+    #    local_nodes = [str(tree) for hint, tree in self.roots.items() if hint != 'return']
+    #    str_repr = '[{}]'.format(', '.join(local_nodes))
+    #    try:
+    #        # If doesn't necessarily have return value, we need to not return one.
+    #        str_repr += ' => {}'.format(self.roots['return'])
+    #    except KeyError:
+    #        pass
+    #    return str_repr
 
 
 def init_validator(hints: typing.Dict, parent: typing.Optional[Validator]=None) -> Validator:

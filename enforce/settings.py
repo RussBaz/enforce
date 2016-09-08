@@ -66,9 +66,14 @@ def reset_config():
         'mode': ModeChoices.invariant,
         'groups': None}
 
+    keys_to_remove = []
+
     for key in _GLOBAL_SETTINGS:
         if key not in default_values:
-            del _GLOBAL_SETTINGS[key]
+            keys_to_remove.append(key)
+
+    for key in keys_to_remove:
+        del _GLOBAL_SETTINGS[key]
 
     for key, value in default_values.items():
         if value is not None:

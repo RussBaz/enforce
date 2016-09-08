@@ -453,5 +453,20 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(_GLOBAL_SETTINGS['mode'], ModeChoices.invariant)
         self.assertEqual(_GLOBAL_SETTINGS['groups'], {})
 
+        # Resetting should also remove unknown global settings
+
+        config(config_update)
+        _GLOBAL_SETTINGS['hello_world'] = 123
+        _GLOBAL_SETTINGS['mode'] = 'hello'
+        config(reset=True)
+
+        self.assertTrue(_GLOBAL_SETTINGS['enabled'])
+        self.assertTrue(_GLOBAL_SETTINGS['default'])
+        self.assertEqual(_GLOBAL_SETTINGS['mode'], ModeChoices.invariant)
+        self.assertEqual(_GLOBAL_SETTINGS['groups'], {})
+
+        self.assertEqual(len(_GLOBAL_SETTINGS), 4)
+
+
 if __name__ == '__main__':
     unittest.main()
