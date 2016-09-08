@@ -5,6 +5,9 @@ from .utils import merge_dictionaries
 
 
 class ModeChoices(enum.Enum):
+    """
+    All possible values for the type checking mode
+    """
     invariant = 0
     covariant = 1
     contravariant = 2
@@ -31,13 +34,20 @@ class Settings:
 
     @enabled.setter
     def enabled(self, value):
+        """
+        Only changes the local enabled
+        """
         self._enabled = value
 
     def __bool__(self):
-        return self.enabled
+        return bool(self.enabled)
 
 
 def config(options=None, *, reset=False):
+    """
+    Starts the config update based on the provided dictionary of Options
+    'None' value indicates no changes will be made
+    """
     if reset:
         parsed_config = None
     else:
@@ -47,13 +57,30 @@ def config(options=None, *, reset=False):
 
 
 def reset_config():
-    _GLOBAL_SETTINGS['enabled'] = True
-    _GLOBAL_SETTINGS['default'] = True
-    _GLOBAL_SETTINGS['mode'] = ModeChoices.invariant
-    _GLOBAL_SETTINGS['groups'] = {}
+    """
+    Resets the global config object to its original state
+    """
+    default_values = {
+        'enabled': True,
+        'default': True,
+        'mode': ModeChoices.invariant,
+        'groups': None}
+
+    for key in _GLOBAL_SETTINGS:
+        if key not in default_values:
+            del _GLOBAL_SETTINGS[key]
+
+    for key, value in default_values.items():
+        if value is not None:
+            _GLOBAL_SETTINGS[key] = value
+
+    _GLOBAL_SETTINGS['groups'].clear()
 
 
 def parse_config(options):
+    """
+    Updates the default config update with a new values for config update
+    """
     default_options = {
         'enabled': None,
         'groups': {
@@ -70,6 +97,9 @@ def parse_config(options):
 
 
 def apply_config(options=None, reset=False):
+    """
+    Modifies the global settings object with a provided config updates
+    """
     if reset:
         reset_config()
     elif options is not None:
@@ -77,26 +107,57 @@ def apply_config(options=None, reset=False):
             if key == 'enabled':
                 if value is not None:
                     _GLOBAL_SETTINGS['enabled'] = value
+
             elif key == 'groups':
-                if value['disable_previous']:
-                    for k in _GLOBAL_SETTINGS['groups']:
-                        _GLOBAL_SETTINGS['groups'][k] = False
+                # For x_previous options, the priority is as follows:
+                # 1. Clear
+                # 2. Enable
+                # 3. Disable
 
-                if value['enable_previous']:
-                    for k in _GLOBAL_SETTINGS['groups']:
-                        _GLOBAL_SETTINGS['groups'][k] = True
+                group_update = {}
+                previous_update = []
 
-                if value['clear_previous']:
-                    for k in _GLOBAL_SETTINGS['groups']:
-                        _GLOBAL_SETTINGS['groups'] = {}
+                for k, v in value.items():
+                    if k == 'disable_previous':
+                        if v:
+                            previous_update.append('d')
 
-                if value['default'] is not None:
-                    _GLOBAL_SETTINGS['default'] = value['default']
+                    elif k == 'enable_previous':
+                        if v:
+                            previous_update.append('e')
 
-                for k, v in value['set'].items():
-                    if k == 'default':
-                        raise KeyError('Cannot set \'default\' group status, use \'default\' option rather than \'set\'')
-                    _GLOBAL_SETTINGS['groups'][k] = v
+                    elif k == 'clear_previous':
+                        if v:
+                            previous_update.append('c')
+
+                    elif k == 'default':
+                        if v is not None:
+                            _GLOBAL_SETTINGS['default'] = value['default']
+
+                    elif k == 'set':
+                        for group_name, group_status in v.items():
+                            if group_name == 'default':
+                                raise KeyError('Cannot set \'default\' group status, use \'default\' option rather than \'set\'')
+                            if group_status is not None:
+                                group_update[group_name] = group_status
+
+                    else:
+                        raise KeyError('Unknown option for groups \'{}\''.format(k))
+                
+                if previous_update:
+                    if 'd' in previous_update:
+                        for group_name in _GLOBAL_SETTINGS['groups']:
+                            _GLOBAL_SETTINGS['groups'][group_name] = False
+
+                    if 'e' in previous_update:
+                        for group_name in _GLOBAL_SETTINGS['groups']:
+                            _GLOBAL_SETTINGS['groups'][group_name] = True
+
+                    if 'c' in previous_update:
+                        _GLOBAL_SETTINGS['groups'].clear()
+
+                _GLOBAL_SETTINGS['groups'].update(group_update)
+
             elif key == 'mode':
                 if value is not None:
                     try:
