@@ -9,6 +9,7 @@ class Validator:
 
     def __init__(self, parent: typing.Optional['Validator']=None):
         self.parent = parent
+        self.settings = None
         self.errors = []
         self.globals = {}
         self.data_out = {}

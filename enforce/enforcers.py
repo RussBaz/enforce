@@ -27,6 +27,8 @@ class Enforcer:
         self.hints = hints
         self.settings = settings
 
+        self.validator.settings = self.settings
+
         self.generic = generic
         self.bound = bound
 

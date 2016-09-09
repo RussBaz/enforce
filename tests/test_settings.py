@@ -419,6 +419,47 @@ class SettingsTests(unittest.TestCase):
         self.assertFalse(_GLOBAL_SETTINGS['default'])
         self.assertEqual(_GLOBAL_SETTINGS['mode'], ModeChoices.bivariant)
 
+    def test_mode_value(self):
+        """
+        Verifies that mode and covariant/contravariant properties work as expected
+        Invariant by default - even if 'mode' is set to None
+        """
+        settings = Settings()
+
+        self.assertEqual(settings.mode, ModeChoices.invariant)
+        self.assertFalse(settings.covariant)
+        self.assertFalse(settings.contravariant)
+
+        config({'mode': ModeChoices.covariant.name})
+
+        self.assertEqual(settings.mode, ModeChoices.covariant)
+        self.assertTrue(settings.covariant)
+        self.assertFalse(settings.contravariant)
+
+        config({'mode': ModeChoices.contravariant.name})
+
+        self.assertEqual(settings.mode, ModeChoices.contravariant)
+        self.assertFalse(settings.covariant)
+        self.assertTrue(settings.contravariant)
+
+        config({'mode': ModeChoices.invariant.name})
+
+        self.assertEqual(settings.mode, ModeChoices.invariant)
+        self.assertFalse(settings.covariant)
+        self.assertFalse(settings.contravariant)
+
+        config({'mode': ModeChoices.bivariant.name})
+
+        self.assertEqual(settings.mode, ModeChoices.bivariant)
+        self.assertTrue(settings.covariant)
+        self.assertTrue(settings.contravariant)
+
+        _GLOBAL_SETTINGS['mode'] = None
+
+        self.assertEqual(settings.mode, ModeChoices.invariant)
+        self.assertFalse(settings.covariant)
+        self.assertFalse(settings.contravariant)
+
     def test_reset(self):
         """
         Verifies that config reset options sets changes the global settings to their default

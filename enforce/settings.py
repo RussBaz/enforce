@@ -39,6 +39,28 @@ class Settings:
         """
         self._enabled = value
 
+    @property
+    def mode(self):
+        """
+        Returns currently selected type checking mode
+        If it is None, then it will return invariant
+        """
+        return _GLOBAL_SETTINGS['mode'] or ModeChoices.invariant
+
+    @property
+    def covariant(self):
+        """
+        Returns if covariant type checking mode is enabled
+        """
+        return _GLOBAL_SETTINGS['mode'] in (ModeChoices.covariant, ModeChoices.bivariant)
+
+    @property
+    def contravariant(self):
+        """
+        Returns if contravariant type checking mode is enabled
+        """
+        return _GLOBAL_SETTINGS['mode'] in (ModeChoices.contravariant, ModeChoices.bivariant)
+
     def __bool__(self):
         return bool(self.enabled)
 

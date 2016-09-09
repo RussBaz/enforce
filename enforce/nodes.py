@@ -7,7 +7,7 @@ from .types import is_type_of_type
 
 class BaseNode:
 
-    def __init__(self, data_type, is_sequence, type_var=False, covariant=False, contravariant=False):
+    def __init__(self, data_type, is_sequence, type_var=False, covariant=None, contravariant=None):
         # is_sequence specifies if it is a sequence node
         # If it is not, then it must be a choice node, i.e. every children is a potential alternative
         # And at least one has to be satisfied
@@ -41,8 +41,8 @@ class BaseNode:
         # 6. If validated, reduce (collect) data from child nodes. Otherwise - FAIL.
         # 7. Post-process (clean) the resultant data
         # 8. Sets the output data for the node
-        # 9. INdicate validation SUCCESS
-        clean_data = self.preprocess_data(data)
+        # 9. Indicate validation SUCCESS
+        clean_data = self.preprocess_data(validator, data)
 
         valid = self.validate_data(validator, clean_data, force)
 
@@ -52,7 +52,7 @@ class BaseNode:
 
         propagated_data = self.map_data(validator, clean_data)
 
-        validation_results, returned_data = yield self.validate_children(propagated_data, validator)
+        validation_results, returned_data = yield self.validate_children(validator, propagated_data)
 
         valid = all(validation_results) if self.is_sequence else any(validation_results)
 
@@ -62,13 +62,13 @@ class BaseNode:
 
         reduced_data = self.reduce_data(validator, returned_data, clean_data)
 
-        data_out = self.postprocess_data(reduced_data)
+        data_out = self.postprocess_data(validator, reduced_data)
 
-        self.set_out_data(data, data_out)
+        self.set_out_data(validator, data, data_out)
 
         yield True
 
-    def validate_children(self, propagated_data, validator):
+    def validate_children(self, validator, propagated_data):
         """
         Performs the validation of child nodes and collects their results
         This is a default implementation and it requires the size of incoming values to match the number of children
@@ -87,7 +87,7 @@ class BaseNode:
         
         yield children_validation_results, children_data_out
 
-    def set_out_data(self, in_data, out_data):
+    def set_out_data(self, validator, in_data, out_data):
         """
         Sets the output data for the node to the combined data of its children
         Also sets the type of a last processed node
@@ -96,13 +96,13 @@ class BaseNode:
         self.data_out = out_data
         self.out_type = type(out_data)
 
-    def preprocess_data(self, data):
+    def preprocess_data(self, validator, data):
         """
         Prepares data for the other stages if needed
         """
         return data
 
-    def postprocess_data(self, data):
+    def postprocess_data(self, validator, data):
         """
         Clears or updates data if needed after it was processed by all other stages
         """
@@ -144,12 +144,12 @@ class BaseNode:
         self.out_type = None
         self.children = [a for a in self.original_children]
 
-    #def __str__(self):
-    #    children_nest = ', '.join([str(c) for c in self.children])
-    #    str_repr = '{}:{}'.format(str(self.data_type), self.__class__.__name__)
-    #    if children_nest:
-    #        str_repr += ' -> ({})'.format(children_nest)
-    #    return str_repr
+    def __repr__(self):
+        children_nest = ', '.join([str(c) for c in self.children])
+        str_repr = '{}:{}'.format(str(self.data_type), self.__class__.__name__)
+        if children_nest:
+            str_repr += ' -> ({})'.format(children_nest)
+        return str_repr
 
 
 class SimpleNode(BaseNode):
@@ -173,7 +173,10 @@ class SimpleNode(BaseNode):
         if not isinstance(data, type):
             data = type(data)
 
-        return is_type_of_type(data, data_type, covariant=self.covariant, contravariant=self.contravariant)
+        covariant = self.covariant or validator.settings.covariant
+        contravariant = self.contravariant or validator.settings.contravariant
+
+        return is_type_of_type(data, data_type, covariant=covariant, contravariant=contravariant)
 
     def map_data(self, validator, data):
         propagated_data = []
@@ -224,7 +227,7 @@ class TypeVarNode(BaseNode):
         # Returns first non-None element, or None if every element is None
         return next((element for element in data if element is not None), None)
 
-    def validate_children(self, propagated_data, validator):
+    def validate_children(self, validator, propagated_data):
         children_validation_results = []
         children_data_out = []
 
@@ -258,7 +261,10 @@ class TupleNode(BaseNode):
         super().__init__(typing.Tuple, is_sequence=True, **kwargs)
 
     def validate_data(self, validator, data, sticky=False):
-        if is_type_of_type(type(data), self.data_type, covariant=self.covariant, contravariant=self.contravariant):
+        covariant = self.covariant or validator.settings.covariant
+        contravariant = self.contravariant or validator.settings.contravariant
+
+        if is_type_of_type(type(data), self.data_type, covariant=covariant, contravariant=contravariant):
             if self.variable_length:
                 return True
             else:
@@ -266,7 +272,7 @@ class TupleNode(BaseNode):
         else:
             return False
 
-    def validate_children(self, propagated_data, validator):
+    def validate_children(self, validator, propagated_data):
         if self.variable_length:
             child = self.children[0]
 
@@ -280,7 +286,7 @@ class TupleNode(BaseNode):
         
             yield children_validation_results, children_data_out
         else:
-            yield super().validate_children(propagated_data, validator)
+            yield super().validate_children(validator, propagated_data)
 
     def map_data(self, validator, data):
         output = []
@@ -309,7 +315,7 @@ class CallableNode(BaseNode):
     def __init__(self, data_type, **kwargs):
         super().__init__(data_type, is_sequence=True, type_var=False, **kwargs)
 
-    def preprocess_data(self, data):
+    def preprocess_data(self, validator, data):
         from .enforcers import Enforcer, apply_enforcer
 
         if not inspect.isfunction(data):
@@ -321,7 +327,10 @@ class CallableNode(BaseNode):
             proxy = EnforceProxy(data)
             return apply_enforcer(proxy)
         else:
-            if is_type_of_type(type(enforcer), Enforcer, covariant=self.covariant, contravariant=self.contravariant):
+            covariant = self.covariant or validator.settings.covariant
+            contravariant = self.contravariant or validator.settings.contravariant
+
+            if is_type_of_type(type(enforcer), Enforcer, covariant=covariant, contravariant=contravariant):
                 return data
             else:
                 return apply_enforcer(data)
@@ -376,17 +385,17 @@ class GenericNode(BaseNode):
         except AttributeError:
             enforcer =  GenericProxy(data_type).__enforcer__
         else:
-            if not is_type_of_type(type(enforcer),
-                                   Enforcer,
-                                   covariant=self.covariant,
-                                   contravariant=self.contravariant):
+            covariant = self.covariant or validator.settings.covariant
+            contravariant = self.contravariant or validator.settings.contravariant
+
+            if not is_type_of_type(type(enforcer), Enforcer, covariant=covariant, contravariant=contravariant):
                 enforcer =  GenericProxy(data_type).__enforcer__
 
         print(enforcer.signature)
 
         super().__init__(enforcer, is_sequence=True, type_var=False, **kwargs)
 
-    def preprocess_data(self, data):
+    def preprocess_data(self, validator, data):
         from .enforcers import Enforcer, GenericProxy
 
         try:
@@ -394,7 +403,10 @@ class GenericNode(BaseNode):
         except AttributeError:
             return GenericProxy(data)
         else:
-            if is_type_of_type(type(enforcer), Enforcer, covariant=self.covariant, contravariant=self.contravariant):
+            covariant = self.covariant or validator.settings.covariant
+            contravariant = self.contravariant or validator.settings.contravariant
+
+            if is_type_of_type(type(enforcer), Enforcer, covariant=covariant, contravariant=contravariant):
                 return data
             else:
                 return GenericProxy(data)
@@ -402,12 +414,13 @@ class GenericNode(BaseNode):
     def validate_data(self, validator, data, sticky=False):
         enforcer = data.__enforcer__
 
-        print('Signature:', enforcer.signature, self.data_type.signature)
+        covariant = self.covariant or validator.settings.covariant
+        contravariant = self.contravariant or validator.settings.contravariant
 
         if not is_type_of_type(enforcer.signature,
                                self.data_type.signature,
-                               covariant=self.covariant,
-                               contravariant=self.contravariant):
+                               covariant=covariant,
+                               contravariant=contravariant):
             return False
 
         if self.data_type.bound != enforcer.bound:
@@ -420,7 +433,7 @@ class GenericNode(BaseNode):
             hint = self.data_type.hints[hint_name]
             if hint != hint_value:
                 for constraint in hint_value.constraints:
-                    if is_type_of_type(constraint, hint, covariant=self.covariant, contravariant=self.contravariant):
+                    if is_type_of_type(constraint, hint, covariant=covariant, contravariant=contravariant):
                         break
                 else:
                     return False

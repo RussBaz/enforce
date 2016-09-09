@@ -2,7 +2,7 @@ import typing
 import unittest
 import numbers
 
-from enforce import runtime_validation
+from enforce import runtime_validation, config
 from enforce.types import EnhancedTypeVar
 from enforce.exceptions import RuntimeTypeError
 
@@ -105,7 +105,7 @@ class SimpleTypesTests(unittest.TestCase):
 
     def test_float(self):
         """
-        Floats should accept both floats and integers
+        Floats should accept only floats in invariant mode
         """
         @runtime_validation
         def sample(data: float) -> float:
@@ -116,12 +116,16 @@ class SimpleTypesTests(unittest.TestCase):
             return data
 
         self.assertEqual(sample(1.0), 1.0)
-        self.assertEqual(sample(1), 1)
+        with self.assertRaises(RuntimeTypeError):
+            sample(1)
         with self.assertRaises(RuntimeTypeError):
             sample('')
 
         with self.assertRaises(RuntimeTypeError):
             sample_bad('')
+
+        config({'mode': 'covariant'})
+        sample(1)
 
     def test_complex(self):
         """
@@ -162,7 +166,7 @@ class SimpleTypesTests(unittest.TestCase):
 
     def test_bytes(self):
         """
-        BYtes should accept bytes as well bytearray and memorieview
+        Bytes should accept bytes as well bytearray and memorieview
         """
         @runtime_validation
         def sample(data: bytes) -> bytes:
@@ -234,6 +238,84 @@ class ComplexTypesTests(unittest.TestCase):
             return runtime_validation(configurable_type_var_func)
         else:
             return runtime_validation(type_var_func)
+
+    def test_checking_mode(self):
+        """
+        Verifies that settings affect the selected type checking mode - covariant/contravariant
+        """
+        @runtime_validation
+        def func(data: numbers.Integral):
+            pass
+
+        @runtime_validation
+        def func2(data: typing.Union[float, str]):
+            pass
+
+        with self.assertRaises(RuntimeTypeError):
+            func(1)
+
+        with self.assertRaises(RuntimeTypeError):
+            func(1.0)
+
+        with self.assertRaises(RuntimeTypeError):
+            func(True)
+
+        func2('hello')
+        func2(1.0)
+        with self.assertRaises(RuntimeTypeError):
+            func2(1)
+
+        config({'mode': 'covariant'})
+
+        func(1)
+        func(True)
+        with self.assertRaises(RuntimeTypeError):
+            func(1.0)
+
+        func2('hello')
+        func2(1.0)
+        func2(1)
+
+        config({'mode': 'contravariant'})
+
+        with self.assertRaises(RuntimeTypeError):
+            func(1)
+
+        func(1.0)
+
+        with self.assertRaises(RuntimeTypeError):
+            func(True)
+
+        func2('hello')
+        func2(1.0)
+        with self.assertRaises(RuntimeTypeError):
+            func2(1)
+
+        config({'mode': 'bivariant'})
+
+        func(1)
+        func(1.0)
+        func(True)
+
+        func2('hello')
+        func2(1.0)
+        func2(1)
+
+        config({'mode': 'invariant'})
+
+        with self.assertRaises(RuntimeTypeError):
+            func(1)
+
+        with self.assertRaises(RuntimeTypeError):
+            func(1.0)
+
+        with self.assertRaises(RuntimeTypeError):
+            func(True)
+
+        func2('hello')
+        func2(1.0)
+        with self.assertRaises(RuntimeTypeError):
+            func2(1)
 
     def test_optional(self):
         @runtime_validation

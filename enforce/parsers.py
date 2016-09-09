@@ -86,17 +86,9 @@ def _parse_complex(node, hint, validator, parsers):
     yield _yield_unified_node(node, hints, validator, parsers)
 
 
-def _parse_float(node, hint, validator, parsers):
-    """
-    Floats should accept integers as well, but not otherwise
-    """
-    hints = [int, float]
-    yield _yield_unified_node(node, hints, validator, parsers)
-
-
 def _parse_bytes(node, hint, validator, parsers):
     """
-    Floats should accept integers as well, but not otherwise
+    Bytes should sldo accept bytearray and memoryview, but not otherwise
     """
     hints = [bytearray, memoryview, bytes]
     yield _yield_unified_node(node, hints, validator, parsers)
@@ -151,6 +143,5 @@ TYPE_PARSERS = {
     typing.TypeVar: _parse_type_var,
     EnhancedTypeVar: _parse_type_var,
     complex: _parse_complex,
-    float: _parse_float,
     bytes: _parse_bytes
     }
