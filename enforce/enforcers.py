@@ -14,7 +14,7 @@ from .validator import init_validator, Validator
 T = typing.TypeVar('T')
 
 # Convenience type for storing all incoming arguments in a single container
-Parameters = namedtuple('Parameters', ['args', 'kwargs'])
+Parameters = namedtuple('Parameters', ['args', 'kwargs', 'skip'])
 
 
 class Enforcer:
@@ -32,6 +32,8 @@ class Enforcer:
         self.generic = generic
         self.bound = bound
 
+        self.reference = None
+
         self._callable_signature = None
 
     @property
@@ -40,6 +42,12 @@ class Enforcer:
         A property which returns _callable_signature (Callable type of the function)
         If it is None, then it generates a new Callable type from the object's signature
         """
+        if self.settings is not None and not self.settings:
+            return typing.Callable
+
+        if hasattr(self.reference, '__no_type_check__'):
+            return typing.Callable
+
         if self._callable_signature is None:
             self._callable_signature = generate_callable_from_signature(self.signature)
 
@@ -52,8 +60,12 @@ class Enforcer:
         if self.settings is not None and not self.settings.enabled:
             return input_data
 
+        if input_data.skip:
+            return input_data
+
         args = input_data.args
         kwargs = input_data.kwargs
+        skip = input_data.skip
 
         binded_arguments = self.signature.bind(*args, **kwargs)
         binded_arguments.apply_defaults()
@@ -66,7 +78,7 @@ class Enforcer:
                     break
                 binded_arguments.arguments[name] = self.validator.data_out[name]
         else:
-            valdated_data = Parameters(binded_arguments.args, binded_arguments.kwargs)
+            valdated_data = Parameters(binded_arguments.args, binded_arguments.kwargs, skip)
             return valdated_data
 
         exception_text = parse_errors(self.validator.errors, self.hints)
@@ -138,6 +150,7 @@ def apply_enforcer(func: typing.Callable,
     if not hasattr(func, '__enforcer__') or not isinstance(func.__enforcer__, Enforcer):
         # Replaces 'incorrect' enforcers
         func.__enforcer__ = generate_new_enforcer(func, generic, parent_root, instance_of, settings)
+        func.__enforcer__.reference = func
 
     return func
 

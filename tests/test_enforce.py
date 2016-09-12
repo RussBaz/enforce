@@ -31,6 +31,30 @@ class GeneralTests(unittest.TestCase):
 
         self.assertEqual(result, 0)
 
+    def test_no_type_check(self):
+        """
+        Verifies that no_type_check is respected
+        """
+        def get_sample_func():
+            def sample(data: int):
+                pass
+
+            return sample
+
+        sample_d1 = typing.no_type_check(runtime_validation(get_sample_func()))
+        sample_d2 = runtime_validation(typing.no_type_check(get_sample_func()))
+
+        sample_d3 = runtime_validation(get_sample_func())
+
+        sample_d4 = typing.no_type_check_decorator(runtime_validation(get_sample_func()))
+        sample_d5 = runtime_validation(typing.no_type_check_decorator(get_sample_func()))
+
+        get_sample_func()('str')
+        sample_d1('str')
+        sample_d2('str')
+        with self.assertRaises(RuntimeTypeError):
+            sample_d3('str')
+
     @runtime_validation
     def sample_function(self, text: str, data: typing.Union[int, None]) -> typing.Optional[int]:
         try:
@@ -46,6 +70,12 @@ class SimpleTypesTests(unittest.TestCase):
     """
     Tests for the simple types which do not require special processing
     """
+
+    def setUp(self):
+        config(reset=True)
+
+    def tearDown(self):
+        config(reset=True)
 
     def test_any(self):
         @runtime_validation
@@ -222,6 +252,12 @@ class ComplexTypesTests(unittest.TestCase):
     """
     Tests for the simple types which require special processing
     """
+    def setUp(self):
+        config(reset=True)
+
+    def tearDown(self):
+        config(reset=True)
+
     def get_type_var_func(self, configurable=False, type_var=None):
         if type_var is None:
             A = typing.TypeVar('A')

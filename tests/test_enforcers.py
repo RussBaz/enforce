@@ -1,12 +1,13 @@
 import unittest
-from typing import Any, Callable, TypeVar, Generic
+from typing import Any, Callable, TypeVar, Generic, no_type_check
 
 from enforce.enforcers import apply_enforcer, Enforcer, GenericProxy
+from enforce.settings import config, Settings
 
 
 class EnforcerTests(unittest.TestCase):
 
-    def setUp(self):
+    def setUp(cls):
         """
         Because functions are recreated on every pass, it is guaranteed to remain unmodified
         """
@@ -26,59 +27,81 @@ class EnforcerTests(unittest.TestCase):
 
         def func_any_args__none(a: Any, *args) -> None: pass
 
-        self.func_int___none = func_int___none
+        cls.func_int___none = lambda: func_int___none
 
-        self.func_int_empty___none = func_int_empty___none
-        self.func_int_empty___empty = func_int_empty___empty
-        self.func_empty_int_empty___empty = func_empty_int_empty___empty
+        cls.func_int_empty___none = lambda: func_int_empty___none
+        cls.func_int_empty___empty = lambda: func_int_empty___empty
+        cls.func_empty_int_empty___empty = lambda: func_empty_int_empty___empty
 
-        self.func_args_kwargs__empty = func_args_kwargs__empty
-        self.func_args__empty = func_args__empty
-        self.func_empty_args__empty = func_empty_args__empty
-        self.func_any_args__none = func_any_args__none
+        cls.func_args_kwargs__empty = lambda: func_args_kwargs__empty
+        cls.func_args__empty = lambda: func_args__empty
+        cls.func_empty_args__empty = lambda: func_empty_args__empty
+        cls.func_any_args__none = lambda: func_any_args__none
 
     def test_can_apply_enforcer(self):
-        wrapped = apply_enforcer(self.func_int___none)
+        wrapped = apply_enforcer(self.func_int___none())
         enforcer = wrapped.__enforcer__
         self.assertTrue(isinstance(enforcer, Enforcer))
 
     def test_callable_simple_type(self):
-        func_type = self.get_function_type(self.func_int___none)
+        func_type = self.get_function_type(self.func_int___none())
 
         self.assertEqual(func_type, Callable[[int], None])
 
     def test_callable_missing_annotation(self):
-        func_type = self.get_function_type(self.func_int_empty___none)
+        func_type = self.get_function_type(self.func_int_empty___none())
 
         self.assertEqual(func_type, Callable[[int, Any], None])
 
-        func_type = self.get_function_type(self.func_int_empty___empty)
+        func_type = self.get_function_type(self.func_int_empty___empty())
 
         self.assertEqual(func_type, Callable[[int, Any], Any])
 
-        func_type = self.get_function_type(self.func_empty_int_empty___empty)
+        func_type = self.get_function_type(self.func_empty_int_empty___empty())
 
         self.assertEqual(func_type, Callable[[Any, int, Any], Any])
 
     def test_with_kwargs(self):
-        func_type = self.get_function_type(self.func_args_kwargs__empty)
+        func_type = self.get_function_type(self.func_args_kwargs__empty())
 
         self.assertEqual(func_type, Callable)
 
     def test_any_positional_only(self):
-        func_type = self.get_function_type(self.func_args__empty)
+        func_type = self.get_function_type(self.func_args__empty())
 
         self.assertEqual(func_type, Callable)
 
     def test_any_extra_positional_only(self):
-        func_type = self.get_function_type(self.func_empty_args__empty)
+        func_type = self.get_function_type(self.func_empty_args__empty())
 
         self.assertEqual(func_type, Callable)
 
     def test_any_positional_with_return(self):
-        func_type = self.get_function_type(self.func_any_args__none)
+        func_type = self.get_function_type(self.func_any_args__none())
 
         self.assertEqual(func_type, Callable[..., None])
+
+    def test_deactivated_callable(self):
+        """
+        Disabled enforcers should be returning just Callable
+        """
+        settings = Settings(enabled=False)
+
+        func = no_type_check(self.func_int___none())
+
+        wrapped = apply_enforcer(func)
+        enforcer = wrapped.__enforcer__
+        func_type = enforcer.callable_signature
+
+        self.assertEqual(func_type, Callable)
+
+        func = self.func_int___none()
+
+        wrapped = apply_enforcer(func, settings=settings)
+        enforcer = wrapped.__enforcer__
+        func_type = enforcer.callable_signature
+
+        self.assertEqual(func_type, Callable)
 
     def get_function_type(self, func):
         wrapped = apply_enforcer(func)

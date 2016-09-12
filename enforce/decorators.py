@@ -88,6 +88,7 @@ def decorate(data, configuration, obj_instance=None, parent_root=None) -> typing
         output of original function.
         """
         enforcer = data.__enforcer__
+        skip = False
 
         # In order to avoid problems with TypeVar-s, validator must be reset
         enforcer.reset()
@@ -96,13 +97,16 @@ def decorate(data, configuration, obj_instance=None, parent_root=None) -> typing
         if instance is not None and not inspect.isclass(instance):
             instance_method = True
 
+        if hasattr(wrapped, '__no_type_check__'):
+            skip = True
+
         if instance_method:
-            parameters = Parameters([instance, *args], kwargs)
+            parameters = Parameters([instance, *args], kwargs, skip)
         else:
-            parameters = Parameters(args, kwargs)
+            parameters = Parameters(args, kwargs, skip)
 
         # First, check argument types (every key not labelled 'return')
-        _args, _kwargs = enforcer.validate_inputs(parameters)
+        _args, _kwargs, _ = enforcer.validate_inputs(parameters)
 
         if instance_method:
             if len(_args) > 1:
@@ -113,6 +117,9 @@ def decorate(data, configuration, obj_instance=None, parent_root=None) -> typing
         result = wrapped(*_args, **_kwargs)
 
         # we *only* return result if all type checks passed
-        return enforcer.validate_outputs(result)
+        if skip:
+            return result
+        else:
+            return enforcer.validate_outputs(result)
 
     return universal(data)
