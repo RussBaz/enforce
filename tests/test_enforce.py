@@ -409,7 +409,7 @@ class ComplexTypesTests(unittest.TestCase):
             sample_any_out(1)
 
     def test_variable_length_tuple(self):
-        # TODO: What is tuple is empty?
+        # TODO: What if tuple is empty?
         @runtime_validation
         def sample_in(data: typing.Tuple[int, ...]) -> typing.Any:
             return data
@@ -871,7 +871,6 @@ class GenericTypesTests(unittest.TestCase):
         self.assertIs(return_any(other), other)
 
         # TODO: Find out exactly what should be be happening in this case
-        #print('S:', strange.__enforcer__.signature, strange.__enforcer__.hints)
         #self.assertIs(return_any(strange), strange)
 
         with self.assertRaises(RuntimeTypeError):

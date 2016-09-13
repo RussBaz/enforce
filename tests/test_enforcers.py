@@ -7,36 +7,37 @@ from enforce.settings import config, Settings
 
 class EnforcerTests(unittest.TestCase):
 
-    def setUp(cls):
-        """
-        Because functions are recreated on every pass, it is guaranteed to remain unmodified
-        """
+    def func_int___none(self):
         def func_int___none(a: int) -> None: pass
+        return func_int___none
 
+    def func_int_empty___none(self):
         def func_int_empty___none(a: int, b) -> None: pass
+        return func_int_empty___none
 
+    def func_int_empty___empty(self):
         def func_int_empty___empty(a: int, b): pass
+        return func_int_empty___empty
 
+    def func_empty_int_empty___empty(self):
         def func_empty_int_empty___empty(a, b: int, c): pass
+        return func_empty_int_empty___empty
 
+    def func_args_kwargs__empty(self):
         def func_args_kwargs__empty(*args, **kwargs): pass
+        return func_args_kwargs__empty
 
+    def func_args__empty(self):
         def func_args__empty(*args): pass
+        return func_args__empty
 
+    def func_empty_args__empty(self):
         def func_empty_args__empty(a, *args): pass
+        return func_empty_args__empty
 
+    def func_any_args__none(self):
         def func_any_args__none(a: Any, *args) -> None: pass
-
-        cls.func_int___none = lambda: func_int___none
-
-        cls.func_int_empty___none = lambda: func_int_empty___none
-        cls.func_int_empty___empty = lambda: func_int_empty___empty
-        cls.func_empty_int_empty___empty = lambda: func_empty_int_empty___empty
-
-        cls.func_args_kwargs__empty = lambda: func_args_kwargs__empty
-        cls.func_args__empty = lambda: func_args__empty
-        cls.func_empty_args__empty = lambda: func_empty_args__empty
-        cls.func_any_args__none = lambda: func_any_args__none
+        return func_any_args__none
 
     def test_can_apply_enforcer(self):
         wrapped = apply_enforcer(self.func_int___none())
@@ -97,10 +98,15 @@ class EnforcerTests(unittest.TestCase):
 
         func = self.func_int___none()
 
+        self.assertFalse(hasattr(func, '__enforcer__'))
+
         wrapped = apply_enforcer(func, settings=settings)
         enforcer = wrapped.__enforcer__
         func_type = enforcer.callable_signature
 
+        self.assertIsNotNone(enforcer.settings)
+        self.assertFalse(enforcer.settings)
+        self.assertFalse(enforcer.settings.enabled)
         self.assertEqual(func_type, Callable)
 
     def get_function_type(self, func):

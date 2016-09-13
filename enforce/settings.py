@@ -111,11 +111,11 @@ def parse_config(options):
     default_options = {
         'enabled': None,
         'groups': {
-                'set': {},
-                'disable_previous': False,
-                'enable_previous': False,
-                'clear_previous': False,
-                'default': None
+            'set': {},
+            'disable_previous': False,
+            'enable_previous': False,
+            'clear_previous': False,
+            'default': None
             },
         'mode': None
         }
