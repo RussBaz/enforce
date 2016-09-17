@@ -92,7 +92,12 @@ def foo(a: typing.Callable[[int, int], str]) -> str:
 def bar(a: int, b: int) -> str:
     return str(a * b)
 
+class Baz:
+    def __call__(self, a: int, b: int) -> str:
+      return bar(a, b)
+
 foo(bar)
+foo(Baz())
 ```
 
 #### TypeVar and Generics
