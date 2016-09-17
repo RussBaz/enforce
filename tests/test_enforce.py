@@ -13,7 +13,6 @@ class GeneralTests(unittest.TestCase):
     """
 
     def test_argument_validation(self):
-        print(self.sample_function)
         self.assertEqual(self.sample_function('11', 1), 12)
 
         result = 0

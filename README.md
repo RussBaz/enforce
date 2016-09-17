@@ -12,6 +12,7 @@
 * [Usage](#usage)
   * [Features](#features)
   * [Configuration](#configuration)
+* [Changelog](#changelog)
 * [Contributing](#contributing)
 
 ## Overview
@@ -30,7 +31,7 @@
 
 ## Installation
 
-Stable 0.3 - Stable and ready for every day use version
+Stable 0.3.x - Stable and ready for every day use version
 
     pip install enforce
 
@@ -258,6 +259,13 @@ for large structures performance can be a nightmare.
 Class decorators are not as well tested, and you may encounter a bug or two.
 Please report an issue if you do find one and we'll try to fix it as quickly as
 possible.
+
+## Changelog
+
+### 0.3.1 - 17.09.2016
+
+* Added support for Callable classes (classes with \_\_call\_\_ method are now treated like any other Callable object)
+* Fixed bugs in processing callables without specified return type
 
 ## Contributing
 
