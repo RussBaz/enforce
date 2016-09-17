@@ -33,6 +33,15 @@ class GeneralTests(unittest.TestCase):
 
         self.assertEqual(example(1), 1)
 
+    def test_return_value_validation(self):
+        self.assertIsNone(self.sample_function('', None))
+
+        result = 0
+        with self.assertRaises(RuntimeTypeError):
+            result += self.sample_function('', 1)
+
+        self.assertEqual(result, 0)
+
     def test_no_type_check(self):
         """
         Verifies that no_type_check is respected
