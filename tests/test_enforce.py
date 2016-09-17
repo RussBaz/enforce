@@ -22,6 +22,17 @@ class GeneralTests(unittest.TestCase):
 
         self.assertEqual(result, 0)
 
+    def test_returns_output_if_no_return_annotation(self):
+        """
+        Verifies that the wrapped function's output is returned even if there
+        is no 'return' annotation
+        """
+        @runtime_validation
+        def example(x: int):
+            return x
+
+        self.assertEqual(example(1), 1)
+
     def test_return_value_validation(self):
         self.assertIsNone(self.sample_function('', None))
 

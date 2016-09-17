@@ -97,6 +97,8 @@ class Enforcer:
                 raise RuntimeTypeError(exception_text)
             else:
                 return self.validator.data_out['return']
+        else:
+            return output_data
 
     def reset(self):
         """
