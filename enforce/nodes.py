@@ -319,7 +319,10 @@ class CallableNode(BaseNode):
         from .enforcers import Enforcer, apply_enforcer
 
         if not inspect.isfunction(data):
-            return data
+            if hasattr(data, '__call__'): # handle case where data is a callable object
+                data = data.__call__
+            else:
+                return data
 
         try:
             enforcer = data.__enforcer__
@@ -379,7 +382,7 @@ class GenericNode(BaseNode):
 
     def __init__(self, data_type, **kwargs):
         from .enforcers import Enforcer, GenericProxy
-        print(data_type)
+        #print(data_type)
         try:
             enforcer = data_type.__enforcer__
         except AttributeError:
@@ -391,7 +394,7 @@ class GenericNode(BaseNode):
             if not is_type_of_type(type(enforcer), Enforcer, covariant=covariant, contravariant=contravariant):
                 enforcer =  GenericProxy(data_type).__enforcer__
 
-        print(enforcer.signature)
+        #print(enforcer.signature)
 
         super().__init__(enforcer, is_sequence=True, type_var=False, **kwargs)
 
