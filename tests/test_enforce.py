@@ -736,6 +736,13 @@ class CallableTypesTests(unittest.TestCase):
         with self.assertRaises(RuntimeTypeError):
             self.any_func_return('bad_input')
 
+    def test_good_callable_object(self):
+        """ Test that a callable object works """
+        class Good:
+            def __call__(self, x: int, y: int) -> int:
+                return int(x * y)
+        self.test(Good(), 5)
+
     def test_good_func_arg(self):
         """ Test that good arguments pass """
         def good(x: int, y: int) -> int:
