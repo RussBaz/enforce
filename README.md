@@ -262,6 +262,8 @@ possible.
 
 ## Changelog
 
+### 0.3.2 - xx.xx.2016
+
 ### 0.3.1 - 17.09.2016
 
 * Added support for Callable classes (classes with \_\_call\_\_ method are now treated like any other Callable object)

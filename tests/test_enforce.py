@@ -418,6 +418,42 @@ class ComplexTypesTests(unittest.TestCase):
         with self.assertRaises(RuntimeTypeError):
             sample_any_out(1)
 
+    def test_named_tuple(self):
+        from collections import namedtuple
+
+        MyNamedTuple = typing.NamedTuple('MyNamedTuple', [('my_int', int)])
+        t = MyNamedTuple(5)
+        t1 = namedtuple('MyNamedTuple', 'my_int')(5)
+        t2 = namedtuple('MyNamedTuple', 'my_int')('string')
+
+        @runtime_validation
+        def sample(data: MyNamedTuple) -> MyNamedTuple:
+            return data
+
+        sample(t)
+        sample(t1)
+        with self.assertRaises(RuntimeTypeError):
+            sample(t2)
+
+    def test_typed_named_tuple(self):
+        MyNamedTuple = typing.NamedTuple('MyNamedTuple', [('my_int', int)])
+        MyNamedTuple = runtime_validation(MyNamedTuple)
+
+        mt = MyNamedTuple(5)
+        mt2 = MyNamedTuple(my_int=5)
+
+        self.assertEqual(mt[0], 5)
+        self.assertEqual(mt.my_int, 5)
+
+        self.assertEqual(mt2[0], 5)
+        self.assertEqual(mt2.my_int, 5)
+
+        with self.assertRaises(RuntimeTypeError):
+            MyNamedTuple('string')
+
+        with self.assertRaises(RuntimeTypeError):
+            MyNamedTuple(my_int='string')
+
     def test_variable_length_tuple(self):
         # TODO: What if tuple is empty?
         @runtime_validation

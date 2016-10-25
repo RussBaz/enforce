@@ -10,7 +10,7 @@ with codecs.open(path.join(ROOT, 'README.md'), encoding='utf-8') as f:
 setup(
     name='enforce',
 
-    version='0.3.1',
+    version='0.3.2',
 
     description='Python 3.5+ library for integration testing and data validation through configurable and optional runtime type hint enforcement.',
     long_description=LONG_DESCRIPTION,

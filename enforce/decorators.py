@@ -45,7 +45,13 @@ def runtime_validation(data=None, *, enabled=None, group=None):
                         if attr_name == '__class__':
                             raise AttributeError
                         old_attr = getattr(wrapped, attr_name)
-                        new_attr = decorate(old_attr, configuration, obj_instance=None, parent_root=root)
+
+                        if old_attr.__class__ is property:
+                            old_fset = old_attr.fset
+                            new_fset = decorate(old_fset, configuration, obj_instance=None, parent_root=root)
+                            new_attr = old_attr.setter(new_fset)
+                        else:
+                            new_attr = decorate(old_attr, configuration, obj_instance=None, parent_root=root)
                         setattr(wrapped, attr_name, new_attr)
                     except AttributeError:
                         pass
@@ -64,6 +70,10 @@ def runtime_validation(data=None, *, enabled=None, group=None):
                 # Decorator was applied to an instancemethod.
                 print('instance method')
                 return decorate(wrapped, configuration, instance)
+
+    if data.__class__ is property:
+        generate_decorated = build_wrapper(data.fset)
+        return data.setter(generate_decorated())
 
     generate_decorated = build_wrapper(data)
     return generate_decorated()

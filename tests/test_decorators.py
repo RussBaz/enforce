@@ -191,6 +191,82 @@ class DecoratorsTests(unittest.TestCase):
         with self.assertRaises(RuntimeTypeError):
             SampleClass.test_bad2('')
 
+    def test_property(self):
+        """
+        Checks if property object can be type checked
+        """
+        @runtime_validation
+        class Sample:
+            def __init__(self):
+                self._x = 0
+
+            @property
+            def x(self):
+                return self._x
+
+            @x.setter
+            def x(self, value: int):
+                self._x = value
+
+
+        class Sample2:
+            def __init__(self):
+                self._x = 0
+
+            @property
+            def x(self):
+                return self._x
+
+            @runtime_validation
+            @x.setter
+            def x(self, value: int):
+                self._x = value
+
+
+        class Sample3:
+            def __init__(self):
+                self._x = 0
+
+            @runtime_validation
+            @property
+            def x(self):
+                return self._x
+
+            @x.setter
+            @runtime_validation
+            def x(self, value: int):
+                self._x = value
+
+        
+        s = Sample()
+        s2 = Sample2()
+        s3 = Sample3()
+
+        self.assertEqual(0, s.x)
+        self.assertEqual(0, s2.x)
+        self.assertEqual(0, s3.x)
+
+        s.x = 1
+        s2.x = 1
+        s3.x = 1
+
+        self.assertEqual(1, s.x)
+        self.assertEqual(1, s2.x)
+        self.assertEqual(1, s3.x)
+
+        with self.assertRaises(RuntimeTypeError):
+            s.x = 'string'
+
+        with self.assertRaises(RuntimeTypeError):
+            s2.x = 'string'
+
+        with self.assertRaises(RuntimeTypeError):
+            s3.x = 'string'
+
+        self.assertEqual(1, s.x)
+        self.assertEqual(1, s2.x)
+        self.assertEqual(1, s3.x)
+
     @unittest.skip('Well, that was a shame.')
     def test_intance(self):
         """

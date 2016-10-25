@@ -7,6 +7,7 @@ from typing import Callable
 class NodesTests(unittest.TestCase):
     pass
 
+
 class CallableNodeTests(unittest.TestCase):
     def setUp(self):
         self.node = CallableNode(Callable[[int], int])

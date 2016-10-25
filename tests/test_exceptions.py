@@ -18,5 +18,6 @@ class ExceptionsTests(unittest.TestCase):
 
         self.assertEqual(message, error.exception.__str__())
 
+
 if __name__ == '__main__':
     unittest.main()
