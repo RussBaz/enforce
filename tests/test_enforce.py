@@ -454,6 +454,12 @@ class ComplexTypesTests(unittest.TestCase):
         with self.assertRaises(RuntimeTypeError):
             MyNamedTuple(my_int='string')
 
+        with self.assertRaises(AttributeError):
+            mt2.my_int = 'hello world'
+
+        with self.assertRaises(TypeError):
+            MyNamedTuple(2, my_int='string')
+
     def test_variable_length_tuple(self):
         # TODO: What if tuple is empty?
         @runtime_validation
