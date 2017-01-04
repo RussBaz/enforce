@@ -422,18 +422,32 @@ class ComplexTypesTests(unittest.TestCase):
         from collections import namedtuple
 
         MyNamedTuple = typing.NamedTuple('MyNamedTuple', [('my_int', int)])
+
         t = MyNamedTuple(5)
         t1 = namedtuple('MyNamedTuple', 'my_int')(5)
         t2 = namedtuple('MyNamedTuple', 'my_int')('string')
+        t3 = runtime_validation(MyNamedTuple)(5)
+        t4 = (5, )
+        t5 = '5'
 
         @runtime_validation
         def sample(data: MyNamedTuple) -> MyNamedTuple:
             return data
 
+        # invariant cases
         sample(t)
-        sample(t1)
+        with self.assertRaises(RuntimeTypeError):
+            sample(t1)
         with self.assertRaises(RuntimeTypeError):
             sample(t2)
+        sample(t3)
+        with self.assertRaises(RuntimeTypeError):
+            sample(t4)
+        with self.assertRaises(RuntimeTypeError):
+            sample(t5)
+
+        # Covariant case
+        config({'mode': 'covariant'})
 
     def test_typed_named_tuple(self):
         MyNamedTuple = typing.NamedTuple('MyNamedTuple', [('my_int', int)])
@@ -646,6 +660,17 @@ class ListTypesTests(unittest.TestCase):
         with self.assertRaises(RuntimeTypeError):
             self.int_func(['a', 'b', {3, 4, 5}])
 
+    def test_list_of_lists(self):
+        @runtime_validation
+        def func(param: typing.List[typing.List[str]]) -> typing.List[typing.List[str]]:
+            return param
+
+        func([['s', 'aaa'], ['a', 'b']])
+        func([[]])
+
+        with self.assertRaises(RuntimeTypeError):
+            func([[12]])
+
 
 class UnionTypesTests(unittest.TestCase):
     """
@@ -706,6 +731,16 @@ class UnionTypesTests(unittest.TestCase):
             self.nest_func({'a': 5, 'b':6})
         with self.assertRaises(RuntimeTypeError):
             self.nest_func({1, 2, 3, 4})
+
+    def test_union_of_nested_lists(self):
+        ManyMessageType = typing.List[str]
+        MessagesType = typing.Union[str, typing.List[ManyMessageType]]
+        
+        @runtime_validation
+        def test(msgs: MessagesType):
+            return msgs
+
+        test([["a","b"],["x","y"]])
 
 
 class ContainerTypesTests(unittest.TestCase):

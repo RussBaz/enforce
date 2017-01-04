@@ -5,7 +5,7 @@ from wrapt import CallableObjectProxy, ObjectProxy
 from .exceptions import RuntimeTypeError
 
 
-class Proxy(ObjectProxy):
+class Proxy(CallableObjectProxy):
     """
     Transparent proxy with an option of attributes being saved on the proxy instance.
     """
@@ -14,8 +14,8 @@ class Proxy(ObjectProxy):
         """
         By default, it acts as a transparent proxy
         """
+        self._self_pass_through = True
         super().__init__(wrapped)
-        self.pass_through = True
 
     def __setattr__(self, name, value):
         """
@@ -24,9 +24,9 @@ class Proxy(ObjectProxy):
         Otherwise, it is saved on the wrapped object
         """
         if hasattr(self, '_self_pass_through'):
-            return super().__setattr__(name, value)
+            return object.__setattr__(self.__wrapped__, name, value)
 
-        return super().__setattr__('_self_'+name, value)
+        return object.__setattr__(self, '_self_'+name, value)
 
     def __getattr__(self, name):
         if name == '__wrapped__':
@@ -38,38 +38,51 @@ class Proxy(ObjectProxy):
             raise AttributeError()
 
         if hasattr(self, '_self_pass_through'):
-            return getattr(self.__wrapped__, name)
+            return super().__getattr__(name)
         else:
             # Attempts to return a local copy if such attribute exists
             # on the wrapped object but falls back to default behaviour
             # if there is no local copy, i.e. attribute with '_self_' prefix
-            if hasattr(self.__wrapped__, name):
-                try:
-                    return getattr(self, '_self_'+name)
-                except AttributeError:
-                    pass
-            return getattr(self.__wrapped__, name)
+            try:
+                return super().__getattr__('_self_'+name)
+            except AttributeError:
+                return super().__getattr__(name)
 
     @property
     def pass_through(self):
         """
         Returns if the proxy is transparent or can save attributes on itself
         """
-        return hasattr(self._self_pass_through)
+        return self._self_pass_through
 
     @pass_through.setter
     def pass_through(self, full_proxy):
         if full_proxy:
-            self._self_pass_through = None
+            self._self_pass_through = True
         else:
-            del(self._self_pass_through)
+            self._self_pass_through = False
 
 
-class EnforceProxy(CallableObjectProxy):
+class EnforceProxy(ObjectProxy):
     """
     A proxy object for safe addition of runtime type enforcement without mutating the original object
     """
-    __enforcer__ = None
+    def __init__(self, wrapped, enforcer=None):
+        super().__init__(wrapped)
+        self._self_enforcer = enforcer
+
+    @property
+    def __enforcer__(self):
+        return self._self_enforcer
+
+    @__enforcer__.setter
+    def __enforcer__(self, value):
+        self._self_enforcer = value
+
+    def __call__(self, *args, **kwargs):
+        if type(self.__wrapped__) is type:
+            return EnforceProxy(self.__wrapped__(*args, **kwargs), self.__enforcer__)
+        return self.__wrapped__(*args, **kwargs)
 
 
 #class ListProxy(ObjectProxy):

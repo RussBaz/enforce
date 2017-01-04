@@ -5,6 +5,7 @@ from collections import namedtuple, OrderedDict
 from wrapt import ObjectProxy
 
 from .types import EnhancedTypeVar, is_type_of_type
+from .wrappers import Proxy, EnforceProxy
 from .exceptions import RuntimeTypeError
 from .validator import init_validator, Validator
 
@@ -150,6 +151,10 @@ def apply_enforcer(func: typing.Callable,
     Such instance is added as '__enforcer__'
     """
     if not hasattr(func, '__enforcer__') or not isinstance(func.__enforcer__, Enforcer):
+    #if not hasattr(func, '__enforcer__'):
+    #    func = EnforceProxy(func)
+
+    #if not isinstance(func.__enforcer__, Enforcer):
         # Replaces 'incorrect' enforcers
         func.__enforcer__ = generate_new_enforcer(func, generic, parent_root, instance_of, settings)
         func.__enforcer__.reference = func
@@ -211,9 +216,14 @@ def generate_new_enforcer(func, generic, parent_root, instance_of, settings):
 
         validator = init_validator(hints, parent_root)
     else:
+        if type(func) is Proxy:
+            signature = inspect.signature(func.__wrapped__)
+            hints = typing.get_type_hints(func.__wrapped__)
+        else:
+            signature = inspect.signature(func)
+            hints = typing.get_type_hints(func)
+
         bound = False
-        signature = inspect.signature(func)
-        hints = typing.get_type_hints(func)
         validator = init_validator(hints, parent_root)
 
     return Enforcer(validator, signature, hints, generic, bound, settings)

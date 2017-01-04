@@ -1,10 +1,11 @@
 import unittest
 import numbers
 from abc import ABC
+from collections import namedtuple
 from collections.abc import Sized
-from typing import TypeVar, Any, Tuple, Dict, List, Union, Optional, Generic
+from typing import TypeVar, Any, Tuple, Dict, List, Union, Optional, Generic, NamedTuple
 
-from enforce.types import is_type_of_type, EnhancedTypeVar, Integer, Boolean
+from enforce.types import is_type_of_type, is_named_tuple, EnhancedTypeVar, Integer, Boolean
 
 
 class Animal:
@@ -781,6 +782,37 @@ class EnhancedTypeVarTests(unittest.TestCase):
         ET = EnhancedTypeVar('ET', int, str)
         with self.assertRaises(TypeError):
             ET = EnhancedTypeVar('ET', int)
+
+
+class TypeCheckingUtilityTests(unittest.TestCase):
+
+    def test_if_named_tuple(self):
+        NT1 = namedtuple('NT1', 'x, y, z')
+        NT2 = NamedTuple('NT2', [('x', int), ('y', int), ('z', int)])
+        NT3 = tuple
+        NT4 = int
+
+        nt1 = NT1(1, 2, 3)
+        nt2 = NT2(1, 2, 3)
+        nt3 = NT3([1, 2, 3])
+        nt4 = NT4(2)
+
+        class NT5(tuple):
+            pass
+
+        nt5 = NT5([1, 2, 3])
+
+        self.assertTrue(is_named_tuple(NT1))
+        self.assertTrue(is_named_tuple(NT2))
+        self.assertFalse(is_named_tuple(NT3))
+        self.assertFalse(is_named_tuple(NT4))
+        self.assertFalse(is_named_tuple(NT5))
+
+        self.assertTrue(is_named_tuple(nt1))
+        self.assertTrue(is_named_tuple(nt2))
+        self.assertFalse(is_named_tuple(nt3))
+        self.assertFalse(is_named_tuple(nt4))
+        self.assertFalse(is_named_tuple(nt5))
 
 
 if __name__ == '__main__':

@@ -224,6 +224,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 env/
+env*/
 venv/
 venv*/
 build/

@@ -6,6 +6,7 @@ from functools import wraps
 from wrapt import decorator, ObjectProxy
 
 from .settings import Settings
+#from .wrappers import Proxy
 from .enforcers import apply_enforcer, Parameters, GenericProxy
 from .types import is_type_of_type
 
@@ -30,12 +31,7 @@ def runtime_validation(data=None, *, enabled=None, group=None):
 
     configuration = Settings(enabled=enabled, group=group)
 
-    build_wrapper = get_wrapper_builder(configuration)
-
-    if data.__class__ is property:
-        generate_decorated = build_wrapper(data.fset)
-        return data.setter(generate_decorated())
-
+    # ????
     if data.__class__ is type and is_type_of_type(data, tuple, covariant=True):
         try:
             fields = data._fields
@@ -45,6 +41,12 @@ def runtime_validation(data=None, *, enabled=None, group=None):
 
         except AttributeError:
             pass
+
+    build_wrapper = get_wrapper_builder(configuration)
+
+    if data.__class__ is property:
+        generate_decorated = build_wrapper(data.fset)
+        return data.setter(generate_decorated())
 
     generate_decorated = build_wrapper(data)
     return generate_decorated()
@@ -59,7 +61,7 @@ def decorate(data, configuration, obj_instance=None, parent_root=None) -> typing
     if not hasattr(data, '__annotations__'):
         return data
 
-    apply_enforcer(data, parent_root=parent_root, settings=configuration)
+    data = apply_enforcer(data, parent_root=parent_root, settings=configuration)
 
     universal = get_universal_decorator()
 

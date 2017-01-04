@@ -2,7 +2,8 @@ import typing
 import inspect
 
 from .wrappers import EnforceProxy
-from .types import is_type_of_type
+from .types import is_type_of_type, is_named_tuple
+from .exceptions import RuntimeTypeError
 
 
 class BaseNode:
@@ -183,7 +184,7 @@ class SimpleNode(BaseNode):
         if isinstance(data, list):
             # If it's a list we need to make child for every item in list
             propagated_data = data
-            self.children *= len(data)
+            self.children = len(data) * self.original_children
         return propagated_data
 
 
@@ -298,6 +299,32 @@ class TupleNode(BaseNode):
         return tuple(data)
 
 
+class NamedTupleNode(BaseNode):
+
+    def __init__(self, data_type, **kwargs):
+        from .decorators import runtime_validation
+
+        super().__init__(runtime_validation(data_type), is_sequence=True, **kwargs)
+
+    def preprocess_data(self, validator, data):
+        if not is_named_tuple(data): return None
+        if type(data).__name__ != self.data_type.__name__: return None
+
+        if hasattr(data, '_field_types') != hasattr(self.data_type, '_field_types'): return None
+
+        try:
+            return self.data_type(*(getattr(data, field) for field in data._fields))
+        except RuntimeTypeError:
+            return None
+        except AttributeError:
+            return None
+        except TypeError:
+            return None
+
+    def validate_data(self, validator, data, sticky=False):
+        return bool(data)
+
+
 class CallableNode(BaseNode):
     """
     This node is used when we have a function that expects another function
@@ -386,7 +413,7 @@ class GenericNode(BaseNode):
         try:
             enforcer = data_type.__enforcer__
         except AttributeError:
-            enforcer =  GenericProxy(data_type).__enforcer__
+            enforcer = GenericProxy(data_type).__enforcer__
         else:
             covariant = self.covariant or validator.settings.covariant
             contravariant = self.contravariant or validator.settings.contravariant

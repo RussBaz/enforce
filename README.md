@@ -262,7 +262,10 @@ possible.
 
 ## Changelog
 
-### 0.3.2 - xx.xx.2016
+### 0.3.2 - xx.01.2017
+
+* Added support for NamedTuples
+* Fixed failing nested lists type checking
 
 ### 0.3.1 - 17.09.2016
 

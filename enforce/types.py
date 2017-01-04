@@ -273,3 +273,35 @@ def sort_and_flat_type(type_in):
         type_out = type_in
 
     yield type_out
+
+
+def is_named_tuple(data):
+    try:
+        fields = data._fields
+        field_types = getattr(data, '_field_types', {})
+
+        if type(data) == type:
+            data_type = data
+        else:
+            data_type = type(data)
+
+            if len(fields) != len(data):
+                return False
+
+        is_tuple = is_type_of_type(data_type, tuple, covariant=True)
+
+        if not is_tuple:
+            return False
+
+        for field_name in field_types.keys():
+            if field_name not in fields:
+                return False
+
+        for field_name in fields:
+            getattr(data, field_name)
+
+    except (AttributeError, TypeError):
+        return False
+
+    else:
+        return True

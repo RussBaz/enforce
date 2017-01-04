@@ -1,7 +1,11 @@
 import typing
+from collections import namedtuple
 
 from . import nodes
-from .types import EnhancedTypeVar
+from .types import EnhancedTypeVar, is_named_tuple
+
+
+ParserChoice = namedtuple('ParserChoice', ['validator', 'parser'])
 
 
 def get_parser(node, hint, validator, parsers=None):
@@ -12,11 +16,38 @@ def get_parser(node, hint, validator, parsers=None):
         parsers = TYPE_PARSERS
 
     if type(hint) == type:
-        parser = parsers.get(hint, _parse_default)
+        parser = parsers.get(hint, _get_aliased_parser_or_default(hint, _parse_default))
     else:
-        parser = parsers.get(type(hint), _parse_default)
+        parser = parsers.get(type(hint), _get_aliased_parser_or_default(hint, _parse_default))
 
     yield parser(node, hint, validator, parsers)
+
+
+def _get_aliased_parser_or_default(hint, default):
+    for choice in ALIASED_TYPE_PARSERS:
+        if choice.validator(hint):
+            return choice.parser
+
+    return default
+
+
+def _parse_namedtuple(node, hint, validator, parsers):
+    #fields = hint._fields
+    #field_types = hint._field_types
+
+    #args = ''.join((field_types.get(field, typing.Any)).__name__ + ', ' for field in fields)
+    #args = args[:-2]
+
+    #template = """typing.Tuple[{args}]"""
+    #formatted_template = template.format(args=args)
+
+    #new_hint = eval(formatted_template)
+
+    #yield _parse_tuple(node, hint, validator, parsers)
+
+    new_node = yield nodes.NamedTupleNode(hint)
+    validator.all_nodes.append(new_node)
+    yield _yield_parsing_result(node, new_node)
 
 
 def _parse_default(node, hint, validator, parsers):
@@ -110,7 +141,7 @@ def _parse_list(node, hint, validator, parsers):
     validator.all_nodes.append(new_node)
 
     # add its type as child
-    # We can index first as Lists only ever have 1 parameter
+    # We need to index first element only as Lists always have 1 argument
     if hint.__args__:
         yield get_parser(new_node, hint.__args__[0], validator, parsers)
 
@@ -145,3 +176,8 @@ TYPE_PARSERS = {
     complex: _parse_complex,
     bytes: _parse_bytes
     }
+
+
+ALIASED_TYPE_PARSERS = (
+    ParserChoice(validator=is_named_tuple, parser=_parse_namedtuple),
+    )

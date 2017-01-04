@@ -22,27 +22,28 @@ class WrapperTests(unittest.TestCase):
         a = A()
         a.b = 1
 
-        proxy_a = Proxy(a)
-
-        proxy_a.pass_through = False
-        
+        proxy_a = EnforceProxy(a, 12)
         proxy_a.b = 2
 
-        self.assertEqual(a.b, 1)
-        self.assertEqual(proxy_a.b, 2)
-        self.assertEqual(proxy_a._self_b, 2)
+        B = EnforceProxy(A)
+        b = B()
 
-        proxy_a.pass_through = True
+        def foo():
+            return None
 
-        self.assertEqual(a.b, 1)
-        self.assertEqual(proxy_a.b, 1)
-        self.assertEqual(proxy_a._self_b, 2)
+        C = EnforceProxy(A, foo)
+        c = C()
 
-        proxy_a.b = 3
+        self.assertTrue(a.b, proxy_a.b)
+        self.assertFalse(hasattr(a, '__enforcer__'))
+        self.assertEqual(proxy_a.__enforcer__, 12)
 
-        self.assertEqual(a.b, 3)
-        self.assertEqual(proxy_a.b, 3)
-        self.assertEqual(proxy_a._self_b, 2)
+        self.assertFalse(hasattr(A, '__enforcer__'))
+        self.assertIsNone(B.__enforcer__)
+        self.assertIsNone(b.__enforcer__)
+
+        self.assertIs(C.__enforcer__, foo)
+        self.assertIs(c.__enforcer__, foo)
 
     #def test_list_proxy(self):
     #    a = [1, 2]
@@ -67,10 +68,10 @@ class WrapperTests(unittest.TestCase):
         self.assertIs(foo, foo_proxy.__wrapped__)
         self.assertIsNone(foo_proxy.__enforcer__)
 
-        temp_number = 1
-        foo_proxy.__enforcer__ = temp_number
+        tmp_number = 1
+        foo_proxy.__enforcer__ = tmp_number
 
-        self.assertEqual(foo_proxy.__enforcer__, temp_number)
+        self.assertEqual(foo_proxy.__enforcer__, tmp_number)
         self.assertFalse(hasattr(foo, '__enforcer__'))
 
         inspect.signature(foo_proxy)
