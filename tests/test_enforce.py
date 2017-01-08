@@ -1,6 +1,7 @@
 import typing
 import unittest
 import numbers
+import re
 
 from enforce import runtime_validation, config
 from enforce.types import EnhancedTypeVar
@@ -988,6 +989,109 @@ class NestedTypesTests(unittest.TestCase):
     Tests for special and corner cases when types are deeply nested
     """
     pass
+
+
+class ExceptionMessageTests(unittest.TestCase):
+    """
+    Tests for validating a correct exception messages are returned
+    """
+    def setUp(self):
+        self.prefix_message = "\n  The following runtime type errors were encountered:"
+        self.input_error_message = "Argument '{0}' was not of type {1}. Actual type was {2}."
+        self.return_error_message = "Return value was not of type {0}. Actual type was {1}."
+
+    def generateStrictFunction(self, inputs: typing.List[typing.Tuple[str, str]], returns: typing.Optional[str], result) -> typing.Callable:
+        template = """
+@runtime_validation
+def func({inputs}) {returns}:
+    return data
+"""
+        inputs = tuple(': '.join(input_pair) for input_pair in inputs)
+        inputs = ', '.join(inputs)
+        returns = '' if returns is None else '-> ' + returns
+        formatted_template = template.format(inputs=inputs, returns=returns)
+
+        scope_data = {
+            'data': result,
+            'typing': typing,
+            'runtime_validation': runtime_validation
+        }
+
+        exec(formatted_template, scope_data)
+
+        return scope_data['func']
+
+    def generateExceptionPattern(self, messages, is_return=False):
+        if is_return:
+            expected_message = self.return_error_message.format(*messages)
+            expected_message = '.*' + re.escape(expected_message) + '.*'
+        else:
+            expected_message = self.input_error_message.format(*messages)
+            expected_message = '.*' + re.escape(expected_message) + '.*'
+
+        pattern = re.compile(expected_message)
+
+        return pattern
+
+    def test_simple_exceptions(self):
+        sample_function = self.generateStrictFunction([('a', 'int')], 'str', 12)
+
+        pattern = self.generateExceptionPattern(('a', str(int), 'str'))
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function('12')
+
+        pattern = self.generateExceptionPattern((str(str), 'int'), True)
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function(12)
+
+    def test_list_exceptions(self):
+        sample_function = self.generateStrictFunction([('a', 'typing.List[int]')], 'str', 12)
+
+        pattern = self.generateExceptionPattern(('a', str(typing.List[int]), 'int'))
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function(12)
+
+        pattern = self.generateExceptionPattern(('a', str(typing.List[int]), 'typing.List[str]'))
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function(['12'])
+
+        pattern = self.generateExceptionPattern((str(str), 'int'), True)
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function([12])
+
+    def test_union_exceptions(self):
+        parameter_type_str = str(typing.Union[int, str])
+
+        sample_function = self.generateStrictFunction([('a', 'typing.Union[int, str]')], 'typing.List[typing.Union[int, str]]', [None])
+
+        pattern = self.generateExceptionPattern(('a', parameter_type_str, 'NoneType'))
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function(None)
+
+        pattern = self.generateExceptionPattern(('a', parameter_type_str, 'typing.List'))
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function([None])
+
+        pattern = self.generateExceptionPattern((str(typing.List[typing.Union[int, str]]), 'typing.List[NoneType]'), True)
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function(12)
+
+    def test_tuple_exception(self):
+        parameter_type_str = str(typing.Tuple[int, typing.Union[int, str]])
+        sample_function = self.generateStrictFunction([('a', 'typing.Tuple[int, typing.Union[int, str]]')], 'int', 12)
+
+        pattern = self.generateExceptionPattern(('a', parameter_type_str, 'typing.Tuple[str, int]'))
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function(('1', 2))
 
 
 if __name__ == '__main__':

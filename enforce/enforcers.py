@@ -234,7 +234,7 @@ def parse_errors(errors: typing.List[str], hints:typing.Dict[str, type], return_
     Generates an exception message based on which fields failed
     """
     error_message = "       Argument '{0}' was not of type {1}. Actual type was {2}."
-    return_error_message = "        Return value was not of type {0}. Actual type was {1}"
+    return_error_message = "        Return value was not of type {0}. Actual type was {1}."
     output = "\n  The following runtime type errors were encountered:"
 
     for error in errors:

@@ -23,13 +23,14 @@ class Validator:
         hint_validator = self.roots[param_name]
         validation_tree = hint_validator.validate(data, self)
 
-        result = visit(validation_tree)
+        validation_result = visit(validation_tree)
 
         self.data_out[param_name] = self.roots[param_name].data_out
 
-        if not result:
-            self.errors.append((param_name, type(data)))
-        return result
+        if not validation_result.valid:
+            self.errors.append((param_name, validation_result.type_name))
+
+        return validation_result.valid
 
     def reset(self) -> None:
         """

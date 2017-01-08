@@ -1,27 +1,30 @@
 import typing
 import inspect
+import re
 
 from .wrappers import EnforceProxy
 from .types import is_type_of_type, is_named_tuple
 from .exceptions import RuntimeTypeError
 
 
+ValidationResult = typing.NamedTuple('ValidationResult', [('valid', bool), ('data', typing.Any), ('type_name', str)])
+
+
 class BaseNode:
 
-    def __init__(self, data_type, is_sequence, type_var=False, covariant=None, contravariant=None):
+    def __init__(self, expected_data_type, is_sequence, type_var=False, covariant=None, contravariant=None):
         # is_sequence specifies if it is a sequence node
         # If it is not, then it must be a choice node, i.e. every children is a potential alternative
         # And at least one has to be satisfied
         # Sequence nodes implies all children must be satisfied
-        self.data_type = data_type
+        self.expected_data_type = expected_data_type
         self.is_sequence = is_sequence
-        self.type_var = type_var
+        self.is_type_var = type_var
 
         self.covariant = covariant
         self.contravariant = contravariant
 
         self.data_out = None
-        self.out_type = None
 
         self.bound = False
         self.in_type = None
@@ -43,31 +46,46 @@ class BaseNode:
         # 7. Post-process (clean) the resultant data
         # 8. Sets the output data for the node
         # 9. Indicate validation SUCCESS
+
+        # 1
         clean_data = self.preprocess_data(validator, data)
 
-        valid = self.validate_data(validator, clean_data, force)
+        # 2
+        self_validation_result = self.validate_data(validator, clean_data, force)
 
-        if not valid:
-            yield False
+        # 3
+        if not self_validation_result.valid:
+            yield self_validation_result
             return
 
-        propagated_data = self.map_data(validator, clean_data)
+        propagated_data = self.map_data(validator, self_validation_result)
 
-        validation_results, returned_data = yield self.validate_children(validator, propagated_data)
+        # 4
+        child_validation_results = yield self.validate_children(validator, propagated_data)
 
-        valid = all(validation_results) if self.is_sequence else any(validation_results)
+        # 5
+        if self.is_sequence:
+            valid = all(result.valid for result in child_validation_results)
+        else:
+            valid = any(result.valid for result in child_validation_results)
 
+        actual_type = self.get_actual_data_type(self_validation_result, child_validation_results, valid)
+
+        # 6
         if not valid:
-            yield False
+            yield ValidationResult(False, self_validation_result.data, actual_type)
             return
 
-        reduced_data = self.reduce_data(validator, returned_data, clean_data)
+        reduced_data = self.reduce_data(validator, child_validation_results, self_validation_result)
 
+        # 7
         data_out = self.postprocess_data(validator, reduced_data)
 
+        # 8
         self.set_out_data(validator, data, data_out)
 
-        yield True
+        # 8/9
+        yield ValidationResult(True, data_out, actual_type)
 
     def validate_children(self, validator, propagated_data):
         """
@@ -79,14 +97,32 @@ class BaseNode:
         # And, for now, at least, I'd prefer it being explicit
         # Note, if len(self.children) changes during iteration, errors *will* occur
         children_validation_results = []
-        children_data_out = []
 
         for i, child in enumerate(self.children):
-            result = yield child.validate(propagated_data[i], validator, self.type_var)
-            children_validation_results.append(result)
-            children_data_out.append(child.data_out)
+            validation_result = yield child.validate(propagated_data[i], validator, self.is_type_var)
+            children_validation_results.append(validation_result)
         
-        yield children_validation_results, children_data_out
+        yield children_validation_results
+
+    def get_actual_data_type(self, self_validation_result, child_validation_results, valid):
+        """
+        Returns a name of an actual type of given data
+        """
+        actual_type = self_validation_result.type_name
+        child_types = set(result.type_name for result in child_validation_results)
+
+        child_types.discard(None)
+
+        if actual_type == 'Tuple' or actual_type == 'tuple':
+            actual_type = 'typing.Tuple'
+
+        if actual_type == 'List' or actual_type == 'list':
+            actual_type = 'typing.List'
+
+        if child_types:
+            actual_type = actual_type + '[' + ', '.join(child_types) + ']'
+
+        return actual_type
 
     def set_out_data(self, validator, in_data, out_data):
         """
@@ -95,7 +131,6 @@ class BaseNode:
         """
         self.in_type = type(in_data)
         self.data_out = out_data
-        self.out_type = type(out_data)
 
     def preprocess_data(self, validator, data):
         """
@@ -113,19 +148,19 @@ class BaseNode:
         """
         Responsible for determining if node is of specific type
         """
-        return False
+        return ValidationResult(valid=False, data=data, type_name=type(data).__name__)
 
-    def map_data(self, validator, data):
+    def map_data(self, validator, self_validation_result):
         """
         Maps the input data to the nested type nodes
         """
         return []
 
-    def reduce_data(self, validator, data, old_data):
+    def reduce_data(self, validator, child_validation_results, self_validation_result):
         """
         Combines the data from the nested type nodes into a current node expected data type
         """
-        return old_data
+        return self_validation_result.data
 
     def add_child(self, child):
         """
@@ -142,12 +177,11 @@ class BaseNode:
         self.bound = False
         self.in_type = None
         self.data_out = None
-        self.out_type = None
         self.children = [a for a in self.original_children]
 
     def __repr__(self):
         children_nest = ', '.join([str(c) for c in self.children])
-        str_repr = '{}:{}'.format(str(self.data_type), self.__class__.__name__)
+        str_repr = '{}:{}'.format(str(self.expected_data_type), self.__class__.__name__)
         if children_nest:
             str_repr += ' -> ({})'.format(children_nest)
         return str_repr
@@ -155,8 +189,8 @@ class BaseNode:
 
 class SimpleNode(BaseNode):
 
-    def __init__(self, data_type, **kwargs):
-        super().__init__(data_type, is_sequence=True, type_var=False, **kwargs)
+    def __init__(self, expected_data_type, **kwargs):
+        super().__init__(expected_data_type, is_sequence=True, type_var=False, **kwargs)
 
     def validate_data(self, validator, data, sticky=False):
         # Will keep till all the debugging is over
@@ -166,20 +200,30 @@ class SimpleNode(BaseNode):
         # This conditional is for when Callable object arguments are
         # mapped to SimpleNodes
         if self.bound:
-            data_type = self.in_type
+            expected_data_type = self.in_type
         else:
-            data_type = self.data_type
+            expected_data_type = self.expected_data_type
 
         # TODO: Is everything we are interested in converting to type, is an instance of Type?
         if not isinstance(data, type):
-            data = type(data)
+            input_type = type(data)
+        else:
+            input_type = data
 
         covariant = self.covariant or validator.settings.covariant
         contravariant = self.contravariant or validator.settings.contravariant
 
-        return is_type_of_type(data, data_type, covariant=covariant, contravariant=contravariant)
+        result = is_type_of_type(input_type, expected_data_type, covariant=covariant, contravariant=contravariant)
 
-    def map_data(self, validator, data):
+        type_name = input_type.__name__
+
+        if type_name == 'List' or type_name == 'list':
+            type_name = 'typing.List'
+
+        return ValidationResult(valid=result, data=data, type_name=type_name)
+
+    def map_data(self, validator, self_validation_result):
+        data = self_validation_result.data
         propagated_data = []
         if isinstance(data, list):
             # If it's a list we need to make child for every item in list
@@ -205,49 +249,57 @@ class UnionNode(BaseNode):
         #                           self.last_type,
         #                           covariant=self.covariant,
         #                           contravariant=self.contravariant)
-        return True
+        return ValidationResult(valid=True, data=data, type_name=type(data).__name__)
 
-    def map_data(self, validator, data):
-        return [data for _ in self.children]
+    def map_data(self, validator, self_validation_result):
+        return [self_validation_result.data for _ in self.children]
 
-    def reduce_data(self, validator, data, old_data):
-        return next((element for element in data if element is not None), None)
+    def reduce_data(self, validator, self_validation_result, child_validation_result):
+        return next((result.data for result in self_validation_result if result.data is not None), None)
+
+    def get_actual_data_type(self, self_validation_result, child_validation_results, valid):
+        """
+        Returns a name of an actual type of given data
+        """
+        actual_type = self_validation_result.type_name
+        child_types = set(result.type_name for result in child_validation_results)
+
+        child_types.discard(None)
+
+        return child_types.pop()
 
 
 class TypeVarNode(BaseNode):
     def __init__(self, **kwargs):
-        super().__init__(data_type=None, is_sequence=True, type_var=True, **kwargs)
+        super().__init__(expected_data_type=None, is_sequence=True, type_var=True, **kwargs)
 
     def validate_data(self, validator, data, sticky=False):
-        return True
+        return ValidationResult(valid=True, data=data, type_name='typing.TypeVar')
 
-    def map_data(self, validator, data):
-        return [data for _ in self.children]
+    def map_data(self, validator, self_validation_result):
+        return [self_validation_result.data for _ in self.children]
 
-    def reduce_data(self, validator, data, old_data):
+    def reduce_data(self, validator, child_validation_results, self_validation_result):
         # Returns first non-None element, or None if every element is None
-        return next((element for element in data if element is not None), None)
+        return next((result.data for result in child_validation_results if result.data is not None), None)
 
     def validate_children(self, validator, propagated_data):
         children_validation_results = []
-        children_data_out = []
 
         for i, child in enumerate(self.children):
-            result = yield child.validate(propagated_data[i], validator, self.type_var)
-            if result:
-                children_validation_results.append(result)
-                children_data_out.append(child.data_out)
+            validation_result = yield child.validate(propagated_data[i], validator, self.is_type_var)
+            if validation_result.valid:
+                children_validation_results.append(validation_result)
                 if not self.bound:
                     self.bound = True
                     self.children = [child]
-                if child.data_type is typing.Any:
+                if child.expected_data_type is typing.Any:
                     child.bound = True
                 break
         else:
-            children_validation_results.append(False)
-            children_data_out.append(None)
+            children_validation_results.append(ValidationResult(False, propagated_data[0], None))
         
-        yield children_validation_results, children_data_out
+        yield children_validation_results
 
     def add_child(self, child):
         child.covariant = self.covariant
@@ -265,38 +317,57 @@ class TupleNode(BaseNode):
         covariant = self.covariant or validator.settings.covariant
         contravariant = self.contravariant or validator.settings.contravariant
 
-        if is_type_of_type(type(data), self.data_type, covariant=covariant, contravariant=contravariant):
+        input_type = type(data)
+
+        if is_type_of_type(input_type, self.expected_data_type, covariant=covariant, contravariant=contravariant):
             if self.variable_length:
-                return True
+                return ValidationResult(valid=True, data=data, type_name=input_type.__name__)
             else:
-                return len(data) == len(self.children)
+                return ValidationResult(valid=len(data) == len(self.children), data=data, type_name=input_type.__name__)
         else:
-            return False
+            return ValidationResult(valid=False, data=data, type_name=input_type.__name__)
 
     def validate_children(self, validator, propagated_data):
         if self.variable_length:
             child = self.children[0]
 
             children_validation_results = []
-            children_data_out = []
 
             for i, data in enumerate(propagated_data):
-                result = yield child.validate(data, validator, self.type_var)
-                children_validation_results.append(result)
-                children_data_out.append(child.data_out)
+                validation_result = yield child.validate(data, validator, self.is_type_var)
+                children_validation_results.append(validation_result)
         
-            yield children_validation_results, children_data_out
+            yield children_validation_results
         else:
             yield super().validate_children(validator, propagated_data)
 
-    def map_data(self, validator, data):
+    def map_data(self, validator, self_validation_result):
+        data = self_validation_result.data
         output = []
         for element in data:
             output.append(element)
         return output
 
-    def reduce_data(self, validator, data, old_data):
-        return tuple(data)
+    def reduce_data(self, validator, child_validation_results, self_validation_result):
+        return tuple(result.data for result in child_validation_results)
+
+    def get_actual_data_type(self, self_validation_result, child_validation_results, valid):
+        """
+        Returns a name of an actual type of given data
+        """
+        actual_type = self_validation_result.type_name
+        child_types = list(result.type_name for result in child_validation_results) or []
+
+        if actual_type == 'Tuple' or actual_type == 'tuple':
+            actual_type = 'typing.Tuple'
+
+        if actual_type == 'List' or actual_type == 'list':
+            actual_type = 'typing.List'
+
+        if child_types:
+            actual_type = actual_type + '[' + ', '.join(child_types) + ']'
+
+        return actual_type
 
 
 class NamedTupleNode(BaseNode):
@@ -308,12 +379,12 @@ class NamedTupleNode(BaseNode):
 
     def preprocess_data(self, validator, data):
         if not is_named_tuple(data): return None
-        if type(data).__name__ != self.data_type.__name__: return None
+        if type(data).__name__ != self.expected_data_type.__name__: return None
 
-        if hasattr(data, '_field_types') != hasattr(self.data_type, '_field_types'): return None
+        if hasattr(data, '_field_types') != hasattr(self.expected_data_type, '_field_types'): return None
 
         try:
-            return self.data_type(*(getattr(data, field) for field in data._fields))
+            return self.expected_data_type(*(getattr(data, field) for field in data._fields))
         except RuntimeTypeError:
             return None
         except AttributeError:
@@ -322,7 +393,7 @@ class NamedTupleNode(BaseNode):
             return None
 
     def validate_data(self, validator, data, sticky=False):
-        return bool(data)
+        return ValidationResult(valid=bool(data), data=data, type_name=type(data).__name__)
 
 
 class CallableNode(BaseNode):
@@ -371,9 +442,11 @@ class CallableNode(BaseNode):
         #                                       self.data_type,
         #                                       isinstance(data, self.data_type)))
         try:
+            input_type = type(data)
+
             callable_signature = data.__enforcer__.callable_signature
 
-            expected_params = self.data_type.__args__
+            expected_params = self.expected_data_type.__args__
             actual_params = callable_signature.__args__
             params_match = False
 
@@ -386,7 +459,7 @@ class CallableNode(BaseNode):
                 else:
                     params_match = True
 
-            expected_result = self.data_type.__result__
+            expected_result = self.expected_data_type.__result__
             actual_result = callable_signature.__result__
             result_match = False
 
@@ -397,12 +470,12 @@ class CallableNode(BaseNode):
 
             is_callable = params_match and result_match
 
-            return is_callable
+            return ValidationResult(valid=is_callable, data=data, type_name=callable_signature)
         except AttributeError:
-            return False
+            return ValidationResult(valid=False, data=data, type_name=input_type)
         except TypeError:
             # Can occur in case of typing.Callable having no parameters
-            return False
+            return ValidationResult(valid=False, data=data, type_name=input_type)
 
 
 class GenericNode(BaseNode):
@@ -441,29 +514,30 @@ class GenericNode(BaseNode):
 
     def validate_data(self, validator, data, sticky=False):
         enforcer = data.__enforcer__
+        input_type = enforcer.signature
 
         covariant = self.covariant or validator.settings.covariant
         contravariant = self.contravariant or validator.settings.contravariant
 
-        if not is_type_of_type(enforcer.signature,
-                               self.data_type.signature,
+        if not is_type_of_type(input_type,
+                               self.expected_data_type.signature,
                                covariant=covariant,
                                contravariant=contravariant):
-            return False
+            return ValidationResult(valid=False, data=data, type_name=input_type)
 
-        if self.data_type.bound != enforcer.bound:
-            return False
+        if self.expected_data_type.bound != enforcer.bound:
+            return ValidationResult(valid=False, data=data, type_name=input_type)
 
-        if len(enforcer.hints) != len(self.data_type.hints):
-            return False
+        if len(enforcer.hints) != len(self.expected_data_type.hints):
+            return ValidationResult(valid=False, data=data, type_name=input_type)
 
         for hint_name, hint_value in enforcer.hints.items():
-            hint = self.data_type.hints[hint_name]
+            hint = self.expected_data_type.hints[hint_name]
             if hint != hint_value:
                 for constraint in hint_value.constraints:
                     if is_type_of_type(constraint, hint, covariant=covariant, contravariant=contravariant):
                         break
                 else:
-                    return False
+                    return ValidationResult(valid=False, data=data, type_name=input_type)
 
-        return True
+        return ValidationResult(valid=True, data=data, type_name=input_type)

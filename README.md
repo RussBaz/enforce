@@ -11,6 +11,11 @@
 * [Installation](#installation)
 * [Usage](#usage)
   * [Features](#features)
+    * [Basics](#basic-type-hint-enforcement)
+    * [Callable](#callable-support)
+    * [TypeVar and Generics](#typevar-and-generics)
+    * [Class Decorator](#class-decorator)
+    * [NamedTuple](#namedtuple)
   * [Configuration](#configuration)
 * [Changelog](#changelog)
 * [Contributing](#contributing)
@@ -149,6 +154,14 @@ class DoTheThing(object):
 
     def do_the_stuff(self, a: int, b: float) -> str:
         return str(a * b)
+```
+
+#### NamedTuple
+
+Enforce.py supports typed NamedTuples.
+
+```python
+
 ```
 
 ### Configuration

@@ -178,6 +178,10 @@ class TypesCheckingTests(unittest.TestCase):
         Verifies that type checking automatically replaces None with NoneType
         """
         self.assertTrue(is_type_of_type(None, None))
+        self.assertTrue(is_type_of_type(type(None), None))
+        self.assertTrue(is_type_of_type(None, None, covariant=True))
+        self.assertTrue(is_type_of_type(None, None, contravariant=True))
+        self.assertTrue(is_type_of_type(None, None, covariant=True, contravariant=True))
 
     def test_any(self):
         """
