@@ -1,6 +1,12 @@
 import typing
 from collections import namedtuple
 
+# This enables a support for Python version 3.5.0-3.5.2
+try:
+    from typing import UnionMeta
+except ImportError:
+    UnionMeta = typing.Union
+
 from . import nodes
 from .types import EnhancedTypeVar, is_named_tuple
 
@@ -51,9 +57,12 @@ def _parse_namedtuple(node, hint, validator, parsers):
 
 
 def _parse_default(node, hint, validator, parsers):
-    new_node = yield nodes.SimpleNode(hint)
-    validator.all_nodes.append(new_node)
-    yield _yield_parsing_result(node, new_node)
+    if str(hint).startswith('typing.Union'):
+        yield _parse_union(node, hint, validator, parsers)
+    else:
+        new_node = yield nodes.SimpleNode(hint)
+        validator.all_nodes.append(new_node)
+        yield _yield_parsing_result(node, new_node)
 
 
 def _parse_union(node, hint, validator, parsers):
@@ -63,8 +72,12 @@ def _parse_union(node, hint, validator, parsers):
     in order to enable further validation of nested types
     """
     new_node = yield nodes.UnionNode()
+    try:
+        union_params = hint.__union_params__
+    except AttributeError:
+        union_params = hint.__args__
     validator.all_nodes.append(new_node)
-    for element in hint.__union_params__:
+    for element in union_params:
         yield get_parser(new_node, element, validator, parsers)
     yield _yield_parsing_result(node, new_node)
 
@@ -93,12 +106,18 @@ def _parse_type_var(node, hint, validator, parsers):
 
 
 def _parse_tuple(node, hint, validator, parsers):
-    if hint.__tuple_params__ is None:
+    try:
+        tuple_params = hint.__tuple_params__
+    except AttributeError:
+        tuple_params = hint.__args__
+
+    if tuple_params is None:
         yield _parse_default(node, hint, validator, parsers)
     else:
-        new_node = yield nodes.TupleNode(variable_length=hint.__tuple_use_ellipsis__)
-        for element in hint.__tuple_params__:
-            yield get_parser(new_node, element, validator, parsers)
+        new_node = yield nodes.TupleNode(variable_length=(Ellipsis in tuple_params))
+        for element in tuple_params:
+            if element is not Ellipsis:
+                yield get_parser(new_node, element, validator, parsers)
         yield _yield_parsing_result(node, new_node)
 
 
@@ -130,6 +149,8 @@ def _parse_generic(node, hint, validator, parsers):
         yield _parse_list(node, hint, validator, parsers)
     elif issubclass(hint, typing.Dict):
         yield _parse_default(node, hint, validator, parsers)
+    elif issubclass(hint, typing.Set):
+        yield _parse_set(node, hint, validator, parsers)
     else:
         new_node = yield nodes.GenericNode(hint)
         validator.all_nodes.append(new_node)
@@ -142,6 +163,17 @@ def _parse_list(node, hint, validator, parsers):
 
     # add its type as child
     # We need to index first element only as Lists always have 1 argument
+    if hint.__args__:
+        yield get_parser(new_node, hint.__args__[0], validator, parsers)
+
+    yield _yield_parsing_result(node, new_node)
+
+def _parse_set(node, hint, validator, parsers):
+    new_node = yield nodes.SimpleNode(hint.__extra__)
+    validator.all_nodes.append(new_node)
+
+    # add its type as child
+    # We need to index first element only as Sets always have 1 argument
     if hint.__args__:
         yield get_parser(new_node, hint.__args__[0], validator, parsers)
 
@@ -167,7 +199,7 @@ def _yield_parsing_result(node, new_node):
 
 
 TYPE_PARSERS = {
-    typing.UnionMeta: _parse_union,
+    UnionMeta: _parse_union,
     typing.TupleMeta: _parse_tuple,
     typing.GenericMeta: _parse_generic,
     typing.CallableMeta: _parse_callable,

@@ -277,7 +277,9 @@ possible.
 
 ### 0.3.2 - xx.01.2017
 
-* Added support for NamedTuples
+* Added support for Python 3.5.3 and 3.6.0
+* Added support for NamedTuple
+* Added support for Set
 * Fixed failing nested lists type checking
 
 ### 0.3.1 - 17.09.2016

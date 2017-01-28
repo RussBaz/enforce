@@ -2,7 +2,13 @@ import builtins
 import typing
 import numbers
 from collections import ChainMap
-from typing import Optional, Union, UnionMeta, Any, TypeVar, Tuple, Generic
+from typing import Optional, Union, Any, TypeVar, Tuple, Generic
+
+# This enables a support for Python version 3.5.0-3.5.2
+try:
+    from typing import UnionMeta
+except ImportError:
+    UnionMeta = Union
 
 from .utils import visit
 
@@ -20,7 +26,7 @@ class EnhancedTypeVar:
                  bound: Optional[type]=None,
                  covariant: Optional[bool]=False,
                  contravariant: Optional[bool]=False,
-                 type_var: Optional[TypeVar]=None):
+                 type_var: Optional['TypeVar']=None):
         if type_var is not None:
             self.__name__ = type_var.__name__
             self.__bound__ = type_var.__bound__
@@ -115,6 +121,7 @@ TYPE_ALIASES = {
     complex: numbers.Complex,
     dict: typing.Dict,
     list: typing.List,
+    set: typing.Set,
     None: type(None)
 }
 
@@ -129,11 +136,11 @@ IGNORED_SUBCLASSCHECKS = [
 
 
 def is_type_of_type(data: Union[type, str, None],
-                    data_type: Union[type, str, TypeVar, EnhancedTypeVar, None],
+                    data_type: Union[type, str, 'TypeVar', EnhancedTypeVar, None],
                     covariant: bool=False,
                     contravariant: bool=False,
-                    local_variables: Optional[dict] = None,
-                    global_variables: Optional[dict] = None
+                    local_variables: Optional[typing.Dict] = None,
+                    global_variables: Optional[typing.Dict] = None
                     ) -> bool:
     """
     Returns if the type or type like object is of the same type as constrained
@@ -173,6 +180,10 @@ def is_type_of_type(data: Union[type, str, None],
         # They always use their own
         covariant = data_type.__covariant__
         contravariant = data_type.__contravariant__
+    elif data_type is Any:
+        constraints = [Any]
+    elif str(data_type).startswith('typing.Union'):
+        constraints = [data_type]
     else:
         subclasscheck_enabled = not any(data_type.__class__ is t or t in data_type.__mro__ for t in IGNORED_SUBCLASSCHECKS)
         constraints = [data_type]

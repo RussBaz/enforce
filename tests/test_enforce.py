@@ -751,6 +751,22 @@ class ContainerTypesTests(unittest.TestCase):
     pass
 
 
+class SetTypesTests(unittest.TestCase):
+
+    def test_basic_set(self):
+        @runtime_validation
+        def sample_func(data: typing.Set[str]) -> typing.Set[int]:
+            return set(int(item) for item in data)
+
+        sample_func({'1', '2'})
+
+        with self.assertRaises(RuntimeTypeError):
+            sample_func(['1', '2'])
+
+        with self.assertRaises(RuntimeTypeError):
+            sample_func({'1', 1})
+
+
 class IterableTypesTests(unittest.TestCase):
     """
     Tests for iterator and generator support
@@ -1063,6 +1079,24 @@ def func({inputs}) {returns}:
 
         with self.assertRaisesRegex(RuntimeTypeError, pattern):
             sample_function([12])
+
+    def test_set_exceptions(self):
+        sample_function = self.generateStrictFunction([('a', 'typing.Set[int]')], 'str', 12)
+
+        pattern = self.generateExceptionPattern(('a', str(typing.Set[int]), 'int'))
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function(12)
+
+        pattern = self.generateExceptionPattern(('a', str(typing.Set[int]), 'typing.Set[str]'))
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function({'12'})
+
+        pattern = self.generateExceptionPattern((str(str), 'int'), True)
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function({12})
 
     def test_union_exceptions(self):
         parameter_type_str = str(typing.Union[int, str])

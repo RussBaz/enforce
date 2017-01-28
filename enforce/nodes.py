@@ -220,6 +220,9 @@ class SimpleNode(BaseNode):
         if type_name == 'List' or type_name == 'list':
             type_name = 'typing.List'
 
+        if type_name == 'Set' or type_name == 'set':
+            type_name = 'typing.Set'
+
         return ValidationResult(valid=result, data=data, type_name=type_name)
 
     def map_data(self, validator, self_validation_result):
@@ -228,6 +231,11 @@ class SimpleNode(BaseNode):
         if isinstance(data, list):
             # If it's a list we need to make child for every item in list
             propagated_data = data
+            self.children = len(data) * self.original_children
+
+        if isinstance(data, set):
+            # If it's a list we need to make child for every item in list
+            propagated_data = list(data)
             self.children = len(data) * self.original_children
         return propagated_data
 
@@ -450,17 +458,31 @@ class CallableNode(BaseNode):
             actual_params = callable_signature.__args__
             params_match = False
 
-            if expected_params is None or expected_params is Ellipsis:
+            if expected_params is None or expected_params is Ellipsis or Ellipsis in expected_params:
                 params_match = True
             elif len(expected_params) == len(actual_params):
-                for i, param_type in enumerate(expected_params):
+                for i, param_type in enumerate(expected_params[:-1]):
                     if actual_params[i] != param_type:
                         break
                 else:
                     params_match = True
 
-            expected_result = self.expected_data_type.__result__
-            actual_result = callable_signature.__result__
+            try:
+                expected_result = self.expected_data_type.__result__
+            except AttributeError:
+                try:
+                    expected_result = self.expected_data_type.__args__[-1]
+                except TypeError:
+                    expected_result = None
+
+            try:
+                actual_result = callable_signature.__result__
+            except AttributeError:
+                try:
+                    actual_result = callable_signature.__args__[-1]
+                except TypeError:
+                    actual_result = None
+
             result_match = False
 
             if expected_result is None or expected_result is Ellipsis:
