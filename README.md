@@ -7,6 +7,8 @@
 
 *__Enforce.py__* is a Python 3.5+ library for integration testing and data validation through configurable and optional runtime type hint enforcement. It uses the standard type hinting syntax (defined in PEP 484).
 
+**NOTICE:** Python versions 3.5.2 and earlier (3.5.0-3.5.2) are now deprecated. Only Python versions 3.5.3+ would be supported. Deprecated versions will no longer be officially supported in Enforce.py version 0.4.x.
+
 * [Overview](#overview)
 * [Installation](#installation)
 * [Usage](#usage)
@@ -161,7 +163,18 @@ class DoTheThing(object):
 Enforce.py supports typed NamedTuples.
 
 ```python
+MyNamedTuple = typing.NamedTuple('MyNamedTuple', [('param', int)])
 
+# Optionally making a NamedTuple typed
+# It will now enforce its type signature
+# and will throw exceptions if there is a type mismatch
+# MyNamedTuple(param='str') will now throw an exception
+MyNamedTuple = runtime_validation(MyNamedTuple)
+
+# This function now accepts only NamedTuple arguments
+@runtime_validation
+def foo(data: MyNamedTuple):
+    return data.param
 ```
 
 ### Configuration
@@ -275,11 +288,12 @@ possible.
 
 ## Changelog
 
-### 0.3.2 - xx.01.2017
+### 0.3.2 - 29.01.2017
 
 * Added support for Python 3.5.3 and 3.6.0
 * Added support for NamedTuple
 * Added support for Set
+* New exception message generation system
 * Fixed failing nested lists type checking
 
 ### 0.3.1 - 17.09.2016

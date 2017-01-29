@@ -1,6 +1,5 @@
 import typing
 import inspect
-import re
 
 from .wrappers import EnforceProxy
 from .types import is_type_of_type, is_named_tuple
@@ -179,12 +178,12 @@ class BaseNode:
         self.data_out = None
         self.children = [a for a in self.original_children]
 
-    def __repr__(self):
-        children_nest = ', '.join([str(c) for c in self.children])
-        str_repr = '{}:{}'.format(str(self.expected_data_type), self.__class__.__name__)
-        if children_nest:
-            str_repr += ' -> ({})'.format(children_nest)
-        return str_repr
+    # def __repr__(self):
+    #     children_nest = ', '.join([str(c) for c in self.children])
+    #     str_repr = '{}:{}'.format(str(self.expected_data_type), self.__class__.__name__)
+    #     if children_nest:
+    #         str_repr += ' -> ({})'.format(children_nest)
+    #     return str_repr
 
 
 class SimpleNode(BaseNode):
@@ -193,12 +192,6 @@ class SimpleNode(BaseNode):
         super().__init__(expected_data_type, is_sequence=True, type_var=False, **kwargs)
 
     def validate_data(self, validator, data, sticky=False):
-        # Will keep till all the debugging is over
-        #print('Simple Validation: {}:{}, {}\n=> {}'.format(
-        #    data, type(data), self.data_type, issubclass(type(data),
-        #                                                 self.data_type)))
-        # This conditional is for when Callable object arguments are
-        # mapped to SimpleNodes
         if self.bound:
             expected_data_type = self.in_type
         else:
@@ -250,13 +243,6 @@ class UnionNode(BaseNode):
         super().__init__(typing.Any, is_sequence=False, **kwargs)
 
     def validate_data(self, validator, data, sticky=False):
-        # Will keep till all the debugging is over
-        #print('Validation:', data, type(data), self.data_type, self.last_type)
-        #if sticky and (self.last_type is not None):
-        #    return is_type_of_type(type(data),
-        #                           self.last_type,
-        #                           covariant=self.covariant,
-        #                           contravariant=self.contravariant)
         return ValidationResult(valid=True, data=data, type_name=type(data).__name__)
 
     def map_data(self, validator, self_validation_result):
@@ -269,7 +255,7 @@ class UnionNode(BaseNode):
         """
         Returns a name of an actual type of given data
         """
-        actual_type = self_validation_result.type_name
+        # actual_type = self_validation_result.type_name
         child_types = set(result.type_name for result in child_validation_results)
 
         child_types.discard(None)
@@ -445,10 +431,6 @@ class CallableNode(BaseNode):
                 return apply_enforcer(data)
 
     def validate_data(self, validator, data, sticky=False):
-        # Will keep till all the debugging is over
-        #print('Callable Validation: {}:{}, {}\n=> {}'.format(data, type(data),
-        #                                       self.data_type,
-        #                                       isinstance(data, self.data_type)))
         try:
             input_type = type(data)
 
@@ -490,9 +472,6 @@ class CallableNode(BaseNode):
 
             return ValidationResult(valid=params_match, data=data, type_name=callable_signature)
         except AttributeError:
-            return ValidationResult(valid=False, data=data, type_name=input_type)
-        except TypeError:
-            # Can occur in case of typing.Callable having no parameters
             return ValidationResult(valid=False, data=data, type_name=input_type)
 
 
