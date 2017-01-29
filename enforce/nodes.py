@@ -370,16 +370,30 @@ class NamedTupleNode(BaseNode):
         from .decorators import runtime_validation
 
         super().__init__(runtime_validation(data_type), is_sequence=True, **kwargs)
+        self.data_type_name = None
 
     def preprocess_data(self, validator, data):
-        if not is_named_tuple(data): return None
-        if type(data).__name__ != self.expected_data_type.__name__: return None
+        data_type = type(data)
 
-        if hasattr(data, '_field_types') != hasattr(self.expected_data_type, '_field_types'): return None
+        self.data_type_name = data_type.__name__
+
+        if not is_named_tuple(data):
+            return None
+
+        if data_type.__name__ != self.expected_data_type.__name__:
+            return None
+
+        if not hasattr(data, '_field_types'):
+            self.data_type_name = 'untyped ' + data_type.__name__
+            return None
 
         try:
             return self.expected_data_type(*(getattr(data, field) for field in data._fields))
         except RuntimeTypeError:
+            self.data_type_name = (
+                str(type(data)) + ' with incorrect arguments: ' + ', '.join(
+                    field + ' -> ' + str(type(getattr(data, field))) for field in data._fields
+                ))
             return None
         except AttributeError:
             return None
@@ -387,7 +401,15 @@ class NamedTupleNode(BaseNode):
             return None
 
     def validate_data(self, validator, data, sticky=False):
-        return ValidationResult(valid=bool(data), data=data, type_name=type(data).__name__)
+        if data is None:
+            data_type_name = self.data_type_name
+        else:
+            data_type_name = type(data).__name__
+
+        if data_type_name == 'tuple':
+            data_type_name = 'typing.Tuple'
+
+        return ValidationResult(valid=bool(data), data=data, type_name=data_type_name)
 
 
 class CallableNode(BaseNode):

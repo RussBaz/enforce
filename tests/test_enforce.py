@@ -1127,6 +1127,43 @@ def func({inputs}) {returns}:
         with self.assertRaisesRegex(RuntimeTypeError, pattern):
             sample_function(('1', 2))
 
+    def test_named_tuple_exception(self):
+        from collections import namedtuple
+
+        MyNamedTuple = typing.NamedTuple('MyNamedTuple', [('a', int), ('b', str)])
+        parameter_type_str = str(MyNamedTuple)
+
+        @runtime_validation
+        def foo(data: MyNamedTuple):
+            return str(data.b) + str(data.a)
+
+        argument_a = MyNamedTuple(10, 10)
+        argument_b = (10, 'ten')
+        argument_c = 12
+        argument_d = namedtuple('MyNamedTuple', ['a', 'b'])(10, 'ten')
+        argument_e = None
+
+        pattern_a = self.generateExceptionPattern(('data', parameter_type_str, parameter_type_str + " with incorrect arguments: a -> <class 'int'>, b -> <class 'int'>"))
+        pattern_b = self.generateExceptionPattern(('data', parameter_type_str, 'typing.Tuple'))
+        pattern_c = self.generateExceptionPattern(('data', parameter_type_str, 'int'))
+        pattern_d = self.generateExceptionPattern(('data', parameter_type_str, 'untyped MyNamedTuple'))
+        pattern_e = self.generateExceptionPattern(('data', parameter_type_str, 'NoneType'))
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern_a):
+            foo(argument_a)
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern_b):
+            foo(argument_b)
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern_c):
+            foo(argument_c)
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern_d):
+            foo(argument_d)
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern_e):
+            foo(argument_e)
+
 
 if __name__ == '__main__':
     unittest.main()
