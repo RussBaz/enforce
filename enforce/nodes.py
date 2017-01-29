@@ -456,6 +456,8 @@ class CallableNode(BaseNode):
 
             if self.expected_data_type.__args__ is None:
                 expected_params = []
+            elif self.expected_data_type.__args__ is Ellipsis:
+                expected_params = [Ellipsis]
             else:
                 expected_params = list(self.expected_data_type.__args__)
 
@@ -477,8 +479,8 @@ class CallableNode(BaseNode):
 
             if len(expected_params) == 0:
                 params_match = True
-            elif len(expected_params) > 0 and expected_params[0] is Ellipsis:
-                params_match = True
+            elif expected_params[0] is Ellipsis and len(actual_params) > 0:
+                params_match = actual_params[-1] == expected_params[-1]
             elif len(expected_params) == len(actual_params):
                 for i, param_type in enumerate(expected_params):
                     if actual_params[i] != param_type:
