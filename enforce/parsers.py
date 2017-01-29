@@ -106,10 +106,15 @@ def _parse_type_var(node, hint, validator, parsers):
 
 
 def _parse_tuple(node, hint, validator, parsers):
+    tuple_params = None
     try:
-        tuple_params = hint.__tuple_params__
+        if hint.__tuple_params__:
+            tuple_params = list(hint.__tuple_params__)
+            if hint.__tuple_use_ellipsis__:
+                tuple_params.append(Ellipsis)
     except AttributeError:
-        tuple_params = hint.__args__
+        if hint.__args__:
+            tuple_params = list(hint.__args__)
 
     if tuple_params is None:
         yield _parse_default(node, hint, validator, parsers)

@@ -454,45 +454,39 @@ class CallableNode(BaseNode):
 
             callable_signature = data.__enforcer__.callable_signature
 
-            expected_params = self.expected_data_type.__args__
-            actual_params = callable_signature.__args__
+            if self.expected_data_type.__args__ is None:
+                expected_params = []
+            else:
+                expected_params = list(self.expected_data_type.__args__)
+
+            if callable_signature.__args__ is None:
+                actual_params = []
+            else:
+                actual_params = list(callable_signature.__args__)
+
             params_match = False
 
-            if expected_params is None or expected_params is Ellipsis or Ellipsis in expected_params:
+            try:
+                if self.expected_data_type.__result__ is not None:
+                    expected_params.append(self.expected_data_type.__result__)
+
+                if callable_signature.__result__ is not None:
+                    actual_params.append(callable_signature.__result__)
+            except AttributeError:
+                pass
+
+            if len(expected_params) == 0:
+                params_match = True
+            elif len(expected_params) > 0 and expected_params[0] is Ellipsis:
                 params_match = True
             elif len(expected_params) == len(actual_params):
-                for i, param_type in enumerate(expected_params[:-1]):
+                for i, param_type in enumerate(expected_params):
                     if actual_params[i] != param_type:
                         break
                 else:
                     params_match = True
 
-            try:
-                expected_result = self.expected_data_type.__result__
-            except AttributeError:
-                try:
-                    expected_result = self.expected_data_type.__args__[-1]
-                except TypeError:
-                    expected_result = None
-
-            try:
-                actual_result = callable_signature.__result__
-            except AttributeError:
-                try:
-                    actual_result = callable_signature.__args__[-1]
-                except TypeError:
-                    actual_result = None
-
-            result_match = False
-
-            if expected_result is None or expected_result is Ellipsis:
-                result_match = True
-            else:
-                result_match = type(actual_result) == type(expected_result)
-
-            is_callable = params_match and result_match
-
-            return ValidationResult(valid=is_callable, data=data, type_name=callable_signature)
+            return ValidationResult(valid=params_match, data=data, type_name=callable_signature)
         except AttributeError:
             return ValidationResult(valid=False, data=data, type_name=input_type)
         except TypeError:
