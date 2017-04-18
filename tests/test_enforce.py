@@ -911,6 +911,104 @@ class CallableTypesTests(unittest.TestCase):
             self.union(bad_param)
 
 
+class DictTypesTests(unittest.TestCase):
+    """
+    Tests for the dictionary types
+    """
+
+    def test_simple_dict(self):
+        """
+        Verifies that unrestricted Dictionary type is correctly checked
+        """
+        d = {'a': 12, 'b': 'b'}
+
+        @runtime_validation
+        def foo(a: typing.Dict, b: typing.Any=None) -> typing.Dict:
+            return b
+
+        foo(d, d)
+
+        with self.assertRaises(RuntimeTypeError):
+            foo(3)
+
+        with self.assertRaises(RuntimeTypeError):
+            foo(d, 2)
+
+    def test_restricted_dict(self):
+        """
+        Verifies that restricted dictionaries are type checked correctly
+        """
+        TypeAlias = typing.Dict[str, typing.Union[int, str, None]]
+
+        @runtime_validation
+        def foo(a: TypeAlias, b: typing.Any=None) -> TypeAlias:
+            return b
+
+        good_dict = {
+            'hello': 'world',
+            'name': None,
+            'id': 1234
+        }
+
+        bad_dict = {
+            'hello': 123.5
+        }
+
+        foo(good_dict, good_dict)
+
+        with self.assertRaises(RuntimeTypeError):
+            foo(bad_dict)
+
+        with self.assertRaises(RuntimeTypeError):
+            foo(good_dict, bad_dict)
+
+        foo({}, {})
+
+    def test_nested_dicts(self):
+        """
+        Verifies that the type containing nested dictionaries can be successfully verified
+        """
+        TypeAlias = typing.Dict[str, typing.Dict[str, typing.Optional[int]]]
+
+        @runtime_validation
+        def foo(a: TypeAlias, b: typing.Any=None) -> TypeAlias:
+            return b
+
+        good_dict = {
+            'hello': {
+                'world': 12,
+                'me': None
+            }
+        }
+
+        bad_dict = {
+            12: None
+        }
+
+        bad_dict_2 = {
+            'hello': {
+                'world': 12,
+                'everyone': None,
+                'me': {1, 3},
+                2: {'a': 'a'}
+            }
+        }
+
+        foo(good_dict, good_dict)
+
+        with self.assertRaises(RuntimeTypeError):
+            foo(bad_dict)
+
+        with self.assertRaises(RuntimeTypeError):
+            foo(good_dict, bad_dict)
+
+        with self.assertRaises(RuntimeTypeError):
+            foo(bad_dict_2)
+
+        with self.assertRaises(RuntimeTypeError):
+            foo(good_dict, bad_dict_2)
+
+
 class GenericTypesTests(unittest.TestCase):
     """
     Tests for the generic types
@@ -1097,6 +1195,63 @@ def func({inputs}) {returns}:
 
         with self.assertRaisesRegex(RuntimeTypeError, pattern):
             sample_function({12})
+
+    def test_dict_exceptions(self):
+        scope = {
+            'data': None,
+            'type_alias': typing.Dict[str, int]
+        }
+
+        @runtime_validation
+        def sample_function(a: scope['type_alias']) -> scope['type_alias']:
+            return scope['data']
+
+        pattern = self.generateExceptionPattern(('a', scope['type_alias'], 'int'))
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function(12)
+
+        pattern = self.generateExceptionPattern(('a', scope['type_alias'], 'set'))
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function({'12'})
+
+        pattern = self.generateExceptionPattern(('a', scope['type_alias'], 'typing.Dict[str, float]'))
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function({'s': 12.0})
+
+        scope['data'] = 12
+        pattern = self.generateExceptionPattern((scope['type_alias'], 'int'), is_return=True)
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function({'s': 12})
+
+        scope['data'] = {'12'}
+        pattern = self.generateExceptionPattern((scope['type_alias'], 'set'), is_return=True)
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function({'s': 12})
+
+        scope['data'] = {'s': 12.0}
+        pattern = self.generateExceptionPattern((scope['type_alias'], 'typing.Dict[str, float]'), is_return=True)
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function({'s': 12})
+
+        scope = {
+            'data': None,
+            'type_alias': typing.Dict[str, typing.Dict[str, typing.Optional[int]]]
+        }
+
+        @runtime_validation
+        def sample_function(a: scope['type_alias']) -> scope['type_alias']:
+            return scope['data']
+
+        pattern = self.generateExceptionPattern(('a', scope['type_alias'], 'typing.Dict[str, typing.Dict[str, typing.Union[NoneType, float, int]]]'))
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function({'hello': {'world': 12, 'w': None, 'r': 12.0}})
 
     def test_union_exceptions(self):
         parameter_type_str = str(typing.Union[int, str])

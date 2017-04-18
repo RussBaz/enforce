@@ -321,11 +321,8 @@ class DecoratorsTests(unittest.TestCase):
             return {value: key for key, value in hash.items()}
 
         hash = {5: 1, 'b': 5}
-        try:
+        with self.assertRaises(RuntimeTypeError):
             test(hash)
-            raise AssertionError('RuntimeTypeError should have been raised')
-        except RuntimeTypeError:
-            pass
 
     def test_recursion_slim(self):
         @runtime_validation

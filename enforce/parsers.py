@@ -153,7 +153,7 @@ def _parse_generic(node, hint, validator, parsers):
     if issubclass(hint, typing.List):
         yield _parse_list(node, hint, validator, parsers)
     elif issubclass(hint, typing.Dict):
-        yield _parse_default(node, hint, validator, parsers)
+        yield _parse_dict(node, hint, validator, parsers)
     elif issubclass(hint, typing.Set):
         yield _parse_set(node, hint, validator, parsers)
     else:
@@ -173,6 +173,7 @@ def _parse_list(node, hint, validator, parsers):
 
     yield _yield_parsing_result(node, new_node)
 
+
 def _parse_set(node, hint, validator, parsers):
     new_node = yield nodes.SimpleNode(hint.__extra__)
     validator.all_nodes.append(new_node)
@@ -183,6 +184,22 @@ def _parse_set(node, hint, validator, parsers):
         yield get_parser(new_node, hint.__args__[0], validator, parsers)
 
     yield _yield_parsing_result(node, new_node)
+
+
+def _parse_dict(node, hint, validator, parsers):
+    hint_args = hint.__args__
+
+    if hint_args:
+        new_node = yield nodes.MappingNode(hint.__extra__)
+        validator.all_nodes.append(new_node)
+
+        yield get_parser(new_node, hint_args[0], validator, parsers)
+        yield get_parser(new_node, hint_args[1], validator, parsers)
+
+        yield _yield_parsing_result(node, new_node)
+
+    else:
+        yield _parse_default(node, hint, validator, parsers)
 
 
 def _yield_unified_node(node, hints, validator, parsers):

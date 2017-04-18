@@ -25,6 +25,7 @@ class BaseNode:
 
         self.data_out = None
 
+        # TypeVar stuff
         self.bound = False
         self.in_type = None
 
@@ -560,3 +561,88 @@ class GenericNode(BaseNode):
                     return ValidationResult(valid=False, data=data, type_name=input_type)
 
         return ValidationResult(valid=True, data=data, type_name=input_type)
+
+
+class MappingNode(BaseNode):
+
+    def __init__(self, data_type, **kwargs):
+        super().__init__(data_type, is_sequence=True, **kwargs)
+
+    def validate_data(self, validator, data, sticky=False):
+        if not isinstance(data, type):
+            input_type = type(data)
+        else:
+            input_type = data
+
+        covariant = self.covariant or validator.settings.covariant
+        contravariant = self.contravariant or validator.settings.contravariant
+
+        result = is_type_of_type(input_type, self.expected_data_type, covariant=covariant, contravariant=contravariant)
+
+        type_name = input_type.__name__
+        return ValidationResult(valid=result, data=data, type_name=type_name)
+
+    def validate_children(self, validator, propagated_data):
+        key_validator = self.children[0]
+        value_validator = self.children[1]
+
+        children_validation_results = []
+
+        for i, data in enumerate(propagated_data):
+            key_validation_result = yield key_validator.validate(data[0], validator, self.is_type_var)
+            value_validation_result = yield value_validator.validate(data[1], validator, self.is_type_var)
+
+            is_valid = key_validation_result.valid and value_validation_result.valid
+            out_data = (key_validation_result.data, value_validation_result.data)
+            out_name = (key_validation_result.type_name, value_validation_result.type_name)
+
+            out_result = ValidationResult(valid=is_valid, data=out_data, type_name=out_name)
+
+            children_validation_results.append(out_result)
+
+        yield children_validation_results
+
+    def map_data(self, validator, self_validation_result):
+        data = self_validation_result.data
+        output = []
+
+        for item_pair in data.items():
+            output.append(item_pair)
+
+        return output
+
+    def reduce_data(self, validator, child_validation_results, self_validation_result):
+        return {result.data[0]: result.data[1] for result in child_validation_results}
+
+    def get_actual_data_type(self, self_validation_result, child_validation_results, valid):
+        """
+        Returns a name of an actual type of given data
+        """
+        actual_type = self_validation_result.type_name
+
+        if actual_type == 'Dict' or actual_type == 'dict':
+            actual_type = 'typing.Dict'
+
+        key_types = set(result.type_name[0] for result in child_validation_results) or set()
+        value_types = set(result.type_name[1] for result in child_validation_results) or set()
+
+        key_types = sorted(key_types)
+        value_types = sorted(value_types)
+
+        if len(key_types) > 1:
+            key_type = 'typing.Union[' + ', '.join(key_types) + ']'
+        elif len(key_types) == 1:
+            key_type = key_types[0]
+        else:
+            return actual_type
+
+        if len(value_types) > 1:
+            value_type = 'typing.Union[' + ', '.join(value_types) + ']'
+        elif len(value_types) == 1:
+            value_type = value_types[0]
+        else:
+            return actual_type
+
+        actual_type = actual_type + '[' + key_type + ', ' + value_type + ']'
+
+        return actual_type
