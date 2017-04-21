@@ -1,5 +1,6 @@
 import inspect
 import typing
+import threading
 import functools
 from functools import wraps
 
@@ -9,6 +10,9 @@ from .settings import Settings
 #from .wrappers import Proxy
 from .enforcers import apply_enforcer, Parameters, GenericProxy
 from .types import is_type_of_type
+
+
+Lock = threading.RLock()
 
 
 def runtime_validation(data=None, *, enabled=None, group=None):
@@ -75,40 +79,42 @@ def get_universal_decorator():
         the original function and then it checks for the output type. Only then it returns the
         output of original function.
         """
-        enforcer = wrapped.__enforcer__
-        skip = False
+        with Lock:
+            enforcer = wrapped.__enforcer__
+            skip = False
 
-        # In order to avoid problems with TypeVar-s, validator must be reset
-        enforcer.reset()
+            # In order to avoid problems with TypeVar-s, validator must be reset
+            enforcer.reset()
 
-        instance_method = False
-        if instance is not None and not inspect.isclass(instance):
-            instance_method = True
+            instance_method = False
+            if instance is not None and not inspect.isclass(instance):
+                instance_method = True
 
-        if hasattr(wrapped, '__no_type_check__'):
-            skip = True
+            if hasattr(wrapped, '__no_type_check__'):
+                skip = True
 
-        if instance_method:
-            parameters = Parameters([instance, *args], kwargs, skip)
-        else:
-            parameters = Parameters(args, kwargs, skip)
-
-        # First, check argument types (every key not labelled 'return')
-        _args, _kwargs, _ = enforcer.validate_inputs(parameters)
-
-        if instance_method:
-            if len(_args) > 1:
-                _args = _args[1:]
+            if instance_method:
+                parameters = Parameters([instance, *args], kwargs, skip)
             else:
-                _args = tuple()
+                parameters = Parameters(args, kwargs, skip)
 
-        result = wrapped(*_args, **_kwargs)
+            # First, check argument types (every key not labelled 'return')
+            _args, _kwargs, _ = enforcer.validate_inputs(parameters)
 
-        # we *only* return result if all type checks passed
-        if skip:
-            return result
-        else:
-            return enforcer.validate_outputs(result)
+            if instance_method:
+                if len(_args) > 1:
+                    _args = _args[1:]
+                else:
+                    _args = tuple()
+
+            result = wrapped(*_args, **_kwargs)
+
+            # we *only* return result if all type checks passed
+            if skip:
+                return result
+            else:
+                return enforcer.validate_outputs(result)
+
 
     return decorator(universal)
 
