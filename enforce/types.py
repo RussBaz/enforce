@@ -19,14 +19,14 @@ class EnhancedTypeVar:
     Allows TypeVars to be bivariant
     Can be constructed as any other TypeVar or from existing TypeVars
     """
-    
+
     def __init__(self,
                  name: str,
                  *constraints: Any,
-                 bound: Optional[type]=None,
-                 covariant: Optional[bool]=False,
-                 contravariant: Optional[bool]=False,
-                 type_var: Optional['TypeVar']=None):
+                 bound: Optional[type] = None,
+                 covariant: Optional[bool] = False,
+                 contravariant: Optional[bool] = False,
+                 type_var: Optional['TypeVar'] = None):
         if type_var is not None:
             self.__name__ = type_var.__name__
             self.__bound__ = type_var.__bound__
@@ -129,7 +129,8 @@ TYPE_ALIASES = {
 REVERSED_TYPE_ALIASES = {v: k for k, v in TYPE_ALIASES.items()}
 
 
-# Tells the type checking method to ignore __subclasscheck__ on the following types and their subclasses
+# Tells the type checking method to ignore __subclasscheck__
+# on the following types and their subclasses
 IGNORED_SUBCLASSCHECKS = [
     Generic
 ]
@@ -137,11 +138,11 @@ IGNORED_SUBCLASSCHECKS = [
 
 def is_type_of_type(data: Union[type, str, None],
                     data_type: Union[type, str, 'TypeVar', EnhancedTypeVar, None],
-                    covariant: bool=False,
-                    contravariant: bool=False,
-                    local_variables: Optional[typing.Dict] = None,
-                    global_variables: Optional[typing.Dict] = None
-                    ) -> bool:
+                    covariant: bool = False,
+                    contravariant: bool = False,
+                    local_variables: Optional[typing.Dict]=None,
+                    global_variables: Optional[typing.Dict]=None
+                   ) -> bool:
     """
     Returns if the type or type like object is of the same type as constrained
     Support co-variance, contra-variance and TypeVar-s

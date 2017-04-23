@@ -288,9 +288,10 @@ possible.
 
 ## Changelog
 
-### 0.x.x - xx.04.2017
+### 0.3.3 - 23.04.2017
 
 * Improved support for Dictionaries
+* Fixed some thread safety issues
 
 ### 0.3.2 - 29.01.2017
 

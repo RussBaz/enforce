@@ -21,6 +21,7 @@ class Pet(Animal):
     """
     pass
 
+
 class Chihuahua(Pet):
     """
     Dummy subclass of Pet

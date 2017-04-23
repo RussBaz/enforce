@@ -12,7 +12,8 @@ from .enforcers import apply_enforcer, Parameters, GenericProxy
 from .types import is_type_of_type
 
 
-Lock = threading.RLock()
+BuildLock = threading.RLock()
+RunLock = threading.RLock()
 
 
 def runtime_validation(data=None, *, enabled=None, group=None):
@@ -20,40 +21,41 @@ def runtime_validation(data=None, *, enabled=None, group=None):
     This decorator enforces runtime parameter and return value type checking validation
     It uses the standard Python 3.5 syntax for type hinting declaration
     """
-    if enabled is not None and not isinstance(enabled, bool):
-        raise TypeError('Enabled parameter must be boolean')
+    with RunLock:
+        if enabled is not None and not isinstance(enabled, bool):
+            raise TypeError('Enabled parameter must be boolean')
 
-    if group is not None and not isinstance(group, str):
-        raise TypeError('Group parameter must be string')
+        if group is not None and not isinstance(group, str):
+            raise TypeError('Group parameter must be string')
 
-    if enabled is None and group is None:
-        enabled = True
+        if enabled is None and group is None:
+            enabled = True
 
-    # see https://wrapt.readthedocs.io/en/latest/decorators.html#decorators-with-optional-arguments
-    if data is None:
-        return functools.partial(runtime_validation, enabled=enabled, group=group)
+        # see https://wrapt.readthedocs.io/en/latest/decorators.html#decorators-with-optional-arguments
+        if data is None:
+            return functools.partial(runtime_validation, enabled=enabled, group=group)
 
-    configuration = Settings(enabled=enabled, group=group)
+        configuration = Settings(enabled=enabled, group=group)
 
-    # ????
-    if data.__class__ is type and is_type_of_type(data, tuple, covariant=True):
-        try:
-            fields = data._fields
-            field_types = data._field_types
+        # ????
+        if data.__class__ is type and is_type_of_type(data, tuple, covariant=True):
+            try:
+                fields = data._fields
+                field_types = data._field_types
 
-            return get_typed_namedtuple(configuration, data, fields, field_types)
+                return get_typed_namedtuple(configuration, data, fields, field_types)
 
-        except AttributeError:
-            pass
+            except AttributeError:
+                pass
 
-    build_wrapper = get_wrapper_builder(configuration)
+        build_wrapper = get_wrapper_builder(configuration)
 
-    if data.__class__ is property:
-        generate_decorated = build_wrapper(data.fset)
-        return data.setter(generate_decorated())
+        if data.__class__ is property:
+            generate_decorated = build_wrapper(data.fset)
+            return data.setter(generate_decorated())
 
-    generate_decorated = build_wrapper(data)
-    return generate_decorated()
+        generate_decorated = build_wrapper(data)
+        return generate_decorated()
 
 
 def decorate(data, configuration, obj_instance=None, parent_root=None) -> typing.Callable:
@@ -79,7 +81,7 @@ def get_universal_decorator():
         the original function and then it checks for the output type. Only then it returns the
         output of original function.
         """
-        with Lock:
+        with RunLock:
             enforcer = wrapped.__enforcer__
             skip = False
 
@@ -114,7 +116,6 @@ def get_universal_decorator():
                 return result
             else:
                 return enforcer.validate_outputs(result)
-
 
     return decorator(universal)
 
