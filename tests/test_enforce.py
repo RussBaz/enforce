@@ -13,6 +13,12 @@ class GeneralTests(unittest.TestCase):
     A container for general tests
     """
 
+    def setUp(self):
+        config(reset=True)
+
+    def tearDown(self):
+        config(reset=True)
+
     def test_argument_validation(self):
         self.assertEqual(self.sample_function('11', 1), 12)
 
@@ -65,6 +71,15 @@ class GeneralTests(unittest.TestCase):
         sample_d2('str')
         with self.assertRaises(RuntimeTypeError):
             sample_d3('str')
+
+    def test_any_code_works_with_modes(self):
+        config({'mode': 'covariant'})
+
+        @runtime_validation
+        def example() -> typing.Optional[str]:
+            return None
+
+        example()
 
     @runtime_validation
     def sample_function(self, text: str, data: typing.Union[int, None]) -> typing.Optional[int]:

@@ -191,16 +191,16 @@ default_options = {
     # Group related settings
     'groups': {
         # Dictionary of type {<name: str>: <status: bool>}
-		# Sets the status of specified groups
-		# Enable - True, disabled - False, do not change - None
+        # Sets the status of specified groups
+        # Enable - True, disabled - False, do not change - None
         'set': {},
-		# Sets the status of all groups to False before updating
+        # Sets the status of all groups to False before updating
         'disable_previous': False,
-		# Sets the status of all groups to True before updating
+        # Sets the status of all groups to True before updating
         'enable_previous': False,
         # Deletes all the existing groups before updating
         'clear_previous': False,
-		# Updating the default group status - default group is not affected by other settings
+        # Updating the default group status - default group is not affected by other settings
         'default': None
     },
     # Sets the type checking mode
@@ -287,6 +287,9 @@ Please report an issue if you do find one and we'll try to fix it as quickly as
 possible.
 
 ## Changelog
+
+### 0.3.4 - xx.xx.2017
+* General bug fixes
 
 ### 0.3.3 - 23.04.2017
 

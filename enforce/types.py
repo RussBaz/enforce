@@ -231,6 +231,7 @@ def perform_subclasscheck(data, data_type, covariant, contravariant):
         result = data_type.__subclasscheck__(data)
 
         if data is not reversed_data:
+            if reversed_data is None: reversed_data = type(None)
             result = result or data_type.__subclasscheck__(reversed_data)
 
         if result != NotImplemented:
@@ -241,6 +242,7 @@ def perform_subclasscheck(data, data_type, covariant, contravariant):
         result = data.__subclasscheck__(data_type)
 
         if data_type is not reversed_data_type:
+            if reversed_data_type is None: reversed_data_type = type(None)
             result = result or data.__subclasscheck__(reversed_data_type)
 
         if result != NotImplemented:
