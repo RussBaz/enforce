@@ -6,6 +6,18 @@ from .types import is_type_of_type, is_named_tuple
 from .exceptions import RuntimeTypeError
 
 
+TYPE_NAME_ALIASES = {
+    'Tuple': 'typing.Tuple',
+    'tuple': 'typing.Tuple',
+    'List': 'typing.List',
+    'list': 'typing.List',
+    'Set': 'typing.Set',
+    'set': 'typing.Set',
+    'Dict': 'typing.Dict',
+    'dict': 'typing.Dict'
+}
+
+
 ValidationResult = typing.NamedTuple('ValidationResult', [('valid', bool), ('data', typing.Any), ('type_name', str)])
 
 
@@ -129,11 +141,7 @@ class BaseNode:
 
         child_types.discard(None)
 
-        if actual_type == 'Tuple' or actual_type == 'tuple':
-            actual_type = 'typing.Tuple'
-
-        if actual_type == 'List' or actual_type == 'list':
-            actual_type = 'typing.List'
+        actual_type = TYPE_NAME_ALIASES.get(actual_type, actual_type)
 
         if child_types:
             actual_type = actual_type + '[' + ', '.join(child_types) + ']'
@@ -227,11 +235,7 @@ class SimpleNode(BaseNode):
 
         type_name = input_type.__name__
 
-        if type_name == 'List' or type_name == 'list':
-            type_name = 'typing.List'
-
-        if type_name == 'Set' or type_name == 'set':
-            type_name = 'typing.Set'
+        type_name = TYPE_NAME_ALIASES.get(type_name, type_name)
 
         return ValidationResult(valid=result, data=data, type_name=type_name)
 
@@ -369,11 +373,7 @@ class TupleNode(BaseNode):
         actual_type = self_validation_result.type_name
         child_types = list(result.type_name for result in child_validation_results) or []
 
-        if actual_type == 'Tuple' or actual_type == 'tuple':
-            actual_type = 'typing.Tuple'
-
-        if actual_type == 'List' or actual_type == 'list':
-            actual_type = 'typing.List'
+        actual_type = TYPE_NAME_ALIASES.get(actual_type, actual_type)
 
         if child_types:
             actual_type = actual_type + '[' + ', '.join(child_types) + ']'
@@ -423,8 +423,7 @@ class NamedTupleNode(BaseNode):
         else:
             data_type_name = type(data).__name__
 
-        if data_type_name == 'tuple':
-            data_type_name = 'typing.Tuple'
+        data_type_name = TYPE_NAME_ALIASES.get(data_type_name, data_type_name)
 
         return ValidationResult(valid=bool(data), data=data, type_name=data_type_name)
 
@@ -636,8 +635,7 @@ class MappingNode(BaseNode):
         """
         actual_type = self_validation_result.type_name
 
-        if actual_type == 'Dict' or actual_type == 'dict':
-            actual_type = 'typing.Dict'
+        actual_type = TYPE_NAME_ALIASES.get(actual_type, actual_type)
 
         key_types = set(result.type_name[0] for result in child_validation_results) or set()
         value_types = set(result.type_name[1] for result in child_validation_results) or set()

@@ -1226,7 +1226,7 @@ def func({inputs}) {returns}:
         with self.assertRaisesRegex(RuntimeTypeError, pattern):
             sample_function(12)
 
-        pattern = self.generateExceptionPattern(('a', scope['type_alias'], 'set'))
+        pattern = self.generateExceptionPattern(('a', scope['type_alias'], 'typing.Set'))
 
         with self.assertRaisesRegex(RuntimeTypeError, pattern):
             sample_function({'12'})
@@ -1243,7 +1243,7 @@ def func({inputs}) {returns}:
             sample_function({'s': 12})
 
         scope['data'] = {'12'}
-        pattern = self.generateExceptionPattern((scope['type_alias'], 'set'), is_return=True)
+        pattern = self.generateExceptionPattern((scope['type_alias'], 'typing.Set'), is_return=True)
 
         with self.assertRaisesRegex(RuntimeTypeError, pattern):
             sample_function({'s': 12})
@@ -1304,6 +1304,14 @@ def func({inputs}) {returns}:
 
         with self.assertRaisesRegex(RuntimeTypeError, pattern):
             sample_function((1, 2))
+
+        parameter_type_str = str(typing.Tuple[int, int])
+        sample_function = self.generateStrictFunction([('a', 'typing.Tuple[int, int]')], 'None', None)
+
+        pattern = self.generateExceptionPattern(('a', parameter_type_str, 'typing.Tuple[int, int, str]'))
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function((1, 2, 'abc'))
 
     def test_named_tuple_exception(self):
         from collections import namedtuple
