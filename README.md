@@ -27,7 +27,7 @@
 * Supports most of simple and nested types
 * Supports Callables, TypeVars and Generics
 * Supports invariant, covariant, contravariant and bivariant type checking
-  * **Default** mode is *__invariant__*
+  * **Default** mode is *__invariant__* - the type has to match exactly, which is better suitable for testing but differs from Python's normal covariant type checking (a subclass can be used wherever a parent class is expected).
 * Can be applied to both functions and classes (in this case it will be applied to all methods of the class)
 * Highly configurable
   * Global on/off switch

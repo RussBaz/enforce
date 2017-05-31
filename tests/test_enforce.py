@@ -1297,6 +1297,14 @@ def func({inputs}) {returns}:
         with self.assertRaisesRegex(RuntimeTypeError, pattern):
             sample_function(('1', 2))
 
+        parameter_type_str = str(typing.Tuple[int, int, int])
+        sample_function = self.generateStrictFunction([('a', 'typing.Tuple[int, int, int]')], 'None', None)
+
+        pattern = self.generateExceptionPattern(('a', parameter_type_str, 'typing.Tuple[int, int]'))
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function((1, 2))
+
     def test_named_tuple_exception(self):
         from collections import namedtuple
 

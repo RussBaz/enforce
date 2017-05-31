@@ -11,7 +11,7 @@ ValidationResult = typing.NamedTuple('ValidationResult', [('valid', bool), ('dat
 
 class BaseNode:
 
-    def __init__(self, expected_data_type, is_sequence, type_var=False, covariant=None, contravariant=None):
+    def __init__(self, expected_data_type, is_sequence, is_container=False, type_var=False, covariant=None, contravariant=None):
         # is_sequence specifies if it is a sequence node
         # If it is not, then it must be a choice node, i.e. every children is a potential alternative
         # And at least one has to be satisfied
@@ -19,6 +19,7 @@ class BaseNode:
         self.expected_data_type = expected_data_type
         self.is_sequence = is_sequence
         self.is_type_var = type_var
+        self.is_container = is_container
 
         self.covariant = covariant
         self.contravariant = contravariant
@@ -54,7 +55,7 @@ class BaseNode:
         self_validation_result = self.validate_data(validator, clean_data, force)
 
         # 3
-        if not self_validation_result.valid:
+        if not self_validation_result.valid and not self.is_container:
             yield self_validation_result
             return
 
@@ -72,7 +73,7 @@ class BaseNode:
         actual_type = self.get_actual_data_type(self_validation_result, child_validation_results, valid)
 
         # 6
-        if not valid:
+        if not valid or not self_validation_result.valid:
             yield ValidationResult(False, self_validation_result.data, actual_type)
             return
 
@@ -98,9 +99,24 @@ class BaseNode:
         # Note, if len(self.children) changes during iteration, errors *will* occur
         children_validation_results = []
 
-        for i, child in enumerate(self.children):
-            validation_result = yield child.validate(propagated_data[i], validator, self.is_type_var)
-            children_validation_results.append(validation_result)
+        number_of_children = len(self.children)
+
+        if len(propagated_data) < len(self.children):
+            for i, data in enumerate(propagated_data):
+                validation_result = yield self.children[i].validate(data, validator, self.is_type_var)
+                children_validation_results.append(validation_result)
+        elif len(propagated_data) > len(self.children):
+            number_of_extra_elements = len(propagated_data) - len(self.children)
+            for i, child in enumerate(self.children):
+                validation_result = yield child.validate(propagated_data[i], validator, self.is_type_var)
+                children_validation_results.append(validation_result)
+            for i in range(number_of_extra_elements):
+                data = propagated_data[number_of_children + i]
+                children_validation_results.append(ValidationResult(False, data, type(data).__name__))
+        else:
+            for i, child in enumerate(self.children):
+                validation_result = yield child.validate(propagated_data[i], validator, self.is_type_var)
+                children_validation_results.append(validation_result)
         
         yield children_validation_results
 
@@ -241,7 +257,7 @@ class UnionNode(BaseNode):
     """
 
     def __init__(self, **kwargs):
-        super().__init__(typing.Any, is_sequence=False, **kwargs)
+        super().__init__(typing.Any, is_sequence=False, is_container=True, **kwargs)
 
     def validate_data(self, validator, data, sticky=False):
         return ValidationResult(valid=True, data=data, type_name=type(data).__name__)
@@ -306,7 +322,7 @@ class TupleNode(BaseNode):
 
     def __init__(self, variable_length=False, **kwargs):
         self.variable_length = variable_length
-        super().__init__(typing.Tuple, is_sequence=True, **kwargs)
+        super().__init__(typing.Tuple, is_sequence=True, is_container=True, **kwargs)
 
     def validate_data(self, validator, data, sticky=False):
         covariant = self.covariant or validator.settings.covariant
@@ -370,7 +386,7 @@ class NamedTupleNode(BaseNode):
     def __init__(self, data_type, **kwargs):
         from .decorators import runtime_validation
 
-        super().__init__(runtime_validation(data_type), is_sequence=True, **kwargs)
+        super().__init__(runtime_validation(data_type), is_sequence=True, is_container=True, **kwargs)
         self.data_type_name = None
 
     def preprocess_data(self, validator, data):
@@ -428,7 +444,7 @@ class CallableNode(BaseNode):
     """
 
     def __init__(self, data_type, **kwargs):
-        super().__init__(data_type, is_sequence=True, type_var=False, **kwargs)
+        super().__init__(data_type, is_sequence=True, is_container=True, type_var=False, **kwargs)
 
     def preprocess_data(self, validator, data):
         from .enforcers import Enforcer, apply_enforcer
@@ -514,7 +530,7 @@ class GenericNode(BaseNode):
             if not is_type_of_type(type(enforcer), Enforcer, covariant=covariant, contravariant=contravariant):
                 enforcer =  GenericProxy(data_type).__enforcer__
 
-        super().__init__(enforcer, is_sequence=True, type_var=False, **kwargs)
+        super().__init__(enforcer, is_sequence=True, is_container=True, type_var=False, **kwargs)
 
     def preprocess_data(self, validator, data):
         from .enforcers import Enforcer, GenericProxy
@@ -566,7 +582,7 @@ class GenericNode(BaseNode):
 class MappingNode(BaseNode):
 
     def __init__(self, data_type, **kwargs):
-        super().__init__(data_type, is_sequence=True, **kwargs)
+        super().__init__(data_type, is_sequence=True, is_container=True, **kwargs)
 
     def validate_data(self, validator, data, sticky=False):
         if not isinstance(data, type):
@@ -605,9 +621,9 @@ class MappingNode(BaseNode):
     def map_data(self, validator, self_validation_result):
         data = self_validation_result.data
         output = []
-
-        for item_pair in data.items():
-            output.append(item_pair)
+        if self_validation_result.valid:
+            for item_pair in data.items():
+                output.append(item_pair)
 
         return output
 
