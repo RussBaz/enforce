@@ -111,6 +111,14 @@ class SimpleTypesTests(unittest.TestCase):
         self.assertEqual(sample(100.3), 100.3)
         self.assertIsNone(sample(None))
 
+        @runtime_validation
+        def foo(a: typing.Any) -> typing.Any:
+            return 10
+
+        foo([10,20])
+
+        self.assertEqual(foo([10, 20]), 10)
+
     def test_none(self):
         @runtime_validation
         def sample(data: None) -> None:

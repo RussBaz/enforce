@@ -264,7 +264,10 @@ def sort_and_flat_type(type_in):
     """
     # Checks if the type is in the list of type aliases
     # And replaces it (if found) with a base form
-    type_in = TYPE_ALIASES.get(type_in, type_in)
+    try:
+        type_in = TYPE_ALIASES.get(type_in, type_in)
+    except TypeError:
+        pass
 
     if type_in.__class__ is UnionMeta:
         nested_types_in = type_in.__union_params__

@@ -190,6 +190,9 @@ class TypesCheckingTests(unittest.TestCase):
         """
         self.assertTrue(is_type_of_type(Animal, Any))
         self.assertTrue(is_type_of_type(None, Any))
+        self.assertTrue(is_type_of_type(12, Any))
+        self.assertTrue(is_type_of_type([1, 3, 'str'], Any))
+        self.assertTrue(type, Any)
 
     def test_enhanced_type_var(self):
         """

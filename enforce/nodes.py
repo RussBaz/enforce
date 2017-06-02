@@ -122,9 +122,10 @@ class BaseNode:
             for i, child in enumerate(self.children):
                 validation_result = yield child.validate(propagated_data[i], validator, self.is_type_var)
                 children_validation_results.append(validation_result)
-            for i in range(number_of_extra_elements):
-                data = propagated_data[number_of_children + i]
-                children_validation_results.append(ValidationResult(False, data, extract_type_name(data)))
+            if self.bound or not self.expected_data_type is typing.Any:
+                for i in range(number_of_extra_elements):
+                    data = propagated_data[number_of_children + i]
+                    children_validation_results.append(ValidationResult(False, data, extract_type_name(data)))
         else:
             for i, child in enumerate(self.children):
                 validation_result = yield child.validate(propagated_data[i], validator, self.is_type_var)
