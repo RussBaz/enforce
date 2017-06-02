@@ -124,7 +124,7 @@ class BaseNode:
                 children_validation_results.append(validation_result)
             for i in range(number_of_extra_elements):
                 data = propagated_data[number_of_children + i]
-                children_validation_results.append(ValidationResult(False, data, type(data).__name__))
+                children_validation_results.append(ValidationResult(False, data, extract_type_name(data)))
         else:
             for i, child in enumerate(self.children):
                 validation_result = yield child.validate(propagated_data[i], validator, self.is_type_var)
@@ -172,7 +172,7 @@ class BaseNode:
         """
         Responsible for determining if node is of specific type
         """
-        return ValidationResult(valid=False, data=data, type_name=type(data).__name__)
+        return ValidationResult(valid=False, data=data, type_name=extract_type_name(data))
 
     def map_data(self, validator, self_validation_result):
         """
@@ -264,7 +264,7 @@ class UnionNode(BaseNode):
         super().__init__(typing.Any, is_sequence=False, is_container=True, **kwargs)
 
     def validate_data(self, validator, data, sticky=False):
-        return ValidationResult(valid=True, data=data, type_name=type(data).__name__)
+        return ValidationResult(valid=True, data=data, type_name=extract_type_name(data))
 
     def map_data(self, validator, self_validation_result):
         return [self_validation_result.data for _ in self.children]
@@ -336,11 +336,11 @@ class TupleNode(BaseNode):
 
         if is_type_of_type(input_type, self.expected_data_type, covariant=covariant, contravariant=contravariant):
             if self.variable_length:
-                return ValidationResult(valid=True, data=data, type_name=input_type.__name__)
+                return ValidationResult(valid=True, data=data, type_name=extract_type_name(input_type))
             else:
-                return ValidationResult(valid=len(data) == len(self.children), data=data, type_name=input_type.__name__)
+                return ValidationResult(valid=len(data) == len(self.children), data=data, type_name=extract_type_name(input_type))
         else:
-            return ValidationResult(valid=False, data=data, type_name=input_type.__name__)
+            return ValidationResult(valid=False, data=data, type_name=extract_type_name(input_type))
 
     def validate_children(self, validator, propagated_data):
         if self.variable_length:
@@ -510,7 +510,7 @@ class CallableNode(BaseNode):
 
             return ValidationResult(valid=params_match, data=data, type_name=callable_signature)
         except AttributeError:
-            return ValidationResult(valid=False, data=data, type_name=input_type)
+            return ValidationResult(valid=False, data=data, type_name=extract_type_name(input_type))
 
 
 class GenericNode(BaseNode):
@@ -611,6 +611,8 @@ class MappingNode(BaseNode):
             out_data = (key_validation_result.data, value_validation_result.data)
             out_name = (key_validation_result.type_name, value_validation_result.type_name)
 
+            out_name = [TYPE_NAME_ALIASES.get(n, n) for n in out_name]
+
             out_result = ValidationResult(valid=is_valid, data=out_data, type_name=out_name)
 
             children_validation_results.append(out_result)
@@ -660,3 +662,12 @@ class MappingNode(BaseNode):
         actual_type = actual_type + '[' + key_type + ', ' + value_type + ']'
 
         return actual_type
+
+
+def extract_type_name(data):
+    if isinstance(data, type):
+        type_name = data.__name__
+    else:
+        type_name = type(data).__name__
+
+    return TYPE_NAME_ALIASES.get(type_name, type_name)
