@@ -1,7 +1,7 @@
 import inspect
 import typing
-import threading
 import functools
+from multiprocessing import RLock
 from functools import wraps
 
 from wrapt import decorator, ObjectProxy
@@ -12,8 +12,8 @@ from .enforcers import apply_enforcer, Parameters, GenericProxy
 from .types import is_type_of_type
 
 
-BuildLock = threading.RLock()
-RunLock = threading.RLock()
+BuildLock = RLock()
+RunLock = RLock()
 
 
 def runtime_validation(data=None, *, enabled=None, group=None):
