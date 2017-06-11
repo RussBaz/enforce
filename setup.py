@@ -4,7 +4,7 @@ from pathlib import Path
 ROOT = Path('.')
 README_PATH = ROOT / 'README.md'
 
-with open(README_PATH.absolute(), encoding='utf-8') as f:
+with README_PATH.open(encoding='utf-8') as f:
     LONG_DESCRIPTION = f.read()
 
 setup(
