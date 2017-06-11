@@ -288,7 +288,8 @@ possible.
 
 ## Changelog
 
-### 0.3.4 - xx.xx.2017
+### 0.3.4 - 11.06.2017
+* Further improved exception messages and their consistency
 * General bug fixes
 
 ### 0.3.3 - 23.04.2017

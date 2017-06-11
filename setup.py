@@ -1,16 +1,16 @@
-from os import path
-import codecs
 from setuptools import setup
+from pathlib import Path
 
-ROOT = path.abspath(path.dirname(__file__))
+ROOT = Path('.')
+README_PATH = ROOT / 'README.md'
 
-with codecs.open(path.join(ROOT, 'README.md'), encoding='utf-8') as f:
-    LONG_DESCRIPTION = ''.join(f.readlines())
+with open(README_PATH.absolute(), encoding='utf-8') as f:
+    LONG_DESCRIPTION = f.read()
 
 setup(
     name='enforce',
 
-    version='0.3.3',
+    version='0.3.4',
 
     description='Python 3.5+ library for integration testing and data validation through configurable and optional runtime type hint enforcement.',
     long_description=LONG_DESCRIPTION,
@@ -27,7 +27,7 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.5',
     ],
-    keywords='type validation type hints runtime type checking',
+    keywords="""typechecker validation testing runtime type-hints typing decorators""",
     packages=['enforce'],
     install_requires=[
         'wrapt'
