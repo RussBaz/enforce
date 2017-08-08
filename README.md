@@ -158,6 +158,51 @@ class DoTheThing(object):
         return str(a * b)
 ```
 
+This fits nicely with [autoclass](https://github.com/smarie/python-autoclass) to write compact validated classes: the following snippet shows a `HouseConfiguration` class with four attributes. Each attribute is validated against the expected type everytime you try to set it (constructor AND modifications), and the `name` and `surface` attribute are further validated (`len(name) > 0` and `surface >= 0`). Notice the size of the resulting code !
+
+```python
+from autoclass import autoargs, autoprops, setter_override
+from autoclass import Boolean, validate, minlens, gt
+from numbers import Real, Integral
+from typing import Optional
+from enforce import runtime_validation, config
+
+config(dict(mode='covariant'))  # to accept subclasses in validation
+
+@runtime_validation
+@autoprops
+class HouseConfiguration(object):
+    @autoargs
+    @validate(name=minlens(0),
+              surface=gt(0))
+    def __init__(self,
+                 name: str,
+                 surface: Real,
+                 nb_floors: Optional[Integral] = 1,
+                 with_windows: Boolean = False):
+        pass
+
+    # -- overriden setter for surface for custom validation or other things
+    @setter_override
+    def surface(self, surface):
+        print('Set surface to {}'.format(surface))
+        self._surface = surface
+```
+
+We can test that validation works:
+
+```python
+# Test
+t = HouseConfiguration('test', 12, 2)
+t.nb_floors = None  # Declared 'Optional': no error
+t.nb_floors = 2.2   # Type validation: enforce raises a RuntimeTypeError
+t.surface = -1      # Value validation: @validate raises a ValidationError
+HouseConfiguration('', 12, 2)  # Value validation: @validate raises a ValidationError
+```
+
+Note that the `Real` and `Integral` types come from the [`numbers`](https://docs.python.org/3.6/library/numbers.html) built-in module. They provide an easy way to support both python primitives AND e.g. numpy primitives. `autoclass` provides an additional `Boolean` class to complete the picture.
+
+
 #### NamedTuple
 
 Enforce.py supports typed NamedTuples.
