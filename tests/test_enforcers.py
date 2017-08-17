@@ -49,6 +49,14 @@ class EnforcerTests(unittest.TestCase):
 
         self.assertEqual(func_type, Callable[[int], None])
 
+    def test_callable_without_known_return_is_any(self):
+        func_type = self.get_function_type(self.func_int_empty___empty())
+        args = func_type.__args__
+        self.assertEqual(len(args), 3)
+        self.assertEqual(args[0], int)
+        self.assertEqual(args[1], Any)
+        self.assertEqual(args[2], Any)
+
     def test_callable_missing_annotation(self):
         func_type = self.get_function_type(self.func_int_empty___none())
 

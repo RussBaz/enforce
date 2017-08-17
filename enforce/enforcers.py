@@ -279,8 +279,8 @@ def generate_callable_from_signature(signature):
             if return_type != typing.Any:
                 result = typing.Callable[positional_arguments, return_type]
         elif (len(positional_arguments) == 0 or
-            any([a != typing.Any for a in positional_arguments]) or
-            return_type is not typing.Any):
-            result = typing.Callable[positional_arguments, return_type]
+                any([a != typing.Any for a in positional_arguments]) or
+                return_type is not typing.Any):
+                result = typing.Callable[positional_arguments, return_type]
 
     return result

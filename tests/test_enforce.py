@@ -81,6 +81,24 @@ class GeneralTests(unittest.TestCase):
 
         example()
 
+    def test_instance_methods_as_arguments(self):
+        """
+        Verifies that the methods of an instance can be used as arguments for decorated function calls
+        """
+        class Sample:
+            @runtime_validation
+            def method(self, a: typing.Dict):
+                return a
+
+        s = Sample()
+
+        @runtime_validation
+        def foo(callback: typing.Optional[typing.Callable[[typing.Dict], typing.Any]]=None):
+            return callback
+
+        foo(None)
+        foo(s.method)
+
     @runtime_validation
     def sample_function(self, text: str, data: typing.Union[int, None]) -> typing.Optional[int]:
         try:
@@ -1357,6 +1375,19 @@ def func({inputs}) {returns}:
 
         with self.assertRaisesRegex(RuntimeTypeError, pattern_e):
             foo(argument_e)
+
+    def test_callable_exception(self):
+        parameter_type_str = str(typing.Callable[[typing.Any], None])
+        sample_function = self.generateStrictFunction([('a', 'typing.Callable[[typing.Any], None]')], 'int', 12)
+
+        pattern = self.generateExceptionPattern(('a', parameter_type_str, 'typing.Callable[[typing.Dict], None]'))
+
+        @runtime_validation
+        def foo(a: typing.Dict) -> None:
+            pass
+
+        with self.assertRaisesRegex(RuntimeTypeError, pattern):
+            sample_function(foo)
 
 
 class ConcurrentRunTests(unittest.TestCase):

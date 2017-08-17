@@ -159,9 +159,12 @@ def get_wrapper_builder(configuration, excluded_fields=None):
         else:
             if inspect.isclass(instance):
                 # Decorator was applied to a classmethod.
+                print('classmethod')
                 return decorate(wrapped, configuration, None)
             else:
                 # Decorator was applied to an instancemethod.
+                print('instancemethod')
+                print(type(wrapped))
                 return decorate(wrapped, configuration, instance)
 
     return decorator(build_wrapper)
