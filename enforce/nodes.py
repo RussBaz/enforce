@@ -509,7 +509,7 @@ class CallableNode(BaseNode):
                 else:
                     params_match = True
 
-            return ValidationResult(valid=params_match, data=data, type_name=callable_signature)
+            return ValidationResult(valid=params_match, data=data, type_name=str(callable_signature))
         except AttributeError:
             return ValidationResult(valid=False, data=data, type_name=extract_type_name(input_type))
 

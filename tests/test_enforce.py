@@ -1154,8 +1154,23 @@ class ExceptionMessageTests(unittest.TestCase):
         self.prefix_message = "\n  The following runtime type errors were encountered:"
         self.input_error_message = "Argument '{0}' was not of type {1}. Actual type was {2}."
         self.return_error_message = "Return value was not of type {0}. Actual type was {1}."
+        self.errors = {
+            'errors': [],
+            'hints': {}
+        }
 
-    def generateStrictFunction(self, inputs: typing.List[typing.Tuple[str, str]], returns: typing.Optional[str], result) -> typing.Callable:
+        def error_processor(p, e, h, r):
+            self.errors['errors'] = e
+            self.errors['hints'] = h
+            raise RuntimeTypeError('Please ignore me')
+
+        config(reset=True)
+        config({'errors': {'processor': error_processor}})
+
+    def tearDown(self):
+        config(reset=True)
+
+    def generate_strict_function(self, inputs: typing.List[typing.Tuple[str, str]], returns: typing.Optional[str], result) -> typing.Callable:
         template = """
 @runtime_validation
 def func({inputs}) {returns}:
@@ -1174,7 +1189,35 @@ def func({inputs}) {returns}:
 
         exec(formatted_template, scope_data)
 
-        return scope_data['func']
+        func = scope_data['func']
+
+        return self.skip_type_errors(func)
+
+    def skip_type_errors(self, func):
+        def wrapped(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except RuntimeTypeError:
+                pass
+
+        return wrapped
+
+    def get_error(self, pos=None):
+        if pos is None:
+            return self.errors['errors']
+        else:
+            return self.errors['errors'][pos]
+
+    def assert_first_error_is(self, parameter_name: str, expected_value: str):
+        self.assertEqual(self.first_error, (parameter_name, expected_value))
+
+    @property
+    def first_error(self):
+        return self.get_error(0)
+
+    @property
+    def hints(self):
+        return self.errors['hints']
 
     def generateExceptionPattern(self, messages, is_return=False):
         if is_return:
@@ -1189,53 +1232,52 @@ def func({inputs}) {returns}:
         return pattern
 
     def test_simple_exceptions(self):
-        sample_function = self.generateStrictFunction([('a', 'int')], 'str', 12)
+        sample_function = self.generate_strict_function(
+            inputs=[('a', 'int')],
+            returns='str',
+            result=12
+        )
 
-        pattern = self.generateExceptionPattern(('a', str(int), 'str'))
+        sample_function('12')
+        self.assertEqual(self.first_error, ('a', 'str'))
 
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function('12')
+        sample_function(12)
 
-        pattern = self.generateExceptionPattern((str(str), 'int'), True)
-
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function(12)
+        self.assertEqual(self.first_error, ('return', 'int'))
 
     def test_list_exceptions(self):
-        sample_function = self.generateStrictFunction([('a', 'typing.List[int]')], 'str', 12)
+        sample_function = self.generate_strict_function(
+            inputs=[('a', 'typing.List[int]')],
+            returns='str',
+            result=12
+        )
 
-        pattern = self.generateExceptionPattern(('a', str(typing.List[int]), 'int'))
+        sample_function(12)
+        self.assert_first_error_is('a', 'int')
 
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function(12)
+        sample_function('12')
+        self.assert_first_error_is('a', 'str')
 
-        pattern = self.generateExceptionPattern(('a', str(typing.List[int]), 'typing.List[str]'))
+        sample_function(['12'])
+        self.assert_first_error_is('a', 'typing.List[str]')
 
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function(['12'])
-
-        pattern = self.generateExceptionPattern((str(str), 'int'), True)
-
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function([12])
+        sample_function([12])
+        self.assert_first_error_is('return', 'int')
 
     def test_set_exceptions(self):
-        sample_function = self.generateStrictFunction([('a', 'typing.Set[int]')], 'str', 12)
+        sample_function = self.generate_strict_function(
+            inputs=[('a', 'typing.Set[int]')],
+            returns='str',
+            result=12)
 
-        pattern = self.generateExceptionPattern(('a', str(typing.Set[int]), 'int'))
+        sample_function(12)
+        self.assert_first_error_is('a', 'int')
 
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function(12)
+        sample_function({'12'})
+        self.assert_first_error_is('a', 'typing.Set[str]')
 
-        pattern = self.generateExceptionPattern(('a', str(typing.Set[int]), 'typing.Set[str]'))
-
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function({'12'})
-
-        pattern = self.generateExceptionPattern((str(str), 'int'), True)
-
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function({12})
+        sample_function({12})
+        self.assert_first_error_is('return', 'int')
 
     def test_dict_exceptions(self):
         scope = {
@@ -1243,151 +1285,128 @@ def func({inputs}) {returns}:
             'type_alias': typing.Dict[str, int]
         }
 
+        @self.skip_type_errors
         @runtime_validation
         def sample_function(a: scope['type_alias']) -> scope['type_alias']:
             return scope['data']
 
-        pattern = self.generateExceptionPattern(('a', scope['type_alias'], 'int'))
+        sample_function(12)
+        self.assert_first_error_is('a', 'int')
 
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function(12)
+        # If outer container is different, there is no need to check inner contents
+        sample_function({'12'})
+        self.assert_first_error_is('a', 'typing.Set')
 
-        pattern = self.generateExceptionPattern(('a', scope['type_alias'], 'typing.Set'))
-
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function({'12'})
-
-        pattern = self.generateExceptionPattern(('a', scope['type_alias'], 'typing.Dict[str, float]'))
-
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function({'s': 12.0})
+        sample_function({'s': 12.0})
+        self.assert_first_error_is('a', 'typing.Dict[str, float]')
 
         scope['data'] = 12
-        pattern = self.generateExceptionPattern((scope['type_alias'], 'int'), is_return=True)
 
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function({'s': 12})
+        sample_function({'s': 12})
+        self.assert_first_error_is('return', 'int')
 
         scope['data'] = {'12'}
-        pattern = self.generateExceptionPattern((scope['type_alias'], 'typing.Set'), is_return=True)
 
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function({'s': 12})
+        sample_function({'s': 12})
+        self.assert_first_error_is('return', 'typing.Set')
 
         scope['data'] = {'s': 12.0}
-        pattern = self.generateExceptionPattern((scope['type_alias'], 'typing.Dict[str, float]'), is_return=True)
 
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function({'s': 12})
+        sample_function({'s': 12})
+        self.assert_first_error_is('return', 'typing.Dict[str, float]')
 
         scope = {
             'data': None,
             'type_alias': typing.Dict[str, typing.Dict[str, typing.Optional[int]]]
         }
 
+        @self.skip_type_errors
         @runtime_validation
         def sample_function(a: scope['type_alias']) -> scope['type_alias']:
             return scope['data']
 
-        pattern = self.generateExceptionPattern(('a', scope['type_alias'], 'typing.Dict[str, typing.Dict[str, typing.Union[NoneType, float, int]]]'))
+        sample_function({'hello': {'world': 12, 'w': None, 'r': 12.0}})
 
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function({'hello': {'world': 12, 'w': None, 'r': 12.0}})
+        self.assert_first_error_is('a', 'typing.Dict[str, typing.Dict[str, typing.Union[NoneType, float, int]]]')
 
     def test_union_exceptions(self):
-        parameter_type_str = str(typing.Union[int, str])
+        sample_function = self.generate_strict_function(
+            inputs=[('a', 'typing.Union[int, str]')],
+            returns='typing.List[typing.Union[int, str]]',
+            result=[None]
+        )
 
-        sample_function = self.generateStrictFunction([('a', 'typing.Union[int, str]')], 'typing.List[typing.Union[int, str]]', [None])
+        sample_function(None)
+        self.assert_first_error_is('a', 'NoneType')
 
-        pattern = self.generateExceptionPattern(('a', parameter_type_str, 'NoneType'))
+        sample_function([None])
+        self.assert_first_error_is('a', 'typing.List')
 
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function(None)
-
-        pattern = self.generateExceptionPattern(('a', parameter_type_str, 'typing.List'))
-
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function([None])
-
-        pattern = self.generateExceptionPattern((str(typing.List[typing.Union[int, str]]), 'typing.List[NoneType]'), True)
-
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function(12)
+        sample_function(12)
+        self.assert_first_error_is('return', 'typing.List[NoneType]')
 
     def test_tuple_exception(self):
-        parameter_type_str = str(typing.Tuple[int, typing.Union[int, str]])
-        sample_function = self.generateStrictFunction([('a', 'typing.Tuple[int, typing.Union[int, str]]')], 'int', 12)
+        sample_function = self.generate_strict_function(
+            inputs=[('a', 'typing.Tuple[int, typing.Union[int, str]]')],
+            returns='int',
+            result=12
+        )
 
-        pattern = self.generateExceptionPattern(('a', parameter_type_str, 'typing.Tuple[str, int]'))
+        sample_function(('1', 2))
+        self.assert_first_error_is('a', 'typing.Tuple[str, int]')
 
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function(('1', 2))
+        sample_function = self.generate_strict_function(
+            inputs=[('a', 'typing.Tuple[int, int, int]')],
+            returns='None',
+            result=None
+        )
 
-        parameter_type_str = str(typing.Tuple[int, int, int])
-        sample_function = self.generateStrictFunction([('a', 'typing.Tuple[int, int, int]')], 'None', None)
+        sample_function((1, 2))
+        self.assert_first_error_is('a', 'typing.Tuple[int, int]')
 
-        pattern = self.generateExceptionPattern(('a', parameter_type_str, 'typing.Tuple[int, int]'))
-
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function((1, 2))
-
-        parameter_type_str = str(typing.Tuple[int, int])
-        sample_function = self.generateStrictFunction([('a', 'typing.Tuple[int, int]')], 'None', None)
-
-        pattern = self.generateExceptionPattern(('a', parameter_type_str, 'typing.Tuple[int, int, str]'))
-
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function((1, 2, 'abc'))
+        sample_function((1, 2, 'abc'))
+        self.assert_first_error_is('a', 'typing.Tuple[int, int, str]')
 
     def test_named_tuple_exception(self):
         from collections import namedtuple
 
         MyNamedTuple = typing.NamedTuple('MyNamedTuple', [('a', int), ('b', str)])
-        parameter_type_str = str(MyNamedTuple)
 
+        @self.skip_type_errors
         @runtime_validation
         def foo(data: MyNamedTuple):
             return str(data.b) + str(data.a)
 
-        argument_a = MyNamedTuple(10, 10)
-        argument_b = (10, 'ten')
-        argument_c = 12
-        argument_d = namedtuple('MyNamedTuple', ['a', 'b'])(10, 'ten')
-        argument_e = None
+        foo(MyNamedTuple(10, 10))
 
-        pattern_a = self.generateExceptionPattern(('data', parameter_type_str, parameter_type_str + " with incorrect arguments: a -> <class 'int'>, b -> <class 'int'>"))
-        pattern_b = self.generateExceptionPattern(('data', parameter_type_str, 'typing.Tuple'))
-        pattern_c = self.generateExceptionPattern(('data', parameter_type_str, 'int'))
-        pattern_d = self.generateExceptionPattern(('data', parameter_type_str, 'untyped MyNamedTuple'))
-        pattern_e = self.generateExceptionPattern(('data', parameter_type_str, 'NoneType'))
+        error_string = str(MyNamedTuple) + " with incorrect arguments: a -> <class 'int'>, b -> <class 'int'>"
+        self.assert_first_error_is('data', error_string)
 
-        with self.assertRaisesRegex(RuntimeTypeError, pattern_a):
-            foo(argument_a)
+        foo((10, 'ten'))
+        self.assert_first_error_is('data', 'typing.Tuple')
 
-        with self.assertRaisesRegex(RuntimeTypeError, pattern_b):
-            foo(argument_b)
+        foo(12)
+        self.assert_first_error_is('data', 'int')
 
-        with self.assertRaisesRegex(RuntimeTypeError, pattern_c):
-            foo(argument_c)
+        foo(namedtuple('MyNamedTuple', ['a', 'b'])(10, 'ten'))
+        self.assert_first_error_is('data', 'untyped MyNamedTuple')
 
-        with self.assertRaisesRegex(RuntimeTypeError, pattern_d):
-            foo(argument_d)
-
-        with self.assertRaisesRegex(RuntimeTypeError, pattern_e):
-            foo(argument_e)
+        foo(None)
+        self.assert_first_error_is('data', 'NoneType')
 
     def test_callable_exception(self):
-        parameter_type_str = str(typing.Callable[[typing.Any], None])
-        sample_function = self.generateStrictFunction([('a', 'typing.Callable[[typing.Any], None]')], 'int', 12)
-
-        pattern = self.generateExceptionPattern(('a', parameter_type_str, 'typing.Callable[[typing.Dict], None]'))
+        sample_function = self.generate_strict_function(
+            inputs=[('a', 'typing.Callable[[typing.Any], None]')],
+            returns='int',
+            result=12
+        )
 
         @runtime_validation
         def foo(a: typing.Dict) -> None:
             pass
 
-        with self.assertRaisesRegex(RuntimeTypeError, pattern):
-            sample_function(foo)
+        sample_function(foo)
+        self.assert_first_error_is('a', 'typing.Callable[[typing.Dict], NoneType]')
 
 
 class ConcurrentRunTests(unittest.TestCase):

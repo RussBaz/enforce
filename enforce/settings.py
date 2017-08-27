@@ -107,7 +107,10 @@ def reset_config():
         'default': True,
         'mode': ModeChoices.invariant,
         'groups': None,
-        'errors': None
+        'errors': {
+            'parser': parse_errors,
+            'processor': process_errors
+        }
     }
 
     keys_to_remove = []
