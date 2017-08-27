@@ -5,7 +5,7 @@ class RuntimeTypeError(Exception):
     pass
 
 
-def parse_errors(errors: typing.List[str], hints: typing.Dict[str, type], return_type: bool=False) -> str:
+def parse_errors(errors: typing.List[typing.Tuple[str, str]], hints: typing.Dict[str, type], return_type: bool=False) -> str:
     """
     Generates an exception message based on which fields failed
     """
@@ -16,8 +16,6 @@ def parse_errors(errors: typing.List[str], hints: typing.Dict[str, type], return
     for error in errors:
         argument_name, argument_type = error
         hint = hints.get(argument_name, type(None))
-        if hint is None:
-            hint = type(None)
         if return_type:
             output += '\n' + return_error_message.format(hint, argument_type)
         else:
