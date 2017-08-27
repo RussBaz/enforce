@@ -1,7 +1,7 @@
 import enum
 import inspect
 
-from .exceptions import parse_errors, process_errors
+from .exceptions import parse_errors, process_errors, RuntimeTypeError
 
 from .utils import merge_dictionaries
 
@@ -24,6 +24,10 @@ class ErrorSettings:
     @property
     def processor(self):
         return _GLOBAL_SETTINGS['errors']['processor']
+
+    @property
+    def exception(self):
+        return _GLOBAL_SETTINGS['errors']['exception']
 
 
 class Settings:
@@ -109,7 +113,8 @@ def reset_config():
         'groups': None,
         'errors': {
             'parser': parse_errors,
-            'processor': process_errors
+            'processor': process_errors,
+            'exception': RuntimeTypeError
         }
     }
 
@@ -145,7 +150,8 @@ def parse_config(options):
         'mode': None,
         'errors': {
             'parser': None,
-            'processor': None
+            'processor': None,
+            'exception': None
         }
         }
 
@@ -232,6 +238,11 @@ def apply_config(options=None, reset=False):
                                 raise KeyError('Error parser is not a function')
                             else:
                                 error_handling_update[k] = v
+                        elif k == 'exception':
+                            if v is None:
+                                error_handling_update.pop(k, None)
+                            else:
+                                error_handling_update[k] = v
                         else:
                             raise KeyError('Unknown option for errors: \'{}\''.format(k))
 
@@ -247,6 +258,7 @@ _GLOBAL_SETTINGS = {
     'groups': {},
     'errors': {
         'parser': parse_errors,
-        'processor': process_errors
+        'processor': process_errors,
+        'exception': RuntimeTypeError
     }
 }

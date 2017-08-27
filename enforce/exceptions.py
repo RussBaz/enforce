@@ -27,6 +27,6 @@ def raise_errors(exception, message):
     raise exception(message)
 
 
-def process_errors(parser, errors, hints, is_return_type=False):
+def process_errors(parser, exception, errors, hints, is_return_type=False):
     message = parser(errors, hints, is_return_type)
-    raise_errors(RuntimeTypeError, message)
+    raise_errors(exception, message)

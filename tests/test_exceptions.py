@@ -46,7 +46,12 @@ class ExceptionsTests(unittest.TestCase):
             return errors + hints + is_return
 
         with self.assertRaises(RuntimeTypeError) as error:
-            process_errors(parser, e, h, r)
+            process_errors(parser, RuntimeTypeError, e, h, r)
+
+        self.assertEqual(str(error.exception), message)
+
+        with self.assertRaises(TypeError) as error:
+            process_errors(parser, TypeError, e, h, r)
 
         self.assertEqual(str(error.exception), message)
 

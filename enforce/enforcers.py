@@ -212,7 +212,7 @@ def generate_new_enforcer(func, generic, parent_root, instance_of, settings):
         else:
             signature = func.__wrapped__ if func_type is GenericProxy else func
 
-        validator = init_validator(hints, parent_root)
+        validator = init_validator(settings, hints, parent_root)
     else:
         if type(func) is Proxy:
             signature = inspect.signature(func.__wrapped__)
@@ -222,7 +222,7 @@ def generate_new_enforcer(func, generic, parent_root, instance_of, settings):
             hints = typing.get_type_hints(func)
 
         bound = False
-        validator = init_validator(hints, parent_root)
+        validator = init_validator(settings, hints, parent_root)
 
     return Enforcer(validator, signature, hints, generic, bound, settings)
 
@@ -230,8 +230,9 @@ def generate_new_enforcer(func, generic, parent_root, instance_of, settings):
 def process_errors(config, errors, hints, is_return_type=False):
     parser = config.errors.parser
     processor = config.errors.processor
+    exception = config.errors.exception
 
-    processor(parser, errors, hints, is_return_type)
+    processor(parser, exception, errors, hints, is_return_type)
 
 
 def generate_callable_from_signature(signature):

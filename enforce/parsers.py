@@ -51,7 +51,7 @@ def _parse_namedtuple(node, hint, validator, parsers):
 
     #yield _parse_tuple(node, hint, validator, parsers)
 
-    new_node = yield nodes.NamedTupleNode(hint)
+    new_node = yield nodes.NamedTupleNode(hint, validator.settings.errors.exception)
     validator.all_nodes.append(new_node)
     yield _yield_parsing_result(node, new_node)
 

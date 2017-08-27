@@ -1159,10 +1159,10 @@ class ExceptionMessageTests(unittest.TestCase):
             'hints': {}
         }
 
-        def error_processor(p, e, h, r):
+        def error_processor(p, ex, e, h, r):
             self.errors['errors'] = e
             self.errors['hints'] = h
-            raise RuntimeTypeError('Please ignore me')
+            raise ex('Please ignore me')
 
         config(reset=True)
         config({'errors': {'processor': error_processor}})

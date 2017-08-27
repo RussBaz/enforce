@@ -1,7 +1,7 @@
 import unittest
 
 from enforce.settings import Settings, _GLOBAL_SETTINGS, ModeChoices, config
-from enforce.exceptions import parse_errors, process_errors
+from enforce.exceptions import parse_errors, process_errors, RuntimeTypeError
 
 
 class SettingsTests(unittest.TestCase):
@@ -471,6 +471,9 @@ class SettingsTests(unittest.TestCase):
         def processor():
             pass
 
+        class NewException(Exception):
+            pass
+
         config_update = {
             'enabled': False,
             'groups': {
@@ -480,7 +483,8 @@ class SettingsTests(unittest.TestCase):
             'mode': ModeChoices.bivariant.name,
             'errors': {
                 'parser': parser,
-                'processor': processor
+                'processor': processor,
+                'exception': NewException
             }
             }
 
@@ -492,6 +496,7 @@ class SettingsTests(unittest.TestCase):
         self.assertNotEqual(_GLOBAL_SETTINGS['groups'], {})
         self.assertIs(_GLOBAL_SETTINGS['errors']['parser'], parser)
         self.assertIs(_GLOBAL_SETTINGS['errors']['processor'], processor)
+        self.assertIs(_GLOBAL_SETTINGS['errors']['exception'], NewException)
 
         config(reset=True)
 
@@ -501,6 +506,7 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(_GLOBAL_SETTINGS['groups'], {})
         self.assertIs(_GLOBAL_SETTINGS['errors']['parser'], parse_errors)
         self.assertIs(_GLOBAL_SETTINGS['errors']['processor'], process_errors)
+        self.assertIs(_GLOBAL_SETTINGS['errors']['exception'], RuntimeTypeError)
 
         config(config_update, reset=True)
 
@@ -510,6 +516,7 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(_GLOBAL_SETTINGS['groups'], {})
         self.assertIs(_GLOBAL_SETTINGS['errors']['parser'], parse_errors)
         self.assertIs(_GLOBAL_SETTINGS['errors']['processor'], process_errors)
+        self.assertIs(_GLOBAL_SETTINGS['errors']['exception'], RuntimeTypeError)
 
         # Resetting should also remove unknown global settings
 
@@ -524,6 +531,7 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(_GLOBAL_SETTINGS['groups'], {})
         self.assertIs(_GLOBAL_SETTINGS['errors']['parser'], parse_errors)
         self.assertIs(_GLOBAL_SETTINGS['errors']['processor'], process_errors)
+        self.assertIs(_GLOBAL_SETTINGS['errors']['exception'], RuntimeTypeError)
 
         # Checks if unknown settings are cleared
         self.assertEqual(len(_GLOBAL_SETTINGS), 5)

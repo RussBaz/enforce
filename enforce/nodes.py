@@ -384,11 +384,12 @@ class TupleNode(BaseNode):
 
 class NamedTupleNode(BaseNode):
 
-    def __init__(self, data_type, **kwargs):
+    def __init__(self, data_type, exception_type, **kwargs):
         from .decorators import runtime_validation
 
         super().__init__(runtime_validation(data_type), is_sequence=True, is_container=True, **kwargs)
         self.data_type_name = None
+        self.exception_type = exception_type
 
     def preprocess_data(self, validator, data):
         data_type = type(data)
@@ -407,7 +408,7 @@ class NamedTupleNode(BaseNode):
 
         try:
             return self.expected_data_type(*(getattr(data, field) for field in data._fields))
-        except RuntimeTypeError:
+        except self.exception_type:
             self.data_type_name = (
                 str(type(data)) + ' with incorrect arguments: ' + ', '.join(
                     field + ' -> ' + str(type(getattr(data, field))) for field in data._fields
