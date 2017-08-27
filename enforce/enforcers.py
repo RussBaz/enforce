@@ -68,22 +68,21 @@ class Enforcer:
         kwargs = input_data.kwargs
         skip = input_data.skip
 
-        binded_arguments = self.signature.bind(*args, **kwargs)
-        binded_arguments.apply_defaults()
+        bind_arguments = self.signature.bind(*args, **kwargs)
+        bind_arguments.apply_defaults()
 
         for name in self.hints.keys():
             # First, check argument types (every key not labeled 'return')
             if name != 'return':
-                argument = binded_arguments.arguments.get(name)
+                argument = bind_arguments.arguments.get(name)
                 if not self.validator.validate(argument, name):
                     break
-                binded_arguments.arguments[name] = self.validator.data_out[name]
+                bind_arguments.arguments[name] = self.validator.data_out[name]
         else:
-            valdated_data = Parameters(binded_arguments.args, binded_arguments.kwargs, skip)
-            return valdated_data
+            validated_data = Parameters(bind_arguments.args, bind_arguments.kwargs, skip)
+            return validated_data
 
-        exception_text = parse_errors(self.validator.errors, self.hints)
-        raise RuntimeTypeError(exception_text)
+        process_errors(self.settings, self.validator.errors, self.hints)
 
     def validate_outputs(self, output_data: T) -> T:
         """
@@ -94,8 +93,7 @@ class Enforcer:
 
         if 'return' in self.hints.keys():
             if not self.validator.validate(output_data, 'return'):
-                exception_text = parse_errors(self.validator.errors, self.hints, True)
-                raise RuntimeTypeError(exception_text)
+                process_errors(self.settings, self.validator.errors, self.hints, True)
             else:
                 return self.validator.data_out['return']
         else:
@@ -229,24 +227,11 @@ def generate_new_enforcer(func, generic, parent_root, instance_of, settings):
     return Enforcer(validator, signature, hints, generic, bound, settings)
 
 
-def parse_errors(errors: typing.List[str], hints:typing.Dict[str, type], return_type: bool=False) -> str:
-    """
-    Generates an exception message based on which fields failed
-    """
-    error_message = "       Argument '{0}' was not of type {1}. Actual type was {2}."
-    return_error_message = "        Return value was not of type {0}. Actual type was {1}."
-    output = "\n  The following runtime type errors were encountered:"
+def process_errors(config, errors, hints, is_return_type=False):
+    parser = config.errors.parser
+    processor = config.errors.processor
 
-    for error in errors:
-        argument_name, argument_type = error
-        hint = hints.get(argument_name, type(None))
-        if hint is None:
-            hint = type(None)
-        if return_type:
-            output += '\n' + return_error_message.format(hint, argument_type)
-        else:
-            output += '\n' +  error_message.format(argument_name, hint, argument_type)
-    return output
+    processor(parser, errors, hints, is_return_type)
 
 
 def generate_callable_from_signature(signature):

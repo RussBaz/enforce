@@ -1,5 +1,7 @@
 import enum
-import collections
+import inspect
+
+from .exceptions import parse_errors, process_errors
 
 from .utils import merge_dictionaries
 
@@ -14,10 +16,21 @@ class ModeChoices(enum.Enum):
     bivariant = 3
 
 
+class ErrorSettings:
+    @property
+    def parser(self):
+        return _GLOBAL_SETTINGS['errors']['parser']
+
+    @property
+    def processor(self):
+        return _GLOBAL_SETTINGS['errors']['processor']
+
+
 class Settings:
     def __init__(self, enabled=None, group=None):
         self.group = group or 'default'
         self._enabled = enabled
+        self._error_settings = ErrorSettings()
 
     @property
     def enabled(self):
@@ -61,6 +74,13 @@ class Settings:
         """
         return _GLOBAL_SETTINGS['mode'] in (ModeChoices.contravariant, ModeChoices.bivariant)
 
+    @property
+    def errors(self):
+        """
+        Returns error settings
+        """
+        return self._error_settings
+
     def __bool__(self):
         return bool(self.enabled)
 
@@ -86,7 +106,9 @@ def reset_config():
         'enabled': True,
         'default': True,
         'mode': ModeChoices.invariant,
-        'groups': None}
+        'groups': None,
+        'errors': None
+    }
 
     keys_to_remove = []
 
@@ -117,7 +139,11 @@ def parse_config(options):
             'clear_previous': False,
             'default': None
             },
-        'mode': None
+        'mode': None,
+        'errors': {
+            'parser': None,
+            'processor': None
+        }
         }
 
     return merge_dictionaries(default_options, options)
@@ -191,6 +217,22 @@ def apply_config(options=None, reset=False):
                         _GLOBAL_SETTINGS['mode'] = ModeChoices[value]
                     except KeyError:
                         raise KeyError('Mode must be one of mode choices')
+            elif key == 'errors':
+                error_handling_update = {}
+
+                if value is not None:
+                    for k, v in value.items():
+                        if k in ('parser', 'processor'):
+                            if v is None:
+                                error_handling_update.pop(k, None)
+                            elif not inspect.isfunction(v):
+                                raise KeyError('Error parser is not a function')
+                            else:
+                                error_handling_update[k] = v
+                        else:
+                            raise KeyError('Unknown option for errors: \'{}\''.format(k))
+
+                    _GLOBAL_SETTINGS['errors'].update(error_handling_update)
             else:
                 raise KeyError('Unknown option \'{}\''.format(key))
 
@@ -199,6 +241,9 @@ _GLOBAL_SETTINGS = {
     'enabled': True,
     'default': True,
     'mode': ModeChoices.invariant,
-    'groups': {
-        }
+    'groups': {},
+    'errors': {
+        'parser': parse_errors,
+        'processor': process_errors
     }
+}
