@@ -1,1 +1,2 @@
 wrapt==1.10.11
+pypandoc==1.4

@@ -1,16 +1,18 @@
 from setuptools import setup
 from pathlib import Path
 
+import pypandoc
+
 ROOT = Path('.')
 README_PATH = ROOT / 'README.md'
 
 with README_PATH.open(encoding='utf-8') as f:
-    LONG_DESCRIPTION = f.read()
+    LONG_DESCRIPTION = pypandoc.convert_text(f.read(), 'rst', format='md')
 
 setup(
     name='enforce',
 
-    version='0.3.4',
+    version='0.3.5',
 
     description='Python 3.5+ library for integration testing and data validation through configurable and optional runtime type hint enforcement.',
     long_description=LONG_DESCRIPTION,

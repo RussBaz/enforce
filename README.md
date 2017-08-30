@@ -5,9 +5,11 @@
 
 # Enforce.py
 
-*__Enforce.py__* is a Python 3.5+ library for integration testing and data validation through configurable and optional runtime type hint enforcement. It uses the standard type hinting syntax (defined in PEP 484).
+*__Enforce.py__* is a Python 3.5+ library for integration testing and data validation through configurable and optional runtime type hint enforcement. It uses the standard type hinting syntax (defined in PEP 484). 
 
 **NOTICE:** Python versions 3.5.2 and earlier (3.5.0-3.5.2) are now deprecated. Only Python versions 3.5.3+ would be supported. Deprecated versions will no longer be officially supported in Enforce.py version 0.4.x.
+
+In addition, please be aware that the next version 0.4.x is likely to have breaking change due to eventual transition from eager to lazy evaluation of types.
 
 * [Overview](#overview)
 * [Installation](#installation)
@@ -203,6 +205,11 @@ default_options = {
         # Updating the default group status - default group is not affected by other settings
         'default': None
     },
+    # Erorr processing settings
+    'errors': {
+        # Sets which exception would be raised by the default error processor
+        'exception': None
+    }
     # Sets the type checking mode
     # Available options: 'invariant', 'covariant', 'contravariant', 'bivariant' and None
     'mode': None
@@ -288,6 +295,9 @@ possible.
 
 ## Changelog
 
+### 0.3.5 - xx.xx.2017
+* Added an experimental option to change which exception is raised on errors
+* Fixed typechecking of methods as parameters
 ### 0.3.4 - 11.06.2017
 * Further improved exception messages and their consistency
 * General bug fixes
