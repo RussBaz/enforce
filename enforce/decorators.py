@@ -132,7 +132,7 @@ def get_wrapper_builder(configuration, excluded_fields=None):
                 # Decorator was applied to a class
                 root = None
                 if is_type_of_type(wrapped, typing.Generic, covariant=True):
-                    wrapped = GenericProxy(wrapped)
+                    wrapped = GenericProxy(wrapped, settings=configuration)
                     root = wrapped.__enforcer__.validator
 
                 for attr_name in dir(wrapped):

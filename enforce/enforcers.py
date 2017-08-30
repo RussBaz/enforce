@@ -2,12 +2,13 @@ import typing
 import inspect
 from collections import namedtuple, OrderedDict
 
-from wrapt import ObjectProxy
+from wrapt import ObjectProxy, BoundFunctionWrapper
 
 from .types import EnhancedTypeVar, is_type_of_type
 from .wrappers import Proxy, EnforceProxy
 from .exceptions import RuntimeTypeError
 from .validator import init_validator, Validator
+from .settings import Settings
 
 
 # This TypeVar is used to indicate that he result of output validation
@@ -108,27 +109,31 @@ class Enforcer:
 
 class GenericProxy(ObjectProxy):
     """
-    A proxy object for typing.Generics user defined subclasses which always returns proxied objects
+    A proxy object for typing.Generics user defined subclasses which always returns proxy-d objects
     """
     __enforcer__ = None
 
-    def __init__(self, wrapped):
+    def __init__(self, wrapped, settings=None):
         """
         Creates an enforcer instance on a just wrapped user defined Generic
         """
         wrapped_type = type(wrapped)
+        if settings is None:
+            self._self_settings = Settings(enabled=True, group='default')
+        else:
+            self._self_settings = settings
 
         if is_type_of_type(wrapped_type, GenericProxy):
             super().__init__(wrapped.__wrapped__)
-            apply_enforcer(self, generic=True, instance_of=self)
+            apply_enforcer(self, generic=True, instance_of=self, settings=self._self_settings)
         elif is_type_of_type(wrapped_type, typing.GenericMeta):
             super().__init__(wrapped)
-            apply_enforcer(self, generic=True)
+            apply_enforcer(self, generic=True, settings=self._self_settings)
         else:
             raise TypeError('Only generics can be wrapped in GenericProxy')
 
     def __call__(self, *args, **kwargs):
-        return apply_enforcer(self.__wrapped__(*args, **kwargs), generic=True, instance_of=self)
+        return apply_enforcer(self.__wrapped__(*args, **kwargs), generic=True, instance_of=self, settings=self._self_settings)
 
     def __getitem__(self, param):
         """
@@ -139,7 +144,7 @@ class GenericProxy(ObjectProxy):
 
 def apply_enforcer(func: typing.Callable,
                    generic: bool=False,
-                   settings = None,
+                   settings=None,
                    parent_root: typing.Optional[Validator]=None,
                    instance_of: typing.Optional[GenericProxy]=None) -> typing.Callable:
     """
@@ -214,12 +219,11 @@ def generate_new_enforcer(func, generic, parent_root, instance_of, settings):
 
         validator = init_validator(settings, hints, parent_root)
     else:
-        if type(func) is Proxy:
-            signature = inspect.signature(func.__wrapped__)
-            hints = typing.get_type_hints(func.__wrapped__)
-        else:
-            signature = inspect.signature(func)
-            hints = typing.get_type_hints(func)
+        func = inspect.unwrap(func)
+        func_type = type(func)
+
+        signature = inspect.signature(func)
+        hints = typing.get_type_hints(func)
 
         bound = False
         validator = init_validator(settings, hints, parent_root)
@@ -240,33 +244,31 @@ def generate_callable_from_signature(signature):
     Generates a type from a signature of Callable object
     """
     # TODO: (*args, **kwargs) should result in Ellipsis (...) as a parameter
-    result = typing.Callable
     any_positional = False
+    any_keyword = False
     positional_arguments = []
 
     for param in signature.parameters.values():
-        if param.kind == param.KEYWORD_ONLY or param.kind == param.VAR_KEYWORD:
-            break
+        if param.kind == param.VAR_KEYWORD:
+            any_keyword = True
 
-        if param.kind == param.VAR_POSITIONAL:
-            any_positional = True
+        if not param.kind == param.KEYWORD_ONLY and not param.kind == param.VAR_KEYWORD:
 
-        if param.annotation is inspect._empty:
-            positional_arguments.append(typing.Any)
-        else:
-            positional_arguments.append(param.annotation)
-    else:
-        return_type = signature.return_annotation
-        if return_type is inspect._empty:
-            return_type = typing.Any
+            if param.kind == param.VAR_POSITIONAL:
+                any_positional = True
+            else:
+                if param.annotation is inspect._empty:
+                    positional_arguments.append(typing.Any)
+                else:
+                    positional_arguments.append(param.annotation)
 
-        if any_positional and all([a == typing.Any for a in positional_arguments]):
-            positional_arguments = ...
-            if return_type != typing.Any:
-                result = typing.Callable[positional_arguments, return_type]
-        elif (len(positional_arguments) == 0 or
-                any([a != typing.Any for a in positional_arguments]) or
-                return_type is not typing.Any):
-                result = typing.Callable[positional_arguments, return_type]
+    return_type = signature.return_annotation
+    if return_type is inspect._empty:
+        return_type = typing.Any
 
-    return result
+    if any_positional and len(positional_arguments) == 0:
+        positional_arguments = ...
+        if return_type == typing.Any:
+            return typing.Callable
+
+    return typing.Callable[positional_arguments, return_type]

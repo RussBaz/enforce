@@ -157,7 +157,11 @@ def _parse_generic(node, hint, validator, parsers):
     elif issubclass(hint, typing.Set):
         yield _parse_set(node, hint, validator, parsers)
     else:
-        new_node = yield nodes.GenericNode(hint)
+        new_node = yield nodes.GenericNode(
+            hint,
+            covariant=validator.settings.covariant,
+            contravariant=validator.settings.contravariant
+        )
         validator.all_nodes.append(new_node)
         yield _yield_parsing_result(node, new_node)
 

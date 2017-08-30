@@ -27,6 +27,10 @@ class EnforcerTests(unittest.TestCase):
         def func_args_kwargs__empty(*args, **kwargs): pass
         return func_args_kwargs__empty
 
+    def func_args_kwargs__none(self):
+        def func_args_kwargs__none(*args, **kwargs) -> None: pass
+        return func_args_kwargs__none
+
     def func_args__empty(self):
         def func_args__empty(*args): pass
         return func_args__empty
@@ -75,6 +79,11 @@ class EnforcerTests(unittest.TestCase):
 
         self.assertEqual(func_type, Callable)
 
+    def test_with_kwargs_and_return(self):
+        func_type = self.get_function_type(self.func_args_kwargs__none())
+        print(func_type)
+        self.assertEqual(func_type, Callable[..., None])
+
     def test_any_positional_only(self):
         func_type = self.get_function_type(self.func_args__empty())
 
@@ -83,12 +92,12 @@ class EnforcerTests(unittest.TestCase):
     def test_any_extra_positional_only(self):
         func_type = self.get_function_type(self.func_empty_args__empty())
 
-        self.assertEqual(func_type, Callable)
+        self.assertEqual(func_type, Callable[[Any], Any])
 
     def test_any_positional_with_return(self):
         func_type = self.get_function_type(self.func_any_args__none())
 
-        self.assertEqual(func_type, Callable[..., None])
+        self.assertEqual(func_type, Callable[[Any], None])
 
     def test_deactivated_callable(self):
         """
@@ -264,6 +273,7 @@ class GenericProxyTests(unittest.TestCase):
     def test_instances_have_enforcer(self):
         """
         Verifies that instances of generics wrapped with Generic Proxy have __enforcer__ object
+        In addition, this __enforcer__ object must have settings and by default type validation should be enabled
         """
         T = TypeVar('T')
 
@@ -293,6 +303,11 @@ class GenericProxyTests(unittest.TestCase):
             self.assertEqual(hint_value, APT.__enforcer__.hints[hint_name])
 
         self.assertEqual(len(apt.__enforcer__.hints), len(APT.__enforcer__.hints))
+
+        self.assertTrue(AP.__enforcer__.settings)
+        self.assertTrue(APT.__enforcer__.settings)
+        self.assertTrue(ap.__enforcer__.settings)
+        self.assertTrue(apt.__enforcer__.settings)
 
     def test_generic_constraints_are_validated(self):
         """

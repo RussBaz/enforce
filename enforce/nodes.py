@@ -451,16 +451,19 @@ class CallableNode(BaseNode):
         from .enforcers import Enforcer, apply_enforcer
 
         if not inspect.isfunction(data):
-            if hasattr(data, '__call__'): # handle case where data is a callable object
-                data = data.__call__
-            else:
+            try:
+                if inspect.ismethod(data.__call__): # handle case where data is a callable object
+                    data = data.__call__
+                else:
+                    return data
+            except AttributeError:
                 return data
 
         try:
             enforcer = data.__enforcer__
         except AttributeError:
             proxy = EnforceProxy(data)
-            return apply_enforcer(proxy)
+            return apply_enforcer(proxy, settings=validator.settings)
         else:
             covariant = self.covariant or validator.settings.covariant
             contravariant = self.contravariant or validator.settings.contravariant
@@ -468,7 +471,7 @@ class CallableNode(BaseNode):
             if is_type_of_type(type(enforcer), Enforcer, covariant=covariant, contravariant=contravariant):
                 return data
             else:
-                return apply_enforcer(data)
+                return apply_enforcer(data, settings=validator.settings)
 
     def validate_data(self, validator, data, sticky=False):
         try:
@@ -499,18 +502,21 @@ class CallableNode(BaseNode):
             except AttributeError:
                 pass
 
-            if len(expected_params) == 0:
-                params_match = True
-            elif expected_params[0] is Ellipsis and len(actual_params) > 0:
-                params_match = actual_params[-1] == expected_params[-1]
-            elif len(expected_params) == len(actual_params):
-                for i, param_type in enumerate(expected_params):
-                    if actual_params[i] != param_type:
-                        break
-                else:
+            try:
+                if len(expected_params) == 0:
                     params_match = True
+                elif expected_params[0] is Ellipsis and len(actual_params) > 0:
+                    params_match = actual_params[-1] == expected_params[-1]
+                elif len(expected_params) == len(actual_params):
+                    for i, param_type in enumerate(expected_params):
+                        if actual_params[i] != param_type:
+                            break
+                    else:
+                        params_match = True
 
-            return ValidationResult(valid=params_match, data=data, type_name=str(callable_signature))
+                return ValidationResult(valid=params_match, data=data, type_name=str(callable_signature))
+            except AttributeError:
+                return ValidationResult(valid=False, data=data, type_name=str(callable_signature))
         except AttributeError:
             return ValidationResult(valid=False, data=data, type_name=extract_type_name(input_type))
 
@@ -525,11 +531,11 @@ class GenericNode(BaseNode):
         except AttributeError:
             enforcer = GenericProxy(data_type).__enforcer__
         else:
-            covariant = self.covariant or validator.settings.covariant
-            contravariant = self.contravariant or validator.settings.contravariant
+            covariant = self.covariant
+            contravariant = self.contravariant
 
             if not is_type_of_type(type(enforcer), Enforcer, covariant=covariant, contravariant=contravariant):
-                enforcer =  GenericProxy(data_type).__enforcer__
+                enforcer = GenericProxy(data_type).__enforcer__
 
         super().__init__(enforcer, is_sequence=True, is_container=True, type_var=False, **kwargs)
 

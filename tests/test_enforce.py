@@ -81,6 +81,29 @@ class GeneralTests(unittest.TestCase):
 
         example()
 
+        class A:
+            pass
+
+        class B(A):
+            pass
+
+        a = A()
+        b = B()
+
+        @runtime_validation
+        def foo(data: A):
+            return data
+
+        foo(a)
+        foo(b)
+
+        config(reset=True)
+
+        foo(a)
+
+        with self.assertRaises(RuntimeTypeError):
+            foo(b)
+
     def test_instance_methods_as_arguments(self):
         """
         Verifies that the methods of an instance can be used as arguments for decorated function calls
@@ -90,6 +113,10 @@ class GeneralTests(unittest.TestCase):
             def method(self, a: typing.Dict):
                 return a
 
+            @runtime_validation
+            def method_bad(self, a: typing.List):
+                return [a]
+
         s = Sample()
 
         @runtime_validation
@@ -97,7 +124,27 @@ class GeneralTests(unittest.TestCase):
             return callback
 
         foo(None)
+        with self.assertRaises(RuntimeTypeError):
+            foo(s.method)
+
+        with self.assertRaises(RuntimeTypeError):
+            foo(s.method_bad)
+
+        with self.assertRaises(RuntimeTypeError):
+            foo(s)
+
+        @runtime_validation
+        def foo(callback: typing.Optional[typing.Callable[[typing.Any, typing.Dict], typing.Any]] = None):
+            return callback
+
+        foo(None)
         foo(s.method)
+
+        with self.assertRaises(RuntimeTypeError):
+            foo(s.method_bad)
+
+        with self.assertRaises(RuntimeTypeError):
+            foo(s)
 
     @runtime_validation
     def sample_function(self, text: str, data: typing.Union[int, None]) -> typing.Optional[int]:
