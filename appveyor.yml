@@ -4,6 +4,7 @@ environment:
         - python: C:\Python36-x64\python.exe
 
 install:
+  - cinst pandoc
   - ps: "& $env:python -m pip install -r ./requirements.txt"
   - ps: "& $env:python -m pip install pytest"
   - ps: "& $env:python -m pip install -e ."
