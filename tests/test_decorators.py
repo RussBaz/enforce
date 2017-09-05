@@ -131,6 +131,23 @@ class DecoratorsTests(unittest.TestCase):
         with self.assertRaises(RuntimeTypeError):
             SampleClass.test_bad2('')
 
+        # testing staticmethods with class decorator
+        @runtime_validation
+        class Foo(object):
+            @staticmethod
+            def good(x: int) -> int:
+                return x
+
+            @staticmethod
+            def bad(x: int) -> int:
+                return str(x)
+
+        self.assertEqual(Foo.good(1), 1)
+        self.assertEqual(Foo.good(5), 5)
+
+        with self.assertRaises(RuntimeTypeError):
+            Foo.bad(5)
+
     def test_classmethod(self):
         """
         Checks if a classmethod of a class object can be decorated
