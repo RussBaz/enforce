@@ -145,6 +145,14 @@ def get_wrapper_builder(configuration, excluded_fields=None):
                             old_fset = old_attr.fset
                             new_fset = decorate(old_fset, configuration, obj_instance=None, parent_root=root)
                             new_attr = old_attr.setter(new_fset)
+                        elif attr_name in wrapped.__dict__ and type(wrapped.__dict__[attr_name]) is staticmethod:
+                            # if decorator was applied to class need to handle @staticmethods differently
+                            new_attr = staticmethod(decorate(
+                                old_attr,
+                                configuration,
+                                obj_instance=None,
+                                parent_root=root
+                            ))
                         else:
                             new_attr = decorate(old_attr, configuration, obj_instance=None, parent_root=root)
                         setattr(wrapped, attr_name, new_attr)
