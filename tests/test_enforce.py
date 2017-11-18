@@ -156,6 +156,34 @@ class GeneralTests(unittest.TestCase):
         with self.assertRaises(RuntimeTypeError):
             foo(s)
 
+    def test_class_init(self):
+        """
+        Verifies that an __init__ method of a class is correctly decorated and enforced
+        """
+        @runtime_validation
+        class Foo:
+            def __init__(self, fun: typing.Callable):
+                self.fun = fun
+
+        def bar(text):
+            return text*2
+
+        # Should not raise an error
+        Foo(bar)
+
+        with self.assertRaises(RuntimeTypeError):
+            Foo(12)
+
+        class Sample:
+            @runtime_validation
+            def __init__(self, fun: typing.Callable):
+                self.fun = fun
+
+        Sample(bar)
+
+        with self.assertRaises(RuntimeTypeError):
+            Sample(12)
+
     @runtime_validation
     def sample_function(self, text: str, data: typing.Union[int, None]) -> typing.Optional[int]:
         try:
