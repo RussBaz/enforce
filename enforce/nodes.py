@@ -5,7 +5,6 @@ from .wrappers import EnforceProxy
 from .types import is_type_of_type, is_named_tuple
 from .exceptions import RuntimeTypeError
 
-
 TYPE_NAME_ALIASES = {
     'Tuple': 'typing.Tuple',
     'tuple': 'typing.Tuple',
@@ -17,13 +16,12 @@ TYPE_NAME_ALIASES = {
     'dict': 'typing.Dict'
 }
 
-
 ValidationResult = typing.NamedTuple('ValidationResult', [('valid', bool), ('data', typing.Any), ('type_name', str)])
 
 
 class BaseNode:
-
-    def __init__(self, expected_data_type, is_sequence, is_container=False, type_var=False, covariant=None, contravariant=None):
+    def __init__(self, expected_data_type, is_sequence, is_container=False, type_var=False, covariant=None,
+                 contravariant=None):
         # is_sequence specifies if it is a sequence node
         # If it is not, then it must be a choice node, i.e. every children is a potential alternative
         # And at least one has to be satisfied
@@ -130,7 +128,7 @@ class BaseNode:
             for i, child in enumerate(self.children):
                 validation_result = yield child.validate(propagated_data[i], validator, self.is_type_var)
                 children_validation_results.append(validation_result)
-        
+
         yield children_validation_results
 
     def get_actual_data_type(self, self_validation_result, child_validation_results, valid):
@@ -204,16 +202,15 @@ class BaseNode:
         self.data_out = None
         self.children = [a for a in self.original_children]
 
-    # def __repr__(self):
-    #     children_nest = ', '.join([str(c) for c in self.children])
-    #     str_repr = '{}:{}'.format(str(self.expected_data_type), self.__class__.__name__)
-    #     if children_nest:
-    #         str_repr += ' -> ({})'.format(children_nest)
-    #     return str_repr
+        # def __repr__(self):
+        #     children_nest = ', '.join([str(c) for c in self.children])
+        #     str_repr = '{}:{}'.format(str(self.expected_data_type), self.__class__.__name__)
+        #     if children_nest:
+        #         str_repr += ' -> ({})'.format(children_nest)
+        #     return str_repr
 
 
 class SimpleNode(BaseNode):
-
     def __init__(self, expected_data_type, **kwargs):
         super().__init__(expected_data_type, is_sequence=True, type_var=False, **kwargs)
 
@@ -314,7 +311,7 @@ class TypeVarNode(BaseNode):
                 break
         else:
             children_validation_results.append(ValidationResult(False, propagated_data[0], None))
-        
+
         yield children_validation_results
 
     def add_child(self, child):
@@ -324,7 +321,6 @@ class TypeVarNode(BaseNode):
 
 
 class TupleNode(BaseNode):
-
     def __init__(self, variable_length=False, **kwargs):
         self.variable_length = variable_length
         super().__init__(typing.Tuple, is_sequence=True, is_container=True, **kwargs)
@@ -339,7 +335,8 @@ class TupleNode(BaseNode):
             if self.variable_length:
                 return ValidationResult(valid=True, data=data, type_name=extract_type_name(input_type))
             else:
-                return ValidationResult(valid=len(data) == len(self.children), data=data, type_name=extract_type_name(input_type))
+                return ValidationResult(valid=len(data) == len(self.children), data=data,
+                                        type_name=extract_type_name(input_type))
         else:
             return ValidationResult(valid=False, data=data, type_name=extract_type_name(input_type))
 
@@ -352,7 +349,7 @@ class TupleNode(BaseNode):
             for i, data in enumerate(propagated_data):
                 validation_result = yield child.validate(data, validator, self.is_type_var)
                 children_validation_results.append(validation_result)
-        
+
             yield children_validation_results
         else:
             yield super().validate_children(validator, propagated_data)
@@ -383,7 +380,6 @@ class TupleNode(BaseNode):
 
 
 class NamedTupleNode(BaseNode):
-
     def __init__(self, data_type, exception_type, **kwargs):
         from .decorators import runtime_validation
 
@@ -450,28 +446,33 @@ class CallableNode(BaseNode):
     def preprocess_data(self, validator, data):
         from .enforcers import Enforcer, apply_enforcer
 
-        if not inspect.isfunction(data):
-            try:
-                if inspect.ismethod(data.__call__): # handle case where data is a callable object
+        covariant = self.covariant or validator.settings.covariant
+        contravariant = self.contravariant or validator.settings.contravariant
+
+        try:
+            if not inspect.isroutine(data):
+                if inspect.ismethod(data.__call__):
                     data = data.__call__
                 else:
                     return data
-            except AttributeError:
-                return data
+        except AttributeError:
+            return data
+
+        mutable = hasattr(data, '__dict__')
 
         try:
             enforcer = data.__enforcer__
         except AttributeError:
-            proxy = EnforceProxy(data)
-            return apply_enforcer(proxy, settings=validator.settings)
+            enforcer = None
+            data = EnforceProxy(data)
         else:
-            covariant = self.covariant or validator.settings.covariant
-            contravariant = self.contravariant or validator.settings.contravariant
+            if not mutable:
+                data = EnforceProxy(data)
 
-            if is_type_of_type(type(enforcer), Enforcer, covariant=covariant, contravariant=contravariant):
-                return data
-            else:
-                return apply_enforcer(data, settings=validator.settings)
+        if not is_type_of_type(type(enforcer), Enforcer, covariant=covariant, contravariant=contravariant):
+            data = apply_enforcer(data, settings=validator.settings)
+
+        return data
 
     def validate_data(self, validator, data, sticky=False):
         try:
@@ -522,10 +523,9 @@ class CallableNode(BaseNode):
 
 
 class GenericNode(BaseNode):
-
     def __init__(self, data_type, **kwargs):
         from .enforcers import Enforcer, GenericProxy
-        
+
         try:
             enforcer = data_type.__enforcer__
         except AttributeError:
@@ -587,7 +587,6 @@ class GenericNode(BaseNode):
 
 
 class MappingNode(BaseNode):
-
     def __init__(self, data_type, **kwargs):
         super().__init__(data_type, is_sequence=True, is_container=True, **kwargs)
 

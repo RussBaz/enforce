@@ -222,8 +222,18 @@ def generate_new_enforcer(func, generic, parent_root, instance_of, settings):
         func = inspect.unwrap(func)
         func_type = type(func)
 
-        signature = inspect.signature(func)
-        hints = typing.get_type_hints(func)
+        try:
+            signature = inspect.signature(func)
+            hints = typing.get_type_hints(func)
+        except TypeError:
+            if hasattr(func, '__call__') and inspect.ismethod(func.__call__):
+                call = func.__call__
+                signature = inspect.signature(call)
+                hints = typing.get_type_hints(call)
+            else:
+                mutable = hasattr(func, '__dict__')
+                message = 'mutable' if mutable else 'immutable'
+                raise TypeError('Oops, cannot apply enforcer to the {0} object'.format(message))
 
         bound = False
         validator = init_validator(settings, hints, parent_root)

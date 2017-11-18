@@ -63,9 +63,6 @@ class GeneralTests(unittest.TestCase):
 
         sample_d3 = runtime_validation(get_sample_func())
 
-        sample_d4 = typing.no_type_check_decorator(runtime_validation(get_sample_func()))
-        sample_d5 = runtime_validation(typing.no_type_check_decorator(get_sample_func()))
-
         get_sample_func()('str')
         sample_d1('str')
         sample_d2('str')
@@ -132,6 +129,19 @@ class GeneralTests(unittest.TestCase):
 
         with self.assertRaises(RuntimeTypeError):
             foo(s)
+
+        @runtime_validation
+        def bar(callback: typing.Optional[typing.Callable[[typing.Any, typing.Dict], typing.Any]] = None):
+            return callback
+
+        bar(None)
+        bar(s.method)
+
+        with self.assertRaises(RuntimeTypeError):
+            bar(s.method_bad)
+
+        with self.assertRaises(RuntimeTypeError):
+            bar(s)
 
         @runtime_validation
         def foo(callback: typing.Optional[typing.Callable[[typing.Any, typing.Dict], typing.Any]] = None):

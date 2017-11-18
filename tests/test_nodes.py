@@ -23,7 +23,12 @@ class CallableNodeTests(unittest.TestCase):
     def test_callable_validates_function(self):
         def add1(x: int) -> int:
             return x+1
+
+        def add2(x: str) -> str:
+            return x
+
         self.assertTrue(visit(self.node.validate(add1, self.validator)).valid)
+        self.assertFalse(visit(self.node.validate(add2, self.validator)).valid)
 
     def test_any_callable(self):
         def add(): pass
@@ -46,6 +51,7 @@ class CallableNodeTests(unittest.TestCase):
             def __call__(self, x: int) -> int:
                 return x+1
 
+        self.assertTrue(AddOne()(1), 2)
         self.assertTrue(visit(self.node.validate(AddOne(), self.validator)).valid)
 
 
