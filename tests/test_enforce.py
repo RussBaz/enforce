@@ -1493,6 +1493,26 @@ def func({inputs}) {returns}:
         sample_function(foo)
         self.assert_first_error_is('a', 'typing.Callable[[typing.Dict], NoneType]')
 
+    def test_forgotten_self_exception(self):
+        def hello():
+            print("Hello, World!")
+
+        class A:
+            pass
+
+        A.hello = hello
+
+        A = runtime_validation(A)
+
+        a = A()
+
+        expected_exception_message = 'hello() was given an incorrect number of positional arguments'
+
+        with self.assertRaises(TypeError) as e:
+            a.hello()
+
+        self.assertEqual(str(e.exception), expected_exception_message)
+
 
 class ConcurrentRunTests(unittest.TestCase):
 

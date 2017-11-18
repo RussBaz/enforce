@@ -23,7 +23,8 @@ class Enforcer:
     """
     A container for storing type checking logic of functions
     """
-    def __init__(self, validator, signature, hints, generic=False, bound=False, settings=None):
+    def __init__(self, name, validator, signature, hints, generic=False, bound=False, settings=None):
+        self.name = name
         self.validator = validator
         self.signature = signature
         self.hints = hints
@@ -69,7 +70,17 @@ class Enforcer:
         kwargs = input_data.kwargs
         skip = input_data.skip
 
-        bind_arguments = self.signature.bind(*args, **kwargs)
+        try:
+            bind_arguments = self.signature.bind(*args, **kwargs)
+        except TypeError as e:
+            message = str(e)
+
+            if message == 'too many positional arguments':
+                new_message = self.name + str(self.signature) + ' was given an incorrect number of positional arguments'
+                raise TypeError(new_message)
+            else:
+                raise e
+
         bind_arguments.apply_defaults()
 
         for name in self.hints.keys():
@@ -238,7 +249,9 @@ def generate_new_enforcer(func, generic, parent_root, instance_of, settings):
         bound = False
         validator = init_validator(settings, hints, parent_root)
 
-    return Enforcer(validator, signature, hints, generic, bound, settings)
+    name = func.__name__
+
+    return Enforcer(name, validator, signature, hints, generic, bound, settings)
 
 
 def process_errors(config, errors, hints, is_return_type=False):
