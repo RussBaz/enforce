@@ -3,7 +3,7 @@ import numbers
 from abc import ABC
 from collections import namedtuple
 from collections.abc import Sized
-from typing import TypeVar, Any, Tuple, Dict, List, Union, Optional, Generic, NamedTuple
+from typing import TypeVar, Any, Tuple, Dict, List, Union, Optional, Generic, NamedTuple, Mapping
 
 from enforce.types import is_type_of_type, is_named_tuple, EnhancedTypeVar, Integer, Boolean
 
@@ -424,6 +424,12 @@ class TypesCheckingTests(unittest.TestCase):
         self.assertTrue(is_type_of_type(Generic, C, contravariant=True))
         self.assertTrue(is_type_of_type(C, Generic, covariant=True, contravariant=True))
         self.assertTrue(is_type_of_type(Generic, C, covariant=True, contravariant=True))
+
+    def test_inbuilt_generics(self):
+        """
+        Verifies that type checking can correctly identify in-built generics
+        """
+        self.assertTrue(is_type_of_type(dict, Mapping, covariant=True))
 
     def test_abc_registry(self):
         """

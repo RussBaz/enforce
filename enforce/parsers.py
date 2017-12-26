@@ -139,7 +139,7 @@ def _parse_bytes(node, hint, validator, parsers):
 def _parse_generic(node, hint, validator, parsers):
     if issubclass(hint, typing.List):
         yield _parse_list(node, hint, validator, parsers)
-    elif issubclass(hint, typing.Dict):
+    elif issubclass(hint, typing.Mapping):
         yield _parse_dict(node, hint, validator, parsers)
     elif issubclass(hint, typing.Set):
         yield _parse_set(node, hint, validator, parsers)

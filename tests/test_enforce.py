@@ -1076,6 +1076,30 @@ class DictTypesTests(unittest.TestCase):
         with self.assertRaises(RuntimeTypeError):
             foo(d, 2)
 
+    def test_empty_dict(self):
+        """
+        Verifies that empty dictionary is treated correctly
+        """
+        @runtime_validation
+        def foo(a: typing.Any) -> typing.Dict:
+            return dict()
+
+        foo(12)
+
+    def test_dict_is_mapping(self):
+        """
+        Verifies that dictionary is treated like a Mapping
+        """
+        config({'mode': 'covariant'})
+
+        @runtime_validation
+        def returns_dict() -> typing.Mapping:
+            return dict()
+
+        returns_dict()
+
+        config(reset=True)
+
     def test_restricted_dict(self):
         """
         Verifies that restricted dictionaries are type checked correctly
