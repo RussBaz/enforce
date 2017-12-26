@@ -157,7 +157,7 @@ def apply_enforcer(func: typing.Callable,
     #if not hasattr(func, '__enforcer__'):
     #    func = EnforceProxy(func)
 
-    #if not isinstance(func.__enforcer__, Enforcer):
+        # if not isinstance(func.__enforcer__, Enforcer):
         # Replaces 'incorrect' enforcers
         func.__enforcer__ = generate_new_enforcer(func, generic, parent_root, instance_of, settings)
         func.__enforcer__.reference = func

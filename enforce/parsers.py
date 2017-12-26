@@ -38,19 +38,6 @@ def _get_aliased_parser_or_default(hint, default):
 
 
 def _parse_namedtuple(node, hint, validator, parsers):
-    #fields = hint._fields
-    #field_types = hint._field_types
-
-    #args = ''.join((field_types.get(field, typing.Any)).__name__ + ', ' for field in fields)
-    #args = args[:-2]
-
-    #template = """typing.Tuple[{args}]"""
-    #formatted_template = template.format(args=args)
-
-    #new_hint = eval(formatted_template)
-
-    #yield _parse_tuple(node, hint, validator, parsers)
-
     new_node = yield nodes.NamedTupleNode(hint, validator.settings.errors.exception)
     validator.all_nodes.append(new_node)
     yield _yield_parsing_result(node, new_node)
@@ -143,7 +130,7 @@ def _parse_complex(node, hint, validator, parsers):
 
 def _parse_bytes(node, hint, validator, parsers):
     """
-    Bytes should sldo accept bytearray and memoryview, but not otherwise
+    Bytes should accept bytearray and memoryview, but not otherwise
     """
     hints = [bytearray, memoryview, bytes]
     yield _yield_unified_node(node, hints, validator, parsers)

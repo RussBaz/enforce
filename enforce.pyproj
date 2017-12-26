@@ -83,6 +83,7 @@
     <Compile Include="tests\test_wrappers.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="tests\__init__.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="enforce\" />
