@@ -63,9 +63,6 @@ class GeneralTests(unittest.TestCase):
 
         sample_d3 = runtime_validation(get_sample_func())
 
-        sample_d4 = typing.no_type_check_decorator(runtime_validation(get_sample_func()))
-        sample_d5 = runtime_validation(typing.no_type_check_decorator(get_sample_func()))
-
         get_sample_func()('str')
         sample_d1('str')
         sample_d2('str')
@@ -134,6 +131,19 @@ class GeneralTests(unittest.TestCase):
             foo(s)
 
         @runtime_validation
+        def bar(callback: typing.Optional[typing.Callable[[typing.Any, typing.Dict], typing.Any]] = None):
+            return callback
+
+        bar(None)
+        bar(s.method)
+
+        with self.assertRaises(RuntimeTypeError):
+            bar(s.method_bad)
+
+        with self.assertRaises(RuntimeTypeError):
+            bar(s)
+
+        @runtime_validation
         def foo(callback: typing.Optional[typing.Callable[[typing.Any, typing.Dict], typing.Any]] = None):
             return callback
 
@@ -161,6 +171,34 @@ class GeneralTests(unittest.TestCase):
 
         with self.assertRaises(RuntimeTypeError):
             foo(s)
+
+    def test_class_init(self):
+        """
+        Verifies that an __init__ method of a class is correctly decorated and enforced
+        """
+        @runtime_validation
+        class Foo:
+            def __init__(self, fun: typing.Callable):
+                self.fun = fun
+
+        def bar(text):
+            return text*2
+
+        # Should not raise an error
+        Foo(bar)
+
+        with self.assertRaises(RuntimeTypeError):
+            Foo(12)
+
+        class Sample:
+            @runtime_validation
+            def __init__(self, fun: typing.Callable):
+                self.fun = fun
+
+        Sample(bar)
+
+        with self.assertRaises(RuntimeTypeError):
+            Sample(12)
 
     @runtime_validation
     def sample_function(self, text: str, data: typing.Union[int, None]) -> typing.Optional[int]:
@@ -1470,6 +1508,26 @@ def func({inputs}) {returns}:
 
         sample_function(foo)
         self.assert_first_error_is('a', 'typing.Callable[[typing.Dict], NoneType]')
+
+    def test_forgotten_self_exception(self):
+        def hello():
+            print("Hello, World!")
+
+        class A:
+            pass
+
+        A.hello = hello
+
+        A = runtime_validation(A)
+
+        a = A()
+
+        expected_exception_message = 'hello() was given an incorrect number of positional arguments'
+
+        with self.assertRaises(TypeError) as e:
+            a.hello()
+
+        self.assertEqual(str(e.exception), expected_exception_message)
 
 
 class ConcurrentRunTests(unittest.TestCase):

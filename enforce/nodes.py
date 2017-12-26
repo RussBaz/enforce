@@ -456,29 +456,34 @@ class CallableNode(BaseNode):
             print(data.__call__)
         except AttributeError:
             print('No Call found.')
+        
+        covariant = self.covariant or validator.settings.covariant
+        contravariant = self.contravariant or validator.settings.contravariant
 
-        if not inspect.isfunction(data):
-            try:
-                if inspect.ismethod(data.__call__):  # handle case where data is a callable object
+        try:
+            if not inspect.isroutine(data):
+                if inspect.ismethod(data.__call__):
                     data = data.__call__
                 else:
                     return data
-            except AttributeError:
-                return data
+        except AttributeError:
+            return data
+
+        mutable = hasattr(data, '__dict__')
 
         try:
             enforcer = data.__enforcer__
         except AttributeError:
-            proxy = EnforceProxy(data)
-            return apply_enforcer(proxy, settings=validator.settings)
+            enforcer = None
+            data = EnforceProxy(data)
         else:
-            covariant = self.covariant or validator.settings.covariant
-            contravariant = self.contravariant or validator.settings.contravariant
+            if not mutable:
+                data = EnforceProxy(data)
 
-            if is_type_of_type(type(enforcer), Enforcer, covariant=covariant, contravariant=contravariant):
-                return data
-            else:
-                return apply_enforcer(data, settings=validator.settings)
+        if not is_type_of_type(type(enforcer), Enforcer, covariant=covariant, contravariant=contravariant):
+            data = apply_enforcer(data, settings=validator.settings)
+
+        return data
 
     def validate_data(self, validator, data, sticky=False):
         try:
