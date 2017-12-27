@@ -54,10 +54,22 @@
     </Compile>
     <Compile Include="enforce\__init__.py" />
     <Compile Include="setup.py" />
+    <Compile Include="tests\enforce_tests\test_callable_types.py" />
+    <Compile Include="tests\enforce_tests\test_complex_types.py" />
+    <Compile Include="tests\enforce_tests\test_concurrent_execution.py" />
+    <Compile Include="tests\enforce_tests\test_container_types.py" />
+    <Compile Include="tests\enforce_tests\test_dict_types.py" />
+    <Compile Include="tests\enforce_tests\test_exception_messages.py" />
+    <Compile Include="tests\enforce_tests\test_general.py" />
+    <Compile Include="tests\enforce_tests\test_generic_types.py" />
+    <Compile Include="tests\enforce_tests\test_iterable_types.py" />
+    <Compile Include="tests\enforce_tests\test_list_types.py" />
+    <Compile Include="tests\enforce_tests\test_nested_types.py" />
+    <Compile Include="tests\enforce_tests\test_set_types.py" />
+    <Compile Include="tests\enforce_tests\test_simple_types.py" />
+    <Compile Include="tests\enforce_tests\test_union_types.py" />
+    <Compile Include="tests\enforce_tests\__init__.py" />
     <Compile Include="tests\test_decorators.py" />
-    <Compile Include="tests\test_enforce.py">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="tests\test_enforcers.py">
       <SubType>Code</SubType>
     </Compile>
@@ -88,6 +100,7 @@
   <ItemGroup>
     <Folder Include="enforce\" />
     <Folder Include="tests\" />
+    <Folder Include="tests\enforce_tests\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include=".travis.yml" />
