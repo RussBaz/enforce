@@ -1,0 +1,2 @@
+-r requirements.txt
+pypandoc==1.4

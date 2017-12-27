@@ -47,7 +47,13 @@ Stable 0.3.x - Stable and ready for every day use version
 Dev current - "Bleeding edge" features that, while are fairly consistent, may
 change.
 
-    pip install git+https://github.com/RussBaz/enforce.git@dev
+```sh
+git clone https://github.com/RussBaz/enforce.git@dev
+cd enforce
+# Please use a virtual environment before proceeding!
+pip install -r requirements.txt
+pip install -e .
+```
 
 ## Usage
 

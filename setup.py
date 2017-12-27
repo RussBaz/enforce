@@ -1,13 +1,22 @@
+import warnings
 from setuptools import setup
 from pathlib import Path
 
-import pypandoc
+try:
+    import pypandoc
+    PYPANDOC_EXISTS = True
+except ImportError:
+    PYPANDOC_EXISTS = False
 
 ROOT = Path('.')
 README_PATH = ROOT / 'README.md'
 
-with README_PATH.open(encoding='utf-8') as f:
-    LONG_DESCRIPTION = pypandoc.convert_text(f.read(), 'rst', format='md')
+if PYPANDOC_EXISTS:
+    with README_PATH.open(encoding='utf-8') as f:
+        LONG_DESCRIPTION = pypandoc.convert_text(f.read(), 'rst', format='md')
+else:
+    warnings.warn('PyPandoc is not found! Please install it before building wheels.')
+    LONG_DESCRIPTION = ''
 
 setup(
     name='enforce',
