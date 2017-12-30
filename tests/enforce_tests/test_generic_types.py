@@ -1,5 +1,6 @@
 import typing
 import unittest
+from numbers import Integral
 
 from enforce import runtime_validation
 from enforce.exceptions import RuntimeTypeError
@@ -92,3 +93,15 @@ class GenericTypesTests(unittest.TestCase):
 
         with self.assertRaises(RuntimeTypeError):
             return_any(bad)
+
+    def test_numbers_with_aliases_and_named_tuples(self):
+        """
+        Verifies if 'numbers' can be used in type aliases and in NamedTuples
+        """
+        Interval = typing.Tuple[Integral, Integral]
+        Annotation = typing.NamedTuple(
+            "Annotation", [("source", typing.Text), ("start", Integral),
+                           ("end", Integral), ("text", typing.Text),
+                           ("cls", typing.Text)]
+                           )
+        TypedAnnotation = runtime_validation(Annotation)

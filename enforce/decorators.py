@@ -1,15 +1,15 @@
 import inspect
 import typing
 import functools
+from collections import OrderedDict
 from multiprocessing import RLock
-from functools import wraps
 
 from wrapt import decorator, ObjectProxy
 
 from .settings import Settings
-#from .wrappers import Proxy
-from .enforcers import apply_enforcer, Parameters, GenericProxy
+from .enforcers import apply_enforcer, Parameters, GenericProxy, process_errors
 from .types import is_type_of_type
+from .validator import init_validator
 
 
 BuildLock = RLock()
@@ -179,24 +179,54 @@ def get_wrapper_builder(configuration, excluded_fields=None):
 
 
 def get_typed_namedtuple(configuration, typed_namedtuple, fields, fields_types):
-    args = ''.join(field + ': ' + (fields_types.get(field, any)).__name__ + ',' for field in fields)
-    args = args[:-1]
+    # in_fields is an artificial hints container
+    in_fields = OrderedDict()
+    for field in fields:
+        in_fields[field] = fields_types.get(field, typing.Any)
 
-    context = {}
+    validator = init_validator(configuration, in_fields)
 
-    new_init_template = """def init_data({args}): return locals()"""
-
-    new_init_template = new_init_template.format(args=args)
-
-    exec(new_init_template, context)
-
-    init_data = context['init_data']
-
-    init_data = decorate(init_data, configuration)
+    tuple_name = typed_namedtuple.__name__
 
     class NamedTupleProxy(ObjectProxy):
         def __call__(self, *args, **kwargs):
-            data = init_data(*args, **kwargs)
-            return self.__wrapped__(**data)
+            number_of_arguments = len(args) + len(kwargs)
+            expected_number_of_arguments = len(in_fields)
+            unknown_arguments = [str(key) for key in kwargs if key not in in_fields.keys()]
+
+            if unknown_arguments:
+                unexpected_names = ', '.join(f"'{a}'" for a in unknown_arguments)
+                raise TypeError(f'{tuple_name}() got an unexpected keyword argument: {unexpected_names}')
+
+            if number_of_arguments < expected_number_of_arguments:
+                missing_arguments = [f"'{str(arg)}'" for arg in in_fields[number_of_arguments:] if arg not in kwargs]
+                missing_names = ', '.join(missing_arguments)
+                raise TypeError(f'{tuple_name}() missing {len(missing_arguments)} keyword arguments: {missing_names}')
+            elif number_of_arguments > expected_number_of_arguments:
+                raise TypeError(f'{tuple_name}() takes {expected_number_of_arguments} positional arguments but {number_of_arguments} were given')
+
+            in_fields_items = iter(in_fields.keys())
+            in_data = OrderedDict()
+            out_data = OrderedDict()
+
+            for arg in args:
+                key = next(in_fields_items)
+                in_data[key] = arg
+
+            if len(kwargs) > 0:
+                for key, value in kwargs.items():
+                    in_data[key] = value
+
+            validator.reset()
+            for key, value in in_data.items():
+                validator.validate(value, key)
+                out_data[key] = validator.data_out[key]
+
+            errors = validator.errors
+
+            if errors:
+                process_errors(configuration, errors, in_fields)
+
+            return self.__wrapped__(**out_data)
 
     return NamedTupleProxy(typed_namedtuple)
