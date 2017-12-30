@@ -196,15 +196,15 @@ def get_typed_namedtuple(configuration, typed_namedtuple, fields, fields_types):
 
             if unknown_arguments:
                 unexpected_names = ', '.join("'"+a+"'" for a in unknown_arguments)
-                e = '{0() got an unexpected keyword argument: {1}'
+                e = '{0}() got an unexpected keyword argument: {1}'
                 e = e.format(tuple_name, unexpected_names)
                 raise TypeError(e)
 
             if number_of_arguments < expected_number_of_arguments:
-                missing_arguments = ["'"+str(arg)+"'" for arg in in_fields[number_of_arguments:] if arg not in kwargs]
+                missing_arguments = ["'"+str(arg)+"'" for arg in list(in_fields.keys())[number_of_arguments:] if arg not in kwargs]
                 missing_names = ', '.join(missing_arguments)
                 e = '{0}() missing {1} keyword arguments: {2}'
-                e = e.format(typed_named, len(missing_arguments), missing_names)
+                e = e.format(tuple_name, len(missing_arguments), missing_names)
                 raise TypeError(e)
             elif number_of_arguments > expected_number_of_arguments:
                 e = '{0}() takes {1} positional arguments but {2} were given'

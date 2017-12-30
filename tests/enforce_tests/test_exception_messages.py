@@ -254,6 +254,40 @@ def func({inputs}) {returns}:
         foo(None)
         self.assert_first_error_is('data', 'NoneType')
 
+    def test_named_tuple_incorrect_number_arguments(self):
+        N = typing.NamedTuple('N', [('a', int), ('b', str)])
+        N = runtime_validation(N)
+
+        expected_error = "N() got an unexpected keyword argument: 'c'"
+        with self.assertRaises(TypeError) as e:
+            n = N(1, c=2)
+
+        self.assertEqual(str(e.exception), expected_error)
+
+        expected_error = "N() missing 2 keyword arguments: 'a', 'b'"
+        with self.assertRaises(TypeError) as e:
+            n = N()
+
+        self.assertEqual(str(e.exception), expected_error)
+
+        expected_error = "N() missing 1 keyword arguments: 'b'"
+        with self.assertRaises(TypeError) as e:
+            n = N(1)
+
+        self.assertEqual(str(e.exception), expected_error)
+
+        expected_error = "N() takes 2 positional arguments but 3 were given"
+        with self.assertRaises(TypeError) as e:
+            n = N(1, 2, 3)
+
+        self.assertEqual(str(e.exception), expected_error)
+
+        expected_error = "N() takes 2 positional arguments but 4 were given"
+        with self.assertRaises(TypeError) as e:
+            n = N(1, 2, 3, b=3)
+
+        self.assertEqual(str(e.exception), expected_error)
+
     def test_callable_exception(self):
         sample_function = self.generate_strict_function(
             inputs=[('a', 'typing.Callable[[typing.Any], None]')],
