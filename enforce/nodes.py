@@ -330,6 +330,12 @@ class TupleNode(BaseNode):
         super().__init__(typing.Tuple, is_sequence=True, is_container=True, **kwargs)
 
     def validate_data(self, validator, data, sticky=False):
+        # fix for https://github.com/RussBaz/enforce/issues/62 (1/4)
+        if data is None:
+            # unfortunately this is not enough to stop propagating to children...
+            # ... so the None case is also handled in map_data and validate_children
+            return ValidationResult(valid=False, data=data, type_name=extract_type_name(type(data)))
+
         covariant = self.covariant or validator.settings.covariant
         contravariant = self.contravariant or validator.settings.contravariant
 
@@ -344,7 +350,11 @@ class TupleNode(BaseNode):
             return ValidationResult(valid=False, data=data, type_name=extract_type_name(input_type))
 
     def validate_children(self, validator, propagated_data):
-        if self.variable_length:
+        # fix for https://github.com/RussBaz/enforce/issues/62 (3/4)
+        if propagated_data is None:
+            # yield a sequence of one element: a single failure
+            yield [ValidationResult(valid=False, data=propagated_data, type_name=extract_type_name(propagated_data))]
+        elif self.variable_length:
             child = self.children[0]
 
             children_validation_results = []
@@ -359,10 +369,14 @@ class TupleNode(BaseNode):
 
     def map_data(self, validator, self_validation_result):
         data = self_validation_result.data
-        output = []
-        for element in data:
-            output.append(element)
-        return output
+        # fix for https://github.com/RussBaz/enforce/issues/62 (2/4)
+        if data is not None:
+            output = []
+            for element in data:
+                output.append(element)
+            return output
+        else:
+            return None
 
     def reduce_data(self, validator, child_validation_results, self_validation_result):
         return tuple(result.data for result in child_validation_results)
@@ -372,12 +386,20 @@ class TupleNode(BaseNode):
         Returns a name of an actual type of given data
         """
         actual_type = self_validation_result.type_name
-        child_types = list(result.type_name for result in child_validation_results) or []
 
-        actual_type = TYPE_NAME_ALIASES.get(actual_type, actual_type)
+        # fix for https://github.com/RussBaz/enforce/issues/62 (4/4)
+        if actual_type == extract_type_name(type(None)):
+            # None - No need to check children
+            actual_type = TYPE_NAME_ALIASES.get(actual_type, actual_type)
 
-        if child_types:
-            actual_type = actual_type + '[' + ', '.join(child_types) + ']'
+        else:
+            # Append children type information
+            child_types = list(result.type_name for result in child_validation_results) or []
+
+            actual_type = TYPE_NAME_ALIASES.get(actual_type, actual_type)
+
+            if child_types:
+                actual_type = actual_type + '[' + ', '.join(child_types) + ']'
 
         return actual_type
 
