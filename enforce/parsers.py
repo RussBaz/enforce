@@ -150,43 +150,47 @@ def _parse_bytes(node, hint, validator, parsers):
 
 
 def _parse_generic(node, hint, validator, parsers):
-    if issubclass(hint, typing.List):
-        yield _parse_list(node, hint, validator, parsers)
-    elif issubclass(hint, typing.Dict):
-        yield _parse_dict(node, hint, validator, parsers)
-    elif issubclass(hint, typing.Set):
-        yield _parse_set(node, hint, validator, parsers)
+    # Fixes https://github.com/RussBaz/enforce/issues/{47, 51, 52}
+    # Mapping need to be checked BEFORE Iterable (since a Mapping is an Iterable)
+    if issubclass(hint, typing.Mapping):
+        yield _parse_mapping(node, hint, validator, parsers)
+    elif issubclass(hint, typing.Iterable):
+        yield _parse_iterable(node, hint, validator, parsers)
+    # Not needed anymore: a Set is just an Iterable
+    # elif issubclass(hint, typing.Set):
+    #     yield _parse_set(node, hint, validator, parsers)
     else:
         new_node = yield nodes.GenericNode(hint)
         validator.all_nodes.append(new_node)
         yield _yield_parsing_result(node, new_node)
 
 
-def _parse_list(node, hint, validator, parsers):
+def _parse_iterable(node, hint, validator, parsers):
     new_node = yield nodes.SimpleNode(hint.__extra__)
     validator.all_nodes.append(new_node)
 
     # add its type as child
-    # We need to index first element only as Lists always have 1 argument
+    # We need to index first element only as Iterable always have 1 argument
     if hint.__args__:
         yield get_parser(new_node, hint.__args__[0], validator, parsers)
 
     yield _yield_parsing_result(node, new_node)
 
 
-def _parse_set(node, hint, validator, parsers):
-    new_node = yield nodes.SimpleNode(hint.__extra__)
-    validator.all_nodes.append(new_node)
+# -- Not useful anymore: a Set is an Iterable
+# def _parse_set(node, hint, validator, parsers):
+#     new_node = yield nodes.SimpleNode(hint.__extra__)
+#     validator.all_nodes.append(new_node)
+#
+#     # add its type as child
+#     # We need to index first element only as Sets always have 1 argument
+#     if hint.__args__:
+#         yield get_parser(new_node, hint.__args__[0], validator, parsers)
+#
+#     yield _yield_parsing_result(node, new_node)
 
-    # add its type as child
-    # We need to index first element only as Sets always have 1 argument
-    if hint.__args__:
-        yield get_parser(new_node, hint.__args__[0], validator, parsers)
 
-    yield _yield_parsing_result(node, new_node)
-
-
-def _parse_dict(node, hint, validator, parsers):
+def _parse_mapping(node, hint, validator, parsers):
     hint_args = hint.__args__
 
     if hint_args:
