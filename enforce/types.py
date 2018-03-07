@@ -48,7 +48,8 @@ class EnhancedTypeVar:
         Returns constrains further constrained by the __bound__ value
         """
         if self.__bound__:
-            return (self.__bound__, )
+            # This must have a comma at the end - it is a single element tuple
+            return self.__bound__,
         else:
             return self.__constraints__
 
@@ -125,9 +126,7 @@ TYPE_ALIASES = {
     None: type(None)
 }
 
-
 REVERSED_TYPE_ALIASES = {v: k for k, v in TYPE_ALIASES.items()}
-
 
 # Tells the type checking method to ignore __subclasscheck__
 # on the following types and their subclasses
@@ -140,9 +139,9 @@ def is_type_of_type(data: Union[type, str, None],
                     data_type: Union[type, str, 'TypeVar', EnhancedTypeVar, None],
                     covariant: bool = False,
                     contravariant: bool = False,
-                    local_variables: Optional[typing.Dict]=None,
-                    global_variables: Optional[typing.Dict]=None
-                   ) -> bool:
+                    local_variables: Optional[typing.Dict] = None,
+                    global_variables: Optional[typing.Dict] = None
+                    ) -> bool:
     """
     Returns if the type or type like object is of the same type as constrained
     Support co-variance, contra-variance and TypeVar-s
@@ -186,7 +185,8 @@ def is_type_of_type(data: Union[type, str, None],
     elif str(data_type).startswith('typing.Union'):
         constraints = [data_type]
     else:
-        subclasscheck_enabled = not any(data_type.__class__ is t or t in data_type.__mro__ for t in IGNORED_SUBCLASSCHECKS)
+        subclasscheck_enabled = not any(
+            data_type.__class__ is t or t in data_type.__mro__ for t in IGNORED_SUBCLASSCHECKS)
         constraints = [data_type]
 
     if not constraints:
@@ -231,7 +231,8 @@ def perform_subclasscheck(data, data_type, covariant, contravariant):
         result = data_type.__subclasscheck__(data)
 
         if data is not reversed_data:
-            if reversed_data is None: reversed_data = type(None)
+            if reversed_data is None:
+                reversed_data = type(None)
             result = result or data_type.__subclasscheck__(reversed_data)
 
         if result != NotImplemented:
@@ -242,7 +243,8 @@ def perform_subclasscheck(data, data_type, covariant, contravariant):
         result = data.__subclasscheck__(data_type)
 
         if data_type is not reversed_data_type:
-            if reversed_data_type is None: reversed_data_type = type(None)
+            if reversed_data_type is None:
+                reversed_data_type = type(None)
             result = result or data.__subclasscheck__(reversed_data_type)
 
         if result != NotImplemented:
@@ -322,3 +324,14 @@ def is_named_tuple(data):
 
     else:
         return True
+
+
+def is_wrapped_generic(data):
+    try:
+        wrapped = data.__wrapped__
+        is_wrapped = is_type_of_type(wrapped, typing.Generic, covariant=True)
+        return is_wrapped
+    except AttributeError:
+        pass
+
+    return False

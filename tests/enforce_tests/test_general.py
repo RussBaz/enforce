@@ -146,20 +146,6 @@ class GeneralTests(unittest.TestCase):
 
         sm = s.method
 
-        print(1)
-        print(sm.__enforcer__.callable_signature)
-        print(2)
-        print(dir(sm))
-        try:
-            print(sm.__mro__)
-        except AttributeError:
-            print('No MRO found.')
-
-        try:
-            print(sm.__call__)
-        except AttributeError:
-            print('No Call found.')
-
         foo(None)
         foo(s.method)
 

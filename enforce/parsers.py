@@ -8,7 +8,8 @@ except ImportError:
     UnionMeta = typing.Union
 
 from . import nodes
-from .types import EnhancedTypeVar, is_named_tuple
+from .types import EnhancedTypeVar, is_named_tuple, is_wrapped_generic
+from .protocol import _Protocol
 
 
 ParserChoice = namedtuple('ParserChoice', ['validator', 'parser'])
@@ -21,15 +22,41 @@ def get_parser(node, hint, validator, parsers=None):
     if parsers is None:
         parsers = TYPE_PARSERS
 
-    if type(hint) == type:
+    hint_type = type(hint)
+
+    if hint_type is str:
+        parser = _parse_unwrapped_forward_ref
+    elif hint_type == type:
+        _fail_on_unacceptable_hint(node, hint, validator, parsers)
         parser = parsers.get(hint, _get_aliased_parser_or_default(hint, _parse_default))
     else:
-        parser = parsers.get(type(hint), _get_aliased_parser_or_default(hint, _parse_default))
+        _fail_on_unacceptable_hint(node, hint_type, validator, parsers)
+        parser = parsers.get(hint_type, _get_aliased_parser_or_default(hint, _parse_default))
 
     yield parser(node, hint, validator, parsers)
 
 
+def _fail_on_unacceptable_hint(node, hints, validator, parsers):
+    fail_with = TYPE_ERROR_GENERATORS.get(hints, None)
+    if fail_with is not None:
+        fail_with(node, hints, validator, parsers)
+
+
 def _get_aliased_parser_or_default(hint, default):
+    """
+    After a normal parser selection fails,
+    It will try running more complex parser selection suite
+    before returning the most basic default parser
+
+    It will go through the list in a definition order
+    and tests each entry
+    (calls 'validator' property with the int as a parameter)
+    If any 'validator' returns True,
+    Then this function returns the associated parser
+
+    Otherwise, if all tests fail, it returns the default parser
+    passed in as an argument
+    """
     for choice in ALIASED_TYPE_PARSERS:
         if choice.validator(hint):
             return choice.parser
@@ -197,6 +224,17 @@ def _parse_mapping(node, hint, validator, parsers):
         yield _parse_default(node, hint, validator, parsers)
 
 
+def _parse_forward_ref(node, hint, validator, parsers):
+    new_node = yield nodes.ForwardRefNode(hint)
+    validator.all_nodes.append(new_node)
+    yield _yield_parsing_result(node, new_node)
+
+
+def _parse_unwrapped_forward_ref(node, hint, validator, parsers):
+    forward_ref = typing._ForwardRef(hint)
+    yield _parse_forward_ref(node, forward_ref, validator, parsers)
+
+
 def _yield_unified_node(node, hints, validator, parsers):
     new_node = yield nodes.UnionNode()
     validator.all_nodes.append(new_node)
@@ -215,18 +253,29 @@ def _yield_parsing_result(node, new_node):
         yield new_node
 
 
+def _fail_on_empty_protocol(node, hint, validator, parsers):
+    raise TypeError('Cannot enforce undefined protocol')
+
+
 TYPE_PARSERS = {
     UnionMeta: _parse_union,
     typing.TupleMeta: _parse_tuple,
     typing.GenericMeta: _parse_generic,
     typing.CallableMeta: _parse_callable,
     typing.TypeVar: _parse_type_var,
+    typing._ForwardRef: _parse_forward_ref,
     EnhancedTypeVar: _parse_type_var,
     complex: _parse_complex,
     bytes: _parse_bytes
     }
 
+TYPE_ERROR_GENERATORS = {
+    _Protocol: _fail_on_empty_protocol
+}
 
+
+# For details, see the '_get_aliased_parser_or_default' docstring
 ALIASED_TYPE_PARSERS = (
     ParserChoice(validator=is_named_tuple, parser=_parse_namedtuple),
+    ParserChoice(validator=is_wrapped_generic, parser=_parse_generic)
     )
