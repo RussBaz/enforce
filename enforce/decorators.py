@@ -16,6 +16,13 @@ BuildLock = RLock()
 RunLock = RLock()
 
 
+def protocol_registration(data=None, *, name: typing.Optional[str]=None):
+    """
+    This decorator creates and registers a protocol based on a provided class
+    """
+    pass
+
+
 def runtime_validation(data=None, *, enabled=None, group=None):
     """
     This decorator enforces runtime parameter and return value type checking validation
@@ -100,6 +107,12 @@ def get_universal_decorator():
             else:
                 parameters = Parameters(args, kwargs, skip)
 
+            frame = inspect.stack()[2].frame
+            outer_locals = frame.f_locals
+            outer_globals = frame.f_globals
+
+            enforcer.set_outer_scope_variables(outer_locals, outer_globals)
+
             # First, check argument types (every key not labelled 'return')
             _args, _kwargs, _ = enforcer.validate_inputs(parameters)
 
@@ -126,6 +139,7 @@ def get_wrapper_builder(configuration, excluded_fields=None):
 
     excluded_fields |= {'__class__', '__new__'}
 
+    @decorator
     def build_wrapper(wrapped, instance, args, kwargs):
         if instance is None:
             if inspect.isclass(wrapped):
@@ -175,7 +189,7 @@ def get_wrapper_builder(configuration, excluded_fields=None):
                 print(type(wrapped))
                 return decorate(wrapped, configuration, instance)
 
-    return decorator(build_wrapper)
+    return build_wrapper
 
 
 def get_typed_namedtuple(configuration, typed_namedtuple, fields, fields_types):

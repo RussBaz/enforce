@@ -5,8 +5,8 @@ from collections import namedtuple, OrderedDict
 from wrapt import ObjectProxy, BoundFunctionWrapper
 
 from .types import EnhancedTypeVar, is_type_of_type
-from .wrappers import Proxy, EnforceProxy
-from .exceptions import RuntimeTypeError
+# from .wrappers import Proxy, EnforceProxy
+# from .exceptions import RuntimeTypeError
 from .validator import init_validator, Validator
 from .settings import Settings
 
@@ -111,6 +111,16 @@ class Enforcer:
         else:
             return output_data
 
+    def set_outer_scope_variables(self, outer_locals, outer_globals):
+        """
+        Sets the reference to the outer scope on a validator
+        This allows an access to the outer execution scope
+        which is not known at definition time
+        This also enables the forward referencing
+        """
+        self.validator.locals = outer_locals
+        self.validator.globals = outer_globals
+
     def reset(self):
         """
         Clears validator internal state
@@ -134,6 +144,11 @@ class GenericProxy(ObjectProxy):
         else:
             self._self_settings = settings
 
+        # Does anyone remember what exactly this piece of code checks? [Russ]
+        # Note to myself:
+        # First case is to prevent wrapping already wrapped objects
+        # Second case is to find out if it is actually a Generic or something else
+        # Because only Generics are allowed to be wrapped by a Generic proxy
         if is_type_of_type(wrapped_type, GenericProxy):
             super().__init__(wrapped.__wrapped__)
             apply_enforcer(self, generic=True, instance_of=self, settings=self._self_settings)
@@ -144,13 +159,23 @@ class GenericProxy(ObjectProxy):
             raise TypeError('Only generics can be wrapped in GenericProxy')
 
     def __call__(self, *args, **kwargs):
-        return apply_enforcer(self.__wrapped__(*args, **kwargs), generic=True, instance_of=self, settings=self._self_settings)
+        r = apply_enforcer(self.__wrapped__(*args, **kwargs), generic=True, instance_of=self, settings=self._self_settings)
+        d = self.__wrapped__
+        en = r.__enforcer__
+        return r
 
     def __getitem__(self, param):
         """
         Wraps a normal typed Generic in another proxy and applies enforcers for generics on it
         """
         return GenericProxy(self.__wrapped__.__getitem__(param))
+
+    def __repr__(self):
+        # if self.__wrapped__.__origin__ is None:
+        #     return super().__repr__()
+        r = super().__repr__()
+        constraints = repr(self.__wrapped__.__args__)
+        return r + '[{}]'.format(constraints)
 
 
 def apply_enforcer(func: typing.Callable,
@@ -210,7 +235,7 @@ def generate_new_enforcer(func, generic, parent_root, instance_of, settings):
 
         # Verifies that constraints do not contradict generic's parameter definition
         # and bounds parameters to constraints (if constrained)
-        bound = bool(func.__args__)
+        bound = func.__args__ is not None
         if bound:
             for i, param in enumerate(hints.values()):
                 arg = func.__args__[i]
@@ -222,7 +247,6 @@ def generate_new_enforcer(func, generic, parent_root, instance_of, settings):
         # NOTE:
         # Signature in generics should always point to the original unconstrained generic
         # This applies even to the instances of such Generics
-
         if has_origin:
             signature = func.__origin__
         else:
@@ -235,12 +259,14 @@ def generate_new_enforcer(func, generic, parent_root, instance_of, settings):
 
         try:
             signature = inspect.signature(func)
-            hints = typing.get_type_hints(func)
+            a = func.__annotations__
+            hints = getattr(func, '__annotations__', {})
         except TypeError:
             if hasattr(func, '__call__') and inspect.ismethod(func.__call__):
                 call = func.__call__
                 signature = inspect.signature(call)
-                hints = typing.get_type_hints(call)
+                # hints = typing.get_type_hints(call)
+                hints = getattr(call, '__annotations__', {})
             else:
                 mutable = hasattr(func, '__dict__')
                 message = 'mutable' if mutable else 'immutable'

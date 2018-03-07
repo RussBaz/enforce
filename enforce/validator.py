@@ -1,6 +1,5 @@
 import typing
 
-from .nodes import BaseNode
 from .parsers import get_parser
 from .utils import visit
 
@@ -12,6 +11,7 @@ class Validator:
         self.settings = settings
         self.errors = []
         self.globals = {}
+        self.locals = {}
         self.data_out = {}
         self.roots = {}
         self.all_nodes = []
@@ -37,6 +37,8 @@ class Validator:
         Prepares the validator for yet another round of validation by clearing all the temporary data
         """
         self.errors = []
+        self.locals = {}
+        self.globals = {}
         self.data_out = {}
         for node in self.all_nodes:
             node.reset()

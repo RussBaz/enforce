@@ -275,6 +275,9 @@ docs/_build/
 # PyBuilder
 target/
 
+# PyTest
+.pytest_cache/
+
 #########################################
 ## Idea (IntelliJ/PyCharm/...)
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio
