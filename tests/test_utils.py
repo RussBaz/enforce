@@ -1,6 +1,6 @@
 import unittest
 
-from enforce.utils import visit, merge_dictionaries
+from enforce.utils import run_lazy_function, merge_dictionaries
 
 
 class UtilsTests(unittest.TestCase):
@@ -17,7 +17,7 @@ class UtilsTests(unittest.TestCase):
         def generator_multiply_add(a, b):
             yield a + 2*b
 
-        result = visit(generator_foo(1))
+        result = run_lazy_function(generator_foo(1))
 
         self.assertEqual(result, 17)
 

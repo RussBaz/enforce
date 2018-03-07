@@ -10,7 +10,7 @@ try:
 except ImportError:
     UnionMeta = Union
 
-from .utils import visit
+from .utils import run_lazy_function
 
 
 class EnhancedTypeVar:
@@ -164,8 +164,8 @@ def is_type_of_type(data: Union[type, str, None],
     if isinstance(data, str):
         data = calling_scope[data]
 
-    data_type = visit(sort_and_flat_type(data_type))
-    data = visit(sort_and_flat_type(data))
+    data_type = run_lazy_function(sort_and_flat_type(data_type))
+    data = run_lazy_function(sort_and_flat_type(data))
 
     subclasscheck_enabled = True
     is_type_var = data_type.__class__ is TypeVar or data_type.__class__ is EnhancedTypeVar

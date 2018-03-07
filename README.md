@@ -301,9 +301,13 @@ possible.
 
 ## Changelog
 
-### 0.3.5 - xx.xx.2017
+### 0.4.0 - xx.xx.2018
+* Added basic support for structural typing (using own implementation of Protocols behind the scenes)
+* Added inline type checking assertions
+* Added support for Forward References
 * Added an experimental option to change which exception is raised on errors
-* Fixed typechecking of methods as parameters
+* Fixed type checking of methods as parameters
+
 ### 0.3.4 - 11.06.2017
 * Further improved exception messages and their consistency
 * General bug fixes

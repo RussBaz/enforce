@@ -2,7 +2,7 @@ import typing
 from copy import deepcopy
 
 
-def visit(generator):
+def run_lazy_function(generator):
     """
     Runs ('visits') the provided generator till completion
     Returns the last yielded value
