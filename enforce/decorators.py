@@ -3,6 +3,7 @@ import typing
 import functools
 from collections import OrderedDict
 from multiprocessing import RLock
+from typing import _ForwardRef
 
 from wrapt import decorator, ObjectProxy
 
@@ -66,33 +67,32 @@ def runtime_validation(data=None, *, enabled=None, group=None):
 
 
 def _should_decorate_later(data):
-    return_annotation = data.__annotations__.get('return')
-    if not isinstance(return_annotation, str):
-        return False
-    # test if we can reference the class
-    try:
-        eval(return_annotation)
-    except NameError:
-        # this might indicate that late binding is in order
-        return True
+    for annotation_val in data.__annotations__.values():
+        if not isinstance(annotation_val, str):
+            continue
+        # test if we can reference the class
+        frame = inspect.stack()[5].frame
+        try:
+            typing._eval_type(_ForwardRef(annotation_val), frame.f_globals, frame.f_locals)
+        except NameError:
+            # this indicates that late binding is in order
+            return True
     return False
 
 
-def _decorate(data, configuration, obj_instance=None, parent_root=None) -> typing.Callable:
+def _decorate(data, configuration, obj_instance=None, parent_root=None, stack_depth=1) -> typing.Callable:
     data = apply_enforcer(data, parent_root=parent_root, settings=configuration)
-
-    universal = get_universal_decorator()
-
+    universal = get_universal_decorator(stack_depth=stack_depth)
     return universal(data)
 
 
-def _decorate_later(data, configuration, obj_instance=None, parent_root=None):
+def _decorate_later(data, configuration, obj_instance=None, parent_root=None) -> typing.Callable:
     enforced = None
 
     def wrap(*args, **kwargs):
-        nonlocal enforced
+        nonlocal enforced, data
         if enforced is None:
-            enforced = _decorate(data, configuration, obj_instance, parent_root)
+            enforced = _decorate(data, configuration, obj_instance, parent_root, stack_depth=2)
         return enforced(*args, **kwargs)
 
     return wrap
@@ -113,7 +113,7 @@ def decorate(data, configuration, obj_instance=None, parent_root=None) -> typing
         return _decorate(data, configuration, obj_instance, parent_root)
 
 
-def get_universal_decorator():
+def get_universal_decorator(stack_depth=1):
     def universal(wrapped, instance, args, kwargs):
         """
         This function will be returned by the decorator. It adds type checking before triggering
@@ -139,7 +139,7 @@ def get_universal_decorator():
             else:
                 parameters = Parameters(args, kwargs, skip)
 
-            frame = inspect.stack()[2].frame
+            frame = inspect.stack()[stack_depth].frame
             outer_locals = frame.f_locals
             outer_globals = frame.f_globals
 
