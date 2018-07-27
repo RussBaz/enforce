@@ -65,6 +65,39 @@ def runtime_validation(data=None, *, enabled=None, group=None):
         return generate_decorated()
 
 
+def _should_decorate_later(data):
+    return_annotation = data.__annotations__.get('return')
+    if not isinstance(return_annotation, str):
+        return False
+    # test if we can reference the class
+    try:
+        eval(return_annotation)
+    except NameError:
+        # this might indicate that late binding is in order
+        return True
+    return False
+
+
+def _decorate(data, configuration, obj_instance=None, parent_root=None) -> typing.Callable:
+    data = apply_enforcer(data, parent_root=parent_root, settings=configuration)
+
+    universal = get_universal_decorator()
+
+    return universal(data)
+
+
+def _decorate_later(data, configuration, obj_instance=None, parent_root=None):
+    enforced = None
+
+    def wrap(*args, **kwargs):
+        nonlocal enforced
+        if enforced is None:
+            enforced = _decorate(data, configuration, obj_instance, parent_root)
+        return enforced(*args, **kwargs)
+
+    return wrap
+
+
 def decorate(data, configuration, obj_instance=None, parent_root=None) -> typing.Callable:
     """
     Performs the function decoration with a type checking wrapper
@@ -74,11 +107,10 @@ def decorate(data, configuration, obj_instance=None, parent_root=None) -> typing
     if not hasattr(data, '__annotations__'):
         return data
 
-    data = apply_enforcer(data, parent_root=parent_root, settings=configuration)
-
-    universal = get_universal_decorator()
-
-    return universal(data)
+    if _should_decorate_later(data):
+        return _decorate_later(data, configuration, obj_instance, parent_root)
+    else:
+        return _decorate(data, configuration, obj_instance, parent_root)
 
 
 def get_universal_decorator():
