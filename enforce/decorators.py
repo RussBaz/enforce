@@ -3,7 +3,7 @@ import typing
 import functools
 from collections import OrderedDict
 from multiprocessing import RLock
-from typing import _ForwardRef
+from typing import ForwardRef
 
 from wrapt import decorator, ObjectProxy
 
