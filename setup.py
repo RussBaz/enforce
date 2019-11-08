@@ -14,6 +14,7 @@ setup(
 
     description='Python 3.5+ library for integration testing and data validation through configurable and optional runtime type hint enforcement.',
     long_description=LONG_DESCRIPTION,
+    long_description_content_type='text/markdown',
 
     url='https://github.com/RussBaz/enforce',
     author='RussBaz',
