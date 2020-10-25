@@ -12,7 +12,7 @@ from .types import EnhancedTypeVar, is_named_tuple, is_wrapped_generic
 from .protocol import _Protocol
 
 
-ParserChoice = namedtuple('ParserChoice', ['validator', 'parser'])
+ParserChoice = namedtuple("ParserChoice", ["validator", "parser"])
 
 
 def get_parser(node, hint, validator, parsers=None):
@@ -31,7 +31,9 @@ def get_parser(node, hint, validator, parsers=None):
         parser = parsers.get(hint, _get_aliased_parser_or_default(hint, _parse_default))
     else:
         _fail_on_unacceptable_hint(node, hint_type, validator, parsers)
-        parser = parsers.get(hint_type, _get_aliased_parser_or_default(hint, _parse_default))
+        parser = parsers.get(
+            hint_type, _get_aliased_parser_or_default(hint, _parse_default)
+        )
 
     yield parser(node, hint, validator, parsers)
 
@@ -71,7 +73,7 @@ def _parse_namedtuple(node, hint, validator, parsers):
 
 
 def _parse_default(node, hint, validator, parsers):
-    if str(hint).startswith('typing.Union'):
+    if str(hint).startswith("typing.Union"):
         yield _parse_union(node, hint, validator, parsers)
     else:
         new_node = yield nodes.SimpleNode(hint)
@@ -105,7 +107,9 @@ def _parse_type_var(node, hint, validator, parsers):
         except KeyError:
             covariant = hint.__covariant__
             contravariant = hint.__contravariant__
-            new_node = yield nodes.TypeVarNode(covariant=covariant, contravariant=contravariant)
+            new_node = yield nodes.TypeVarNode(
+                covariant=covariant, contravariant=contravariant
+            )
             if hint.__bound__ is not None:
                 yield get_parser(new_node, hint.__bound__, validator, parsers)
             elif hint.__constraints__:
@@ -177,7 +181,7 @@ def _parse_generic(node, hint, validator, parsers):
         new_node = yield nodes.GenericNode(
             hint,
             covariant=validator.settings.covariant,
-            contravariant=validator.settings.contravariant
+            contravariant=validator.settings.contravariant,
         )
         validator.all_nodes.append(new_node)
         yield _yield_parsing_result(node, new_node)
@@ -254,7 +258,7 @@ def _yield_parsing_result(node, new_node):
 
 
 def _fail_on_empty_protocol(node, hint, validator, parsers):
-    raise TypeError('Cannot enforce undefined protocol')
+    raise TypeError("Cannot enforce undefined protocol")
 
 
 TYPE_PARSERS = {
@@ -266,16 +270,14 @@ TYPE_PARSERS = {
     typing._ForwardRef: _parse_forward_ref,
     EnhancedTypeVar: _parse_type_var,
     complex: _parse_complex,
-    bytes: _parse_bytes
-    }
-
-TYPE_ERROR_GENERATORS = {
-    _Protocol: _fail_on_empty_protocol
+    bytes: _parse_bytes,
 }
+
+TYPE_ERROR_GENERATORS = {_Protocol: _fail_on_empty_protocol}
 
 
 # For details, see the '_get_aliased_parser_or_default' docstring
 ALIASED_TYPE_PARSERS = (
     ParserChoice(validator=is_named_tuple, parser=_parse_namedtuple),
-    ParserChoice(validator=is_wrapped_generic, parser=_parse_generic)
-    )
+    ParserChoice(validator=is_wrapped_generic, parser=_parse_generic),
+)

@@ -1,10 +1,9 @@
 import typing
-import unittest
 from numbers import Integral
 
 import pytest
 
-from enforce import runtime_validation, config
+from enforce import runtime_validation
 from enforce.exceptions import RuntimeTypeError
 
 
@@ -17,7 +16,7 @@ class TestGenericTypes:
         """
         Verifies that user defined generics can be initialised
         """
-        T = typing.TypeVar('T')
+        T = typing.TypeVar("T")
 
         class Sample(typing.Generic[T]):
             pass
@@ -32,10 +31,10 @@ class TestGenericTypes:
         st = ST()
         sdt = SDT()
 
-        assert not hasattr(s, '__enforcer__')
-        assert not hasattr(st, '__enforcer__')
-        assert hasattr(sd, '__enforcer__')
-        assert hasattr(sdt, '__enforcer__')
+        assert not hasattr(s, "__enforcer__")
+        assert not hasattr(st, "__enforcer__")
+        assert hasattr(sd, "__enforcer__")
+        assert hasattr(sdt, "__enforcer__")
 
         assert sd.__enforcer__.signature == Sample
         assert sdt.__enforcer__.signature == Sample
@@ -55,7 +54,7 @@ class TestGenericTypes:
         """
         Verifies that user defined generic can be used as a type hint
         """
-        T = typing.TypeVar('T')
+        T = typing.TypeVar("T")
 
         @runtime_validation
         class Sample(typing.Generic[T]):
@@ -107,8 +106,13 @@ class TestGenericTypes:
         """
         Interval = typing.Tuple[Integral, Integral]
         Annotation = typing.NamedTuple(
-            "Annotation", [("source", typing.Text), ("start", Integral),
-                           ("end", Integral), ("text", typing.Text),
-                           ("cls", typing.Text)]
-                           )
+            "Annotation",
+            [
+                ("source", typing.Text),
+                ("start", Integral),
+                ("end", Integral),
+                ("text", typing.Text),
+                ("cls", typing.Text),
+            ],
+        )
         TypedAnnotation = runtime_validation(Annotation)

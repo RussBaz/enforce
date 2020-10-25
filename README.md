@@ -1,15 +1,16 @@
-|  Branch	| Status  |
-| :-------:	| :--- 	  |
-|  Master: 	| [![Build Status](https://img.shields.io/travis/RussBaz/enforce/master.svg)](https://travis-ci.org/RussBaz/enforce) [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/github/RussBaz/enforce?branch=master&svg=true)](https://ci.appveyor.com/project/RussBaz/enforce) [![Coverage Status](https://img.shields.io/coveralls/RussBaz/enforce/master.svg)](https://coveralls.io/github/RussBaz/enforce?branch=master) [![Requirements Status](https://img.shields.io/requires/github/RussBaz/enforce/master.svg)](https://requires.io/github/RussBaz/enforce/requirements/?branch=master) [![PyPI version](https://img.shields.io/pypi/v/enforce.svg)](https://pypi.python.org/pypi/enforce)	|
-|   Dev:  	| [![Build Status](https://img.shields.io/travis/RussBaz/enforce/dev.svg)](https://travis-ci.org/RussBaz/enforce) [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/github/RussBaz/enforce?branch=dev&svg=true)](https://ci.appveyor.com/project/RussBaz/enforce) [![Coverage Status](https://img.shields.io/coveralls/RussBaz/enforce/dev.svg)](https://coveralls.io/github/RussBaz/enforce?branch=dev) [![Requirements Status](https://img.shields.io/requires/github/RussBaz/enforce/dev.svg)](https://requires.io/github/RussBaz/enforce/requirements/?branch=dev)	|
+Enforce.py
+==========
+![Python version range](https://img.shields.io/badge/python-3.5.3%20|%203.6%20|%203.7%20|%203.8%20|%203.9-blue.svg)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Testing](https://github.com/SamuelMarks/enforce/workflows/Test/badge.svg)](https://github.com/SamuelMarks/enforce/actions)
+[![Coverage Status](https://img.shields.io/coveralls/RussBaz/enforce/dev.svg)](https://coveralls.io/github/RussBaz/enforce?branch=dev)
+![Tested OSs, others may work](https://img.shields.io/badge/Tested%20on-Linux%20|%20macOS%20|%20Windows-green)
+[![PyPI version](https://img.shields.io/pypi/v/enforce.svg)](https://pypi.python.org/pypi/enforce)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-# Enforce.py
-
-*__Enforce.py__* is a Python 3.5+ library for integration testing and data validation through configurable and optional runtime type hint enforcement. It uses the standard type hinting syntax (defined in PEP 484). 
+*__Enforce.py__* is a Python 3.5+ library for integration testing and data validation through configurable and optional runtime type hint enforcement. It uses the standard type hinting syntax (defined in PEP 484).
 
 **NOTICE:** Python versions 3.5.2 and earlier (3.5.0-3.5.2) are now deprecated. Only Python versions 3.5.3+ would be supported. Deprecated versions will no longer be officially supported in Enforce.py version 0.4.x.
-
-In addition, please be aware that the next version 0.4.x is likely to have breaking change due to eventual transition from eager to lazy evaluation of types.
 
 * [Overview](#overview)
 * [Installation](#installation)
@@ -47,13 +48,7 @@ Stable 0.3.x - Stable and ready for every day use version
 Dev current - "Bleeding edge" features that, while are fairly consistent, may
 change.
 
-```sh
-git clone https://github.com/RussBaz/enforce.git@dev
-cd enforce
-# Please use a virtual environment before proceeding!
-pip install -r requirements.txt
-pip install -e .
-```
+    pip install git+https://github.com/RussBaz/enforce.git@dev
 
 ## Usage
 
@@ -211,11 +206,6 @@ default_options = {
         # Updating the default group status - default group is not affected by other settings
         'default': None
     },
-    # Erorr processing settings
-    'errors': {
-        # Sets which exception would be raised by the default error processor
-        'exception': None
-    }
     # Sets the type checking mode
     # Available options: 'invariant', 'covariant', 'contravariant', 'bivariant' and None
     'mode': None
@@ -300,13 +290,6 @@ Please report an issue if you do find one and we'll try to fix it as quickly as
 possible.
 
 ## Changelog
-
-### 0.4.0 - xx.xx.2018
-* Added basic support for structural typing (using own implementation of Protocols behind the scenes)
-* Added inline type checking assertions
-* Added support for Forward References
-* Added an experimental option to change which exception is raised on errors
-* Fixed type checking of methods as parameters
 
 ### 0.3.4 - 11.06.2017
 * Further improved exception messages and their consistency

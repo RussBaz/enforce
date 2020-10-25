@@ -1,7 +1,12 @@
-﻿import unittest
-import typing
+﻿import typing
+import unittest
 
-from enforce.exceptions import RuntimeTypeError, parse_errors, raise_errors, process_errors
+from enforce.exceptions import (
+  RuntimeTypeError,
+  parse_errors,
+  raise_errors,
+  process_errors,
+)
 
 
 class ExceptionsTests(unittest.TestCase):
@@ -13,7 +18,7 @@ class ExceptionsTests(unittest.TestCase):
         """
         Verifies that an exception can be raised and it returns a correct message
         """
-        message = 'hello world'
+        message = "hello world"
         with self.assertRaises(RuntimeTypeError) as error:
             raise RuntimeTypeError(message)
 
@@ -23,7 +28,7 @@ class ExceptionsTests(unittest.TestCase):
         """
         Verifies that any exception can be raised with any message
         """
-        message = 'hello world'
+        message = "hello world"
         exception = Exception
 
         with self.assertRaises(exception) as error:
@@ -36,9 +41,9 @@ class ExceptionsTests(unittest.TestCase):
         Verifies that the default error processor would call a passed parser function with given parameters
         and then will raise an error
         """
-        e = 'Hello '
-        h = 'world'
-        r = '!'
+        e = "Hello "
+        h = "world"
+        r = "!"
 
         message = e + h + r
 
@@ -59,26 +64,27 @@ class ExceptionsTests(unittest.TestCase):
         """
         Verifies that the format of the default error parser when used on input, is correct
         """
-        error_message = "       Argument '{0}' was not of type {1}. Actual type was {2}."
-        return_error_message = "        Return value was not of type {0}. Actual type was {1}."
+        error_message = (
+            "       Argument '{0}' was not of type {1}. Actual type was {2}."
+        )
+        return_error_message = (
+            "        Return value was not of type {0}. Actual type was {1}."
+        )
         output = "\n  The following runtime type errors were encountered:"
 
         hints = {
-            'a': int,
-            'b': typing.Dict[str, typing.Optional[int]],
-            'return': typing.Optional[int]
+            "a": int,
+            "b": typing.Dict[str, typing.Optional[int]],
+            "return": typing.Optional[int],
         }
 
         # Multiple errors
 
-        errors = [
-            ('a', 'typing.Dict'),
-            ('b', 'typing.Callable')
-        ]
+        errors = [("a", "typing.Dict"), ("b", "typing.Callable")]
 
         expected_message = output
-        expected_message += '\n' + error_message.format('a', hints['a'], errors[0][1])
-        expected_message += '\n' + error_message.format('b', hints['b'], errors[1][1])
+        expected_message += "\n" + error_message.format("a", hints["a"], errors[0][1])
+        expected_message += "\n" + error_message.format("b", hints["b"], errors[1][1])
 
         message = parse_errors(errors, hints)
 
@@ -86,12 +92,10 @@ class ExceptionsTests(unittest.TestCase):
 
         # Single error
 
-        errors = [
-            ('a', 'int')
-        ]
+        errors = [("a", "int")]
 
         expected_message = output
-        expected_message += '\n' + error_message.format('a', hints['a'], errors[0][1])
+        expected_message += "\n" + error_message.format("a", hints["a"], errors[0][1])
 
         message = parse_errors(errors, hints)
 
@@ -99,12 +103,10 @@ class ExceptionsTests(unittest.TestCase):
 
         # No hint available
 
-        errors = [
-            ('c', 'typing.Union[str, int]')
-        ]
+        errors = [("c", "typing.Union[str, int]")]
 
         expected_message = output
-        expected_message += '\n' + error_message.format('c', type(None), errors[0][1])
+        expected_message += "\n" + error_message.format("c", type(None), errors[0][1])
 
         message = parse_errors(errors, hints)
 
@@ -114,24 +116,30 @@ class ExceptionsTests(unittest.TestCase):
         """
         Verifies that the format of the default error parser when used on output, is correct
         """
-        error_message = "       Argument '{0}' was not of type {1}. Actual type was {2}."
-        return_error_message = "        Return value was not of type {0}. Actual type was {1}."
+        error_message = (
+            "       Argument '{0}' was not of type {1}. Actual type was {2}."
+        )
+        return_error_message = (
+            "        Return value was not of type {0}. Actual type was {1}."
+        )
         output = "\n  The following runtime type errors were encountered:"
 
         hints = {
-            'a': int,
-            'b': typing.Dict[str, typing.Optional[int]],
-            'return': typing.Optional[int]
+            "a": int,
+            "b": typing.Dict[str, typing.Optional[int]],
+            "return": typing.Optional[int],
         }
 
         # Single error
 
         errors = [
-            ('return', 'typing.Dict'),
+            ("return", "typing.Dict"),
         ]
 
         expected_message = output
-        expected_message += '\n' + return_error_message.format(hints['return'], errors[0][1])
+        expected_message += "\n" + return_error_message.format(
+            hints["return"], errors[0][1]
+        )
 
         message = parse_errors(errors, hints, True)
 
@@ -140,19 +148,19 @@ class ExceptionsTests(unittest.TestCase):
         # No return hint specified
 
         errors = [
-            ('return', 'typing.Dict'),
+            ("return", "typing.Dict"),
         ]
 
         # Do not forget: the return hint is deleted at this stage
-        del hints['return']
+        del hints["return"]
 
         expected_message = output
-        expected_message += '\n' + return_error_message.format(type(None), errors[0][1])
+        expected_message += "\n" + return_error_message.format(type(None), errors[0][1])
 
         message = parse_errors(errors, hints, True)
 
         self.assertEqual(message, expected_message)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

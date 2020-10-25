@@ -1,5 +1,5 @@
 import unittest
-from typing import Iterator, Iterable, Generator
+from typing import Iterator
 
 from enforce import runtime_validation
 
@@ -13,6 +13,7 @@ class IterableTypesTests(unittest.TestCase):
         """
         Verifies that Iterator generic is respected
         """
+
         @runtime_validation
         def foo(i: Iterator[int]):
             result = []

@@ -1,6 +1,6 @@
 import numbers
-import unittest
 import typing
+import unittest
 
 from enforce import runtime_validation, config
 from enforce.exceptions import RuntimeTypeError
@@ -20,7 +20,7 @@ class ComplexTypesTests(unittest.TestCase):
 
     def get_type_var_func(self, configurable=False, type_var=None):
         if type_var is None:
-            A = typing.TypeVar('A')
+            A = typing.TypeVar("A")
         else:
             A = type_var
 
@@ -57,23 +57,23 @@ class ComplexTypesTests(unittest.TestCase):
         with self.assertRaises(RuntimeTypeError):
             func(True)
 
-        func2('hello')
+        func2("hello")
         func2(1.0)
         with self.assertRaises(RuntimeTypeError):
             func2(1)
 
-        config({'mode': 'covariant'})
+        config({"mode": "covariant"})
 
         func(1)
         func(True)
         with self.assertRaises(RuntimeTypeError):
             func(1.0)
 
-        func2('hello')
+        func2("hello")
         func2(1.0)
         func2(1)
 
-        config({'mode': 'contravariant'})
+        config({"mode": "contravariant"})
 
         with self.assertRaises(RuntimeTypeError):
             func(1)
@@ -83,22 +83,22 @@ class ComplexTypesTests(unittest.TestCase):
         with self.assertRaises(RuntimeTypeError):
             func(True)
 
-        func2('hello')
+        func2("hello")
         func2(1.0)
         with self.assertRaises(RuntimeTypeError):
             func2(1)
 
-        config({'mode': 'bivariant'})
+        config({"mode": "bivariant"})
 
         func(1)
         func(1.0)
         func(True)
 
-        func2('hello')
+        func2("hello")
         func2(1.0)
         func2(1)
 
-        config({'mode': 'invariant'})
+        config({"mode": "invariant"})
 
         with self.assertRaises(RuntimeTypeError):
             func(1)
@@ -109,7 +109,7 @@ class ComplexTypesTests(unittest.TestCase):
         with self.assertRaises(RuntimeTypeError):
             func(True)
 
-        func2('hello')
+        func2("hello")
         func2(1.0)
         with self.assertRaises(RuntimeTypeError):
             func2(1)
@@ -126,10 +126,10 @@ class ComplexTypesTests(unittest.TestCase):
         self.assertEqual(sample(1), 1)
         self.assertIsNone(sample(None))
         with self.assertRaises(RuntimeTypeError):
-            sample('')
+            sample("")
 
         with self.assertRaises(RuntimeTypeError):
-            sample_bad('')
+            sample_bad("")
 
     def test_tuple(self):
         @runtime_validation
@@ -148,7 +148,7 @@ class ComplexTypesTests(unittest.TestCase):
         def sample_any_out(data: typing.Any) -> typing.Tuple:
             return data
 
-        self.assertEqual(sample((1, '')), (1, ''))
+        self.assertEqual(sample((1, "")), (1, ""))
         with self.assertRaises(RuntimeTypeError):
             sample((1, 1))
 
@@ -159,9 +159,9 @@ class ComplexTypesTests(unittest.TestCase):
             sample([])
 
         with self.assertRaises(RuntimeTypeError):
-            sample_bad((''))
+            sample_bad((""))
 
-        self.assertEqual(sample_any_in((1, '')), (1, ''))
+        self.assertEqual(sample_any_in((1, "")), (1, ""))
         with self.assertRaises(RuntimeTypeError):
             sample_any_in(1)
 
@@ -172,14 +172,14 @@ class ComplexTypesTests(unittest.TestCase):
     def test_named_tuple(self):
         from collections import namedtuple
 
-        MyNamedTuple = typing.NamedTuple('MyNamedTuple', [('my_int', int)])
+        MyNamedTuple = typing.NamedTuple("MyNamedTuple", [("my_int", int)])
 
         t = MyNamedTuple(5)
-        t1 = namedtuple('MyNamedTuple', 'my_int')(5)
-        t2 = namedtuple('MyNamedTuple', 'my_int')('string')
+        t1 = namedtuple("MyNamedTuple", "my_int")(5)
+        t2 = namedtuple("MyNamedTuple", "my_int")("string")
         t3 = runtime_validation(MyNamedTuple)(5)
         t4 = (5,)
-        t5 = '5'
+        t5 = "5"
 
         @runtime_validation
         def sample(data: MyNamedTuple) -> MyNamedTuple:
@@ -198,10 +198,10 @@ class ComplexTypesTests(unittest.TestCase):
             sample(t5)
 
         # Covariant case
-        config({'mode': 'covariant'})
+        config({"mode": "covariant"})
 
     def test_typed_named_tuple(self):
-        MyNamedTuple = typing.NamedTuple('MyNamedTuple', [('my_int', int)])
+        MyNamedTuple = typing.NamedTuple("MyNamedTuple", [("my_int", int)])
         MyNamedTuple = runtime_validation(MyNamedTuple)
 
         mt = MyNamedTuple(5)
@@ -214,16 +214,16 @@ class ComplexTypesTests(unittest.TestCase):
         self.assertEqual(mt2.my_int, 5)
 
         with self.assertRaises(RuntimeTypeError):
-            MyNamedTuple('string')
+            MyNamedTuple("string")
 
         with self.assertRaises(RuntimeTypeError):
-            MyNamedTuple(my_int='string')
+            MyNamedTuple(my_int="string")
 
         with self.assertRaises(AttributeError):
-            mt2.my_int = 'hello world'
+            mt2.my_int = "hello world"
 
         with self.assertRaises(TypeError):
-            MyNamedTuple(2, my_int='string')
+            MyNamedTuple(2, my_int="string")
 
     def test_variable_length_tuple(self):
         # TODO: What if tuple is empty?
@@ -236,7 +236,7 @@ class ComplexTypesTests(unittest.TestCase):
             return data
 
         good = (1, 3, 4)
-        bad = (1, 'a', 2)
+        bad = (1, "a", 2)
         empty = ()
 
         self.assertEqual(sample_in(good), good)
@@ -255,22 +255,22 @@ class ComplexTypesTests(unittest.TestCase):
         bad_type_var_func = self.get_type_var_func(configurable=True)
 
         self.assertEqual(type_var_func(1), 1)
-        self.assertEqual(bad_type_var_func('', 'hello world'), '')
+        self.assertEqual(bad_type_var_func("", "hello world"), "")
 
         with self.assertRaises(RuntimeTypeError):
-            bad_type_var_func('', 1)
+            bad_type_var_func("", 1)
 
     def test_simple_bounded_type_var(self):
         # Invariant case
-        A = typing.TypeVar('A', int, str)
+        A = typing.TypeVar("A", int, str)
 
         type_var_func = self.get_type_var_func(type_var=A)
         bad_type_var_func = self.get_type_var_func(configurable=True, type_var=A)
 
         self.assertEqual(type_var_func(1), 1)
-        self.assertEqual(type_var_func(''), '')
+        self.assertEqual(type_var_func(""), "")
         self.assertEqual(bad_type_var_func(1, 1), 1)
-        self.assertEqual(bad_type_var_func('', ''), '')
+        self.assertEqual(bad_type_var_func("", ""), "")
 
         with self.assertRaises(RuntimeTypeError):
             type_var_func(1.0)
@@ -279,7 +279,7 @@ class ComplexTypesTests(unittest.TestCase):
             bad_type_var_func(1.0, 1)
 
     def test_covariant_type_var(self):
-        A = typing.TypeVar('A', bound=numbers.Number, covariant=True)
+        A = typing.TypeVar("A", bound=numbers.Number, covariant=True)
 
         type_var_func = self.get_type_var_func(type_var=A)
 
@@ -288,7 +288,7 @@ class ComplexTypesTests(unittest.TestCase):
         self.assertEqual(type_var_func(1 + 1j), 1 + 1j)
 
         with self.assertRaises(RuntimeTypeError):
-            type_var_func('bad')
+            type_var_func("bad")
 
     def test_contravariant_type_var(self):
         class B:
@@ -300,7 +300,7 @@ class ComplexTypesTests(unittest.TestCase):
         class D(C):
             pass
 
-        A = typing.TypeVar('A', bound=C, contravariant=True)
+        A = typing.TypeVar("A", bound=C, contravariant=True)
 
         b = B()
         c = C()
@@ -324,7 +324,7 @@ class ComplexTypesTests(unittest.TestCase):
         class D(C):
             pass
 
-        A = EnhancedTypeVar('A', bound=C, covariant=True, contravariant=True)
+        A = EnhancedTypeVar("A", bound=C, covariant=True, contravariant=True)
 
         b = B()
         c = C()
@@ -337,4 +337,4 @@ class ComplexTypesTests(unittest.TestCase):
         self.assertIs(type_var_func(d), d)
 
         with self.assertRaises(RuntimeTypeError):
-            type_var_func('bad')
+            type_var_func("bad")

@@ -1,5 +1,5 @@
-import unittest
 import typing
+import unittest
 
 from enforce import runtime_validation, config
 from enforce.exceptions import RuntimeTypeError
@@ -17,7 +17,7 @@ class GeneralTests(unittest.TestCase):
         config(reset=True)
 
     def test_argument_validation(self):
-        self.assertEqual(self.sample_function('11', 1), 12)
+        self.assertEqual(self.sample_function("11", 1), 12)
 
         result = 0
         with self.assertRaises(RuntimeTypeError):
@@ -30,6 +30,7 @@ class GeneralTests(unittest.TestCase):
         Verifies that the wrapped function's output is returned even if there
         is no 'return' annotation
         """
+
         @runtime_validation
         def example(x: int):
             return x
@@ -37,11 +38,11 @@ class GeneralTests(unittest.TestCase):
         self.assertEqual(example(1), 1)
 
     def test_return_value_validation(self):
-        self.assertIsNone(self.sample_function('', None))
+        self.assertIsNone(self.sample_function("", None))
 
         result = 0
         with self.assertRaises(RuntimeTypeError):
-            result += self.sample_function('', 1)
+            result += self.sample_function("", 1)
 
         self.assertEqual(result, 0)
 
@@ -49,6 +50,7 @@ class GeneralTests(unittest.TestCase):
         """
         Verifies that no_type_check is respected
         """
+
         def get_sample_func():
             def sample(data: int):
                 pass
@@ -60,14 +62,14 @@ class GeneralTests(unittest.TestCase):
 
         sample_d3 = runtime_validation(get_sample_func())
 
-        get_sample_func()('str')
-        sample_d1('str')
-        sample_d2('str')
+        get_sample_func()("str")
+        sample_d1("str")
+        sample_d2("str")
         with self.assertRaises(RuntimeTypeError):
-            sample_d3('str')
+            sample_d3("str")
 
     def test_any_code_works_with_modes(self):
-        config({'mode': 'covariant'})
+        config({"mode": "covariant"})
 
         @runtime_validation
         def example() -> typing.Optional[str]:
@@ -102,6 +104,7 @@ class GeneralTests(unittest.TestCase):
         """
         Verifies that the methods of an instance can be used as arguments for decorated function calls
         """
+
         class Sample:
             @runtime_validation
             def method(self, a: typing.Dict):
@@ -114,7 +117,9 @@ class GeneralTests(unittest.TestCase):
         s = Sample()
 
         @runtime_validation
-        def foo(callback: typing.Optional[typing.Callable[[typing.Dict], typing.Any]]=None):
+        def foo(
+            callback: typing.Optional[typing.Callable[[typing.Dict], typing.Any]] = None
+        ):
             return callback
 
         foo(None)
@@ -128,7 +133,11 @@ class GeneralTests(unittest.TestCase):
             foo(s)
 
         @runtime_validation
-        def bar(callback: typing.Optional[typing.Callable[[typing.Any, typing.Dict], typing.Any]] = None):
+        def bar(
+            callback: typing.Optional[
+                typing.Callable[[typing.Any, typing.Dict], typing.Any]
+            ] = None
+        ):
             return callback
 
         bar(None)
@@ -141,7 +150,11 @@ class GeneralTests(unittest.TestCase):
             bar(s)
 
         @runtime_validation
-        def foo(callback: typing.Optional[typing.Callable[[typing.Any, typing.Dict], typing.Any]] = None):
+        def foo(
+            callback: typing.Optional[
+                typing.Callable[[typing.Any, typing.Dict], typing.Any]
+            ] = None
+        ):
             return callback
 
         sm = s.method
@@ -159,13 +172,14 @@ class GeneralTests(unittest.TestCase):
         """
         Verifies that an __init__ method of a class is correctly decorated and enforced
         """
+
         @runtime_validation
         class Foo:
             def __init__(self, fun: typing.Callable):
                 self.fun = fun
 
         def bar(text):
-            return text*2
+            return text * 2
 
         # Should not raise an error
         Foo(bar)
@@ -184,7 +198,9 @@ class GeneralTests(unittest.TestCase):
             Sample(12)
 
     @runtime_validation
-    def sample_function(self, text: str, data: typing.Union[int, None]) -> typing.Optional[int]:
+    def sample_function(
+        self, text: str, data: typing.Union[int, None]
+    ) -> typing.Optional[int]:
         try:
             return int(text) + data
         except ValueError:

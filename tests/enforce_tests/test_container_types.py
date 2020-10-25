@@ -10,14 +10,14 @@ class TestContainerTypes:
     """
     Tests for the container types - including types of unbounded size
     """
-    
+
     def test_forward_reference_container(self):
         @runtime_validation
-        def foo(data: typing.Optional['A']):
+        def foo(data: typing.Optional["A"]):
             return data.bar(10)
 
         @runtime_validation
-        def bar(data: 'B'):
+        def bar(data: "B"):
             return data
 
         class A:
@@ -39,4 +39,4 @@ class TestContainerTypes:
             foo(12)
 
         with pytest.raises(RuntimeTypeError):
-            bar('B')
+            bar("B")

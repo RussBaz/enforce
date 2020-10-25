@@ -11,8 +11,8 @@ class Assertion(dt.FieldGuard[dt.T]):
         return self.assert_func(data)
 
     def __str__(self) -> str:
-        message = '(Assertion) Field Guard for: {definition}'
-        hint = self.assert_func.__enforcer__.hints.get('data')
+        message = "(Assertion) Field Guard for: {definition}"
+        hint = self.assert_func.__enforcer__.hints.get("data")
         as_string = message.format(definition=hint)
         return as_string
 
