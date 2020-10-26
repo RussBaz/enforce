@@ -195,7 +195,7 @@ def is_type_of_type(
         constraints = [data_type]
     else:
         subclasscheck_enabled = not any(
-            data_type.__class__ is t or t in data_type.__mro__
+            data_type.__class__ is t or hasattr(data_type, '__mro__') and t in data_type.__mro__
             for t in IGNORED_SUBCLASSCHECKS
         )
         constraints = [data_type]
