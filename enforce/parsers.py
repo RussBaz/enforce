@@ -2,6 +2,8 @@ import typing
 from collections import namedtuple
 
 # This enables a support for Python version 3.5.0-3.5.2
+from platform import python_version_tuple
+
 try:
     from typing import UnionMeta
 except ImportError:
@@ -263,15 +265,18 @@ def _fail_on_empty_protocol(node, hint, validator, parsers):
 
 TYPE_PARSERS = {
     UnionMeta: _parse_union,
-    # typing.TupleMeta: _parse_tuple,
-    # typing.GenericMeta: _parse_generic,
-    # typing.CallableMeta: _parse_callable,
     typing.TypeVar: _parse_type_var,
-    # typing._ForwardRef: _parse_forward_ref,
     EnhancedTypeVar: _parse_type_var,
     complex: _parse_complex,
     bytes: _parse_bytes,
 }
+if python_version_tuple() < ("3", "6"):
+  TYPE_PARSERS.update({
+    typing.TupleMeta: _parse_tuple,
+    typing.GenericMeta: _parse_generic,
+    typing.CallableMeta: _parse_callable,
+    typing._ForwardRef: _parse_forward_ref,
+  })
 
 TYPE_ERROR_GENERATORS = {_Protocol: _fail_on_empty_protocol}
 
