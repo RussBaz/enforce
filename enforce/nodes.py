@@ -208,6 +208,8 @@ class SimpleNode(BaseNode):
 
         type_name = TYPE_NAME_ALIASES.get(type_name, type_name)
 
+        if expected_data_type is not None and hasattr(expected_data_type, '__origin__') and expected_data_type.__origin__ == typing.Literal and data in frozenset(expected_data_type.__args__):
+            result, type_name = True, expected_data_type
         return dt.ValidationResult(valid=result, data=data, type_name=type_name)
 
     def map_data(self, validator: "Validator", self_validation_result):
