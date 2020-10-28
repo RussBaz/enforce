@@ -1,13 +1,14 @@
+import sys
 import typing
 from collections import namedtuple
 
 # This enables a support for Python version 3.5.0-3.5.2
 from platform import python_version_tuple
 
-try:
+if sys.version_info < (3, 6):
     from typing import UnionMeta
-except ImportError:
-    UnionMeta = typing.Union
+else:
+    from typing import Union as UnionMeta
 
 from . import nodes
 from .types import EnhancedTypeVar, is_named_tuple, is_wrapped_generic
@@ -90,9 +91,9 @@ def _parse_union(node, hint, validator, parsers):
     in order to enable further validation of nested types
     """
     new_node = yield nodes.UnionNode()
-    try:
+    if hasattr(hint, "__union_params__"):
         union_params = hint.__union_params__
-    except AttributeError:
+    else:
         union_params = hint.__args__
     validator.all_nodes.append(new_node)
     for element in union_params:
@@ -271,12 +272,14 @@ TYPE_PARSERS = {
     bytes: _parse_bytes,
 }
 if python_version_tuple() < ("3", "6"):
-  TYPE_PARSERS.update({
-    typing.TupleMeta: _parse_tuple,
-    typing.GenericMeta: _parse_generic,
-    typing.CallableMeta: _parse_callable,
-    typing._ForwardRef: _parse_forward_ref,
-  })
+    TYPE_PARSERS.update(
+        {
+            typing.TupleMeta: _parse_tuple,
+            typing.GenericMeta: _parse_generic,
+            typing.CallableMeta: _parse_callable,
+            typing._ForwardRef: _parse_forward_ref,
+        }
+    )
 
 TYPE_ERROR_GENERATORS = {_Protocol: _fail_on_empty_protocol}
 

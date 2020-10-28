@@ -68,18 +68,14 @@ class Validator:
         """
         # Preprocessing step for a forward reference evaluation
 
-        try:
-            if not node.forward_ref.__forward_evaluated__:
-                global_vars = self.globals
-                local_vars = self.locals
-                evaluated_type = typing._eval_type(
-                    node.forward_ref, global_vars, local_vars
-                )
-                parser = get_parser(node, evaluated_type, self)
-                run_lazy_function(parser)
-
-        except AttributeError:
-            pass
+        if hasattr(node, "forward_ref") and not node.forward_ref.__forward_evaluated__:
+            global_vars = self.globals
+            local_vars = self.locals
+            evaluated_type = typing._eval_type(
+                node.forward_ref, global_vars, local_vars
+            )
+            parser = get_parser(node, evaluated_type, self)
+            run_lazy_function(parser)
 
         # Validation steps:
         # 1. Pre-process (clean) incoming data

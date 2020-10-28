@@ -2,6 +2,7 @@ import functools
 import inspect
 import typing
 from collections import OrderedDict
+from itertools import filterfalse
 from multiprocessing import RLock
 
 from wrapt import decorator, ObjectProxy
@@ -108,7 +109,7 @@ def get_universal_decorator():
             else:
                 parameters = Parameters(args, kwargs, skip)
 
-            frame = inspect.stack()[2].frame
+            frame = inspect.stack()[-1].frame
             outer_locals = frame.f_locals
             outer_globals = frame.f_globals
 
@@ -150,44 +151,42 @@ def get_wrapper_builder(configuration, excluded_fields=None):
                     wrapped = GenericProxy(wrapped, settings=configuration)
                     root = wrapped.__enforcer__.validator
 
-                for attr_name in dir(wrapped):
-                    try:
-                        if attr_name in excluded_fields:
-                            raise AttributeError
-                        old_attr = getattr(wrapped, attr_name)
+                for attr_name in filterfalse(
+                    lambda attr_name: attr_name in excluded_fields | {"__dict__"},
+                    dir(wrapped),
+                ):
+                    old_attr = getattr(wrapped, attr_name)
 
-                        if old_attr.__class__ is property:
-                            old_fset = old_attr.fset
-                            new_fset = decorate(
-                                old_fset,
-                                configuration,
-                                obj_instance=None,
-                                parent_root=root,
-                            )
-                            new_attr = old_attr.setter(new_fset)
-                        elif (
-                            attr_name in wrapped.__dict__
-                            and type(wrapped.__dict__[attr_name]) is staticmethod
-                        ):
-                            # if decorator was applied to class need to handle @staticmethods differently
-                            new_attr = staticmethod(
-                                decorate(
-                                    old_attr,
-                                    configuration,
-                                    obj_instance=None,
-                                    parent_root=root,
-                                )
-                            )
-                        else:
-                            new_attr = decorate(
+                    if old_attr.__class__ is property:
+                        old_fset = old_attr.fset
+                        new_fset = decorate(
+                            old_fset,
+                            configuration,
+                            obj_instance=None,
+                            parent_root=root,
+                        )
+                        new_attr = old_attr.setter(new_fset)
+                    elif (
+                        attr_name in wrapped.__dict__
+                        and type(wrapped.__dict__[attr_name]) is staticmethod
+                    ):
+                        # if decorator was applied to class need to handle @staticmethods differently
+                        new_attr = staticmethod(
+                            decorate(
                                 old_attr,
                                 configuration,
                                 obj_instance=None,
                                 parent_root=root,
                             )
-                        setattr(wrapped, attr_name, new_attr)
-                    except AttributeError:
-                        pass
+                        )
+                    else:
+                        new_attr = decorate(
+                            old_attr,
+                            configuration,
+                            obj_instance=None,
+                            parent_root=root,
+                        )
+                    setattr(wrapped, attr_name, new_attr)
                 return wrapped
             else:
                 # Decorator was applied to a function or staticmethod.

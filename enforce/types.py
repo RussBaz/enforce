@@ -1,13 +1,13 @@
 import builtins
 import numbers
-import typing
+import sys
 from collections import ChainMap
-from typing import Optional, Union, Any, TypeVar, Tuple, Generic
+from typing import Optional, Union, Any, TypeVar, Tuple, Generic, Set, List, Dict
 
 # This enables a support for Python version 3.5.0-3.5.2
-try:
+if sys.version_info < (3, 6):
     from typing import UnionMeta
-except ImportError:
+else:
     UnionMeta = Union
 
 from .utils import run_lazy_function
@@ -126,9 +126,9 @@ TYPE_ALIASES = {
     bool: Boolean,
     float: numbers.Real,
     complex: numbers.Complex,
-    dict: typing.Dict,
-    list: typing.List,
-    set: typing.Set,
+    dict: Dict,
+    list: List,
+    set: Set,
     None: type(None),
 }
 
@@ -144,8 +144,8 @@ def is_type_of_type(
     data_type: Union[type, str, "TypeVar", EnhancedTypeVar, None],
     covariant: bool = False,
     contravariant: bool = False,
-    local_variables: Optional[typing.Dict] = None,
-    global_variables: Optional[typing.Dict] = None,
+    local_variables: Optional[Dict] = None,
+    global_variables: Optional[Dict] = None,
 ) -> bool:
     """
     Returns if the type or type like object is of the same type as constrained
@@ -159,6 +159,8 @@ def is_type_of_type(
 
     if global_variables is None:
         global_variables = {}
+
+    import typing
 
     calling_scope = ChainMap(
         local_variables, global_variables, vars(typing), vars(builtins)
@@ -195,7 +197,9 @@ def is_type_of_type(
         constraints = [data_type]
     else:
         subclasscheck_enabled = not any(
-            data_type.__class__ is t or hasattr(data_type, '__mro__') and t in data_type.__mro__
+            data_type.__class__ is t
+            or hasattr(data_type, "__mro__")
+            and t in data_type.__mro__
             for t in IGNORED_SUBCLASSCHECKS
         )
         constraints = [data_type]
@@ -312,43 +316,18 @@ def sort_and_flat_type(type_in):
 
 
 def is_named_tuple(data):
-    try:
-        fields = data._fields
-        field_types = getattr(data, "_field_types", {})
-
-        if type(data) == type:
-            data_type = data
-        else:
-            data_type = type(data)
-
-            if len(fields) != len(data):
-                return False
-
-        is_tuple = is_type_of_type(data_type, tuple, covariant=True)
-
-        if not is_tuple:
-            return False
-
-        for field_name in field_types.keys():
-            if field_name not in fields:
-                return False
-
-        for field_name in fields:
-            getattr(data, field_name)
-
-    except (AttributeError, TypeError):
+    # Old version replaced with https://stackoverflow.com/a/2166841
+    t = type(data)
+    b = t.__bases__
+    if len(b) != 1 or b[0] != tuple:
         return False
-
-    else:
-        return True
+    f = getattr(t, "_fields", None)
+    if not isinstance(f, tuple):
+        return False
+    return all(type(n) == str for n in f)
 
 
 def is_wrapped_generic(data):
-    try:
-        wrapped = data.__wrapped__
-        is_wrapped = is_type_of_type(wrapped, typing.Generic, covariant=True)
-        return is_wrapped
-    except AttributeError:
-        pass
-
-    return False
+    if not hasattr(data, "__wrapped__"):
+        return False
+    return is_type_of_type(data.__wrapped__, Generic, covariant=True)
