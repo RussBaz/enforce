@@ -167,25 +167,23 @@ class GenericProxy(ObjectProxy):
         # Because only Generics are allowed to be wrapped by a Generic proxy
         if is_type_of_type(wrapped_type, GenericProxy):
             super().__init__(wrapped.__wrapped__)
-            apply_enforcer(
+            self.__enforcer__ = get_enforcer(
                 self, generic=True, instance_of=self, settings=self._self_settings
             )
         elif is_type_of_type(wrapped_type, typing.GenericMeta):
             super().__init__(wrapped)
-            apply_enforcer(self, generic=True, settings=self._self_settings)
+            self.__enforcer__ = get_enforcer(self, generic=True, settings=self._self_settings)
         else:
             raise TypeError("Only generics can be wrapped in GenericProxy")
 
     def __call__(self, *args, **kwargs):
-        r = apply_enforcer(
+        self.__enforcer__ = get_enforcer(
             self.__wrapped__(*args, **kwargs),
             generic=True,
             instance_of=self,
             settings=self._self_settings,
         )
-        d = self.__wrapped__
-        en = r.__enforcer__
-        return r
+        return self.__enforcer__
 
     def __getitem__(self, param):
         """
@@ -201,37 +199,44 @@ class GenericProxy(ObjectProxy):
         return r + "[{}]".format(constraints)
 
 
-def apply_enforcer(
+def get_enforcer(
     func: typing.Callable,
     generic: bool = False,
     settings=None,
     parent_root: typing.Optional[Validator] = None,
     instance_of: typing.Optional[GenericProxy] = None,
-) -> typing.Callable:
+) -> Enforcer:
     """
     Adds an Enforcer instance to the passed function/generic if it doesn't yet exist
     or if it is not an instance of Enforcer
 
     Such instance is added as '__enforcer__'
     """
-    if not hasattr(func, "__enforcer__") or not isinstance(func.__enforcer__, Enforcer):
+    if hasattr(func, "__enforcer__") and isinstance(func.__enforcer__, Enforcer):
+        return getattr(func, "__enforcer__")
+    else:
         # if not hasattr(func, '__enforcer__'):
         #    func = EnforceProxy(func)
 
         # if not isinstance(func.__enforcer__, Enforcer):
         # Replaces 'incorrect' enforcers
-        func.__enforcer__ = generate_new_enforcer(
+        enforcer = generate_new_enforcer(
             func, generic, parent_root, instance_of, settings
         )
-        func.__enforcer__.reference = func
+        enforcer.reference = func
+        try:
+            setattr(func, "__enforcer__", enforcer)
+        except AttributeError:
+            pass
 
-    return func
+        return enforcer
 
 
 def generate_new_enforcer(func, generic, parent_root, instance_of, settings):
     """
     Private function for generating new Enforcer instances for the incoming function
     """
+    signature = None
     if parent_root is not None:
         if type(parent_root) is not Validator:
             raise TypeError("Parent validator must be a Validator")
@@ -304,17 +309,33 @@ def generate_new_enforcer(func, generic, parent_root, instance_of, settings):
                 signature = inspect.signature(call)
                 # hints = typing.get_type_hints(call)
                 hints = getattr(call, "__annotations__", {})
+            elif hasattr(func, "__annotations__"):
+                hints = getattr(func, "__annotations__")
             else:
-                mutable = hasattr(func, "__dict__")
-                message = "mutable" if mutable else "immutable"
-                raise TypeError(
-                    "Oops, cannot apply enforcer to the {0} object".format(message)
-                )
+                hints = {}
+            # else:
+            #     mutable = hasattr(func, "__dict__")
+            #     message = "mutable" if mutable else "immutable"
+            #     raise TypeError(
+            #         "Oops, cannot apply enforcer to the {0} object".format(message)
+            #     )
 
         bound = False
         validator = init_validator(settings, hints, parent_root)
 
-    name = func.__name__
+
+    if hasattr(func, "__name__"):
+        name = func.__name__
+    elif hasattr(func, "__class__"):
+        name = func.__class__.__name__
+    else:
+        raise NameError("No way known to derive name")
+
+    if signature is None:
+        if hasattr(func, "__add__"):
+            signature = inspect.signature(func.__add__.__call__)
+        else:
+            raise TypeError("No way known to find signature")
 
     return Enforcer(name, validator, signature, hints, generic, bound, settings)
 

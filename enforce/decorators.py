@@ -7,7 +7,7 @@ from multiprocessing import RLock
 
 from wrapt import decorator, ObjectProxy
 
-from .enforcers import apply_enforcer, Parameters, GenericProxy, process_errors
+from .enforcers import get_enforcer, Parameters, GenericProxy, process_errors
 from .settings import Settings
 from .types import is_type_of_type
 from .validator import init_validator
@@ -76,14 +76,14 @@ def decorate(
     if not hasattr(data, "__annotations__"):
         return data
 
-    data = apply_enforcer(data, parent_root=parent_root, settings=configuration)
+    enforcer = get_enforcer(data, parent_root=parent_root, settings=configuration)
 
-    universal = get_universal_decorator()
+    universal = get_universal_decorator(enforcer)
 
     return universal(data)
 
 
-def get_universal_decorator():
+def get_universal_decorator(enforcer):
     def universal(wrapped, instance, args, kwargs):
         """
         This function will be returned by the decorator. It adds type checking before triggering
@@ -91,7 +91,6 @@ def get_universal_decorator():
         output of original function.
         """
         with RunLock:
-            enforcer = wrapped.__enforcer__
             skip = False
 
             # In order to avoid problems with TypeVar-s, validator must be reset

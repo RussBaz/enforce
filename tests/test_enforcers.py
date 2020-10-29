@@ -1,7 +1,7 @@
 import unittest
 from typing import Any, Callable, TypeVar, Generic, no_type_check
 
-from enforce.enforcers import apply_enforcer, Enforcer, GenericProxy
+from enforce.enforcers import get_enforcer, Enforcer, GenericProxy
 from enforce.settings import Settings
 
 
@@ -60,10 +60,8 @@ class EnforcerTests(unittest.TestCase):
 
         return func_any_args__none
 
-    def test_can_apply_enforcer(self):
-        wrapped = apply_enforcer(self.func_int___none())
-        enforcer = wrapped.__enforcer__
-        self.assertTrue(isinstance(enforcer, Enforcer))
+    def test_can_get_enforcer(self):
+        self.assertIsInstance(get_enforcer(self.func_int___none()), Enforcer)
 
     def test_callable_simple_type(self):
         func_type = self.get_function_type(self.func_int___none())
@@ -123,19 +121,15 @@ class EnforcerTests(unittest.TestCase):
         settings = Settings(enabled=False)
 
         func = no_type_check(self.func_int___none())
+        func_type = self.get_function_type(func)
 
-        wrapped = apply_enforcer(func)
-        enforcer = wrapped.__enforcer__
-        func_type = enforcer.callable_signature
-
-        self.assertEqual(func_type, Callable)
+        self.assertIs(func_type, Callable)
 
         func = self.func_int___none()
 
         self.assertFalse(hasattr(func, "__enforcer__"))
 
-        wrapped = apply_enforcer(func, settings=settings)
-        enforcer = wrapped.__enforcer__
+        enforcer = get_enforcer(func, settings=settings)
         func_type = enforcer.callable_signature
 
         self.assertIsNotNone(enforcer.settings)
@@ -143,11 +137,9 @@ class EnforcerTests(unittest.TestCase):
         self.assertFalse(enforcer.settings.enabled)
         self.assertEqual(func_type, Callable)
 
-    def get_function_type(self, func):
-        wrapped = apply_enforcer(func)
-        enforcer = wrapped.__enforcer__
-        func_type = enforcer.callable_signature
-        return func_type
+    @staticmethod
+    def get_function_type(func):
+        return get_enforcer(func).callable_signature
 
 
 class GenericProxyTests(unittest.TestCase):

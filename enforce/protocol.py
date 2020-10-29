@@ -70,7 +70,7 @@ def register(
         raise TypeError("Invalid protocol name - an empty string")
 
     if protocol_name in __protocol_registry:
-        raise TypeError("Protocol is already registered: " + str(protocol_name))
+        raise TypeError("Protocol is already registered: {}".format(protocol_name))
 
     tmp_protocol_definition = {}  # type: Dict[dt.FieldName, dt.FieldDefinition]
 
@@ -159,7 +159,7 @@ class _Protocol:
 
     def __getitem__(self, data: Union[dt.ProtocolId, type]) -> dt.ProtocolDefinition:
         if not is_registered(data):
-            raise TypeError("Not a valid Protocol: {}".format(str(data)))
+            raise TypeError("Not a valid Protocol: {!s}".format(data))
         return retrieve(data)
 
 
