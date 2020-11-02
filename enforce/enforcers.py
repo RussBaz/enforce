@@ -18,7 +18,7 @@ T = typing.TypeVar("T")
 Parameters = namedtuple("Parameters", ["args", "kwargs", "skip"])
 
 
-class Enforcer:
+class Enforcer(object):
     """
     A container for storing type checking logic of functions
     """
@@ -108,7 +108,6 @@ class Enforcer:
                 bind_arguments.args, bind_arguments.kwargs, skip
             )
             return validated_data
-
         process_errors(self.settings, self.validator.errors, self.hints)
 
     def validate_outputs(self, output_data: T) -> T:
@@ -172,7 +171,9 @@ class GenericProxy(ObjectProxy):
             )
         elif is_type_of_type(wrapped_type, typing.GenericMeta):
             super().__init__(wrapped)
-            self.__enforcer__ = get_enforcer(self, generic=True, settings=self._self_settings)
+            self.__enforcer__ = get_enforcer(
+                self, generic=True, settings=self._self_settings
+            )
         else:
             raise TypeError("Only generics can be wrapped in GenericProxy")
 
@@ -322,7 +323,6 @@ def generate_new_enforcer(func, generic, parent_root, instance_of, settings):
 
         bound = False
         validator = init_validator(settings, hints, parent_root)
-
 
     if hasattr(func, "__name__"):
         name = func.__name__

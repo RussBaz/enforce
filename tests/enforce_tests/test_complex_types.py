@@ -18,7 +18,8 @@ class ComplexTypesTests(unittest.TestCase):
     def tearDown(self):
         config(reset=True)
 
-    def get_type_var_func(self, configurable=False, type_var=None):
+    @staticmethod
+    def get_type_var_func(configurable=False, type_var=None):
         if type_var is None:
             A = typing.TypeVar("A")
         else:
@@ -291,7 +292,7 @@ class ComplexTypesTests(unittest.TestCase):
             type_var_func("bad")
 
     def test_contravariant_type_var(self):
-        class B:
+        class B(object):
             pass
 
         class C(B):
@@ -315,7 +316,7 @@ class ComplexTypesTests(unittest.TestCase):
             type_var_func(d)
 
     def test_bivariant_type_var(self):
-        class B:
+        class B(object):
             pass
 
         class C(B):
@@ -338,3 +339,7 @@ class ComplexTypesTests(unittest.TestCase):
 
         with self.assertRaises(RuntimeTypeError):
             type_var_func("bad")
+
+
+if __name__ == "__name__":
+    unittest.main()

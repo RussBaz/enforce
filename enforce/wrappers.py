@@ -81,7 +81,6 @@ class EnforceProxy(ObjectProxy):
             return EnforceProxy(self.__wrapped__(*args, **kwargs), self.__enforcer__)
         return self.__wrapped__(*args, **kwargs)
 
-
 # class ListProxy(ObjectProxy):
 #    # Convention: List input parameter is called 'item'
 

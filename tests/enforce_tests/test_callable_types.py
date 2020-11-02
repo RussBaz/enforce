@@ -68,7 +68,7 @@ class CallableTypesTests(unittest.TestCase):
     def test_good_callable_object(self):
         """ Test that a callable object works """
 
-        class Good:
+        class Good(object):
             def __call__(self, x: int, y: int) -> int:
                 return int(x * y)
 

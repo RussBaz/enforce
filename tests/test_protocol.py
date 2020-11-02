@@ -3,8 +3,6 @@ from __future__ import absolute_import
 import sys
 import unittest
 
-import pytest
-
 from enforce.protocol import register, is_registered, deregister_all
 
 
@@ -13,7 +11,7 @@ class TestProtocol(unittest.TestCase):
         deregister_all(do_it=True)
 
     def test_register_deregister(self):
-        class A:
+        class A(object):
             __protocol_name__ = "main.A"
 
         protocol_definition = register(A)
@@ -25,7 +23,7 @@ class TestProtocol(unittest.TestCase):
         self.assertEqual(protocol_definition.id, A.__protocol_name__)
 
     def test_simple_protocol_registration(self):
-        class A:
+        class A(object):
             def foo(self):
                 pass
 
@@ -83,11 +81,8 @@ class TestProtocol(unittest.TestCase):
 
         self.assertIsNone(extra_tests)
 
-    @pytest.mark.skipif(
-        sys.version_info < (3, 8), reason="Test for Python 3.6.x+ syntax only"
-    )
     def test_parent(self):
         if sys.version_info < (3, 8):
             return
-        from .protocol_test import _test_parent
-        _test_parent(self)
+
+        # TODO: Check git log for previous implementation

@@ -89,3 +89,7 @@ class ListTypesTests(unittest.TestCase):
 
         with self.assertRaises(RuntimeTypeError):
             func([[12]])
+
+
+if __name__ == "__name__":
+    unittest.main()

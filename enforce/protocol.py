@@ -1,11 +1,11 @@
 from typing import (
-  Optional,
-  List,
-  Dict,
-  Union,
-  Any,
-  Callable,
-  get_type_hints,
+    Optional,
+    List,
+    Dict,
+    Union,
+    Any,
+    Callable,
+    get_type_hints,
 )
 
 from . import domain_types as dt
@@ -154,7 +154,7 @@ def verify_protocol(protocol: dt.ProtocolDefinition, data: Any) -> bool:
     pass
 
 
-class _Protocol:
+class _Protocol(object):
     __slots__ = ()
 
     def __getitem__(self, data: Union[dt.ProtocolId, type]) -> dt.ProtocolDefinition:

@@ -108,3 +108,7 @@ class DictTypesTests(unittest.TestCase):
 
         with self.assertRaises(RuntimeTypeError):
             foo(good_dict, bad_dict_2)
+
+
+if __name__ == "__name__":
+    unittest.main()

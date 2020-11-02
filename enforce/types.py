@@ -13,7 +13,7 @@ else:
 from .utils import run_lazy_function
 
 
-class EnhancedTypeVar:
+class EnhancedTypeVar(object):
     """
     Utility wrapper for adding extra properties to default TypeVars
     Allows TypeVars to be bivariant

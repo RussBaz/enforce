@@ -50,3 +50,7 @@ class AssertionsTests(unittest.TestCase):
 
         self.assertEqual(expected_message, as_string)
         pprint(as_string)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -309,7 +309,7 @@ def func({inputs}) {returns}:
         def hello():
             print("Hello, World!")
 
-        class A:
+        class A(object):
             pass
 
         A.hello = hello
@@ -326,3 +326,7 @@ def func({inputs}) {returns}:
             a.hello()
 
         self.assertEqual(str(e.exception), expected_exception_message)
+
+
+if __name__ == "__name__":
+    unittest.main()

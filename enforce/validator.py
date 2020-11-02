@@ -7,8 +7,8 @@ from .settings import Settings
 from .utils import run_lazy_function
 
 
-class Validator:
-    def __init__(self, settings: Settings, parent: typing.Optional["Validator"] = None):
+class Validator(object):
+    def __init__(self, settings: Settings, parent=None):
         self.parent = parent
         self.settings = settings
         self.errors = []
@@ -61,7 +61,7 @@ class Validator:
     #    return str_repr
 
     def validate_lazy(
-        self: "Validator", node: BaseNode, data: typing.Any, force: bool = False
+        self, node: BaseNode, data: typing.Any, force: bool = False
     ) -> dt.ValidationResult:
         """
         Triggers all the stages of data validation, returning true or false as a result

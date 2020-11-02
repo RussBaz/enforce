@@ -16,11 +16,7 @@ class IterableTypesTests(unittest.TestCase):
 
         @runtime_validation
         def foo(i: Iterator[int]):
-            result = []
-            for val in i:
-                result.append(val)
-
-            return iter(result)
+            return iter([val for val in i])
 
         a = range(1, 10)
         ai = iter(a)
@@ -32,3 +28,7 @@ class IterableTypesTests(unittest.TestCase):
         Verifies that Generator generic is respected
         """
         pass
+
+
+if __name__ == "__name__":
+    unittest.main()

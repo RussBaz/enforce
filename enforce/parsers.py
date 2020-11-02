@@ -14,7 +14,6 @@ from . import nodes
 from .types import EnhancedTypeVar, is_named_tuple, is_wrapped_generic
 from .protocol import _Protocol
 
-
 ParserChoice = namedtuple("ParserChoice", ["validator", "parser"])
 
 
@@ -282,7 +281,6 @@ if python_version_tuple() < ("3", "6"):
     )
 
 TYPE_ERROR_GENERATORS = {_Protocol: _fail_on_empty_protocol}
-
 
 # For details, see the '_get_aliased_parser_or_default' docstring
 ALIASED_TYPE_PARSERS = (

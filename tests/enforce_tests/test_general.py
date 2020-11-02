@@ -77,7 +77,7 @@ class GeneralTests(unittest.TestCase):
 
         example()
 
-        class A:
+        class A(object):
             pass
 
         class B(A):
@@ -105,7 +105,7 @@ class GeneralTests(unittest.TestCase):
         Verifies that the methods of an instance can be used as arguments for decorated function calls
         """
 
-        class Sample:
+        class Sample(object):
             @runtime_validation
             def method(self, a: typing.Dict):
                 return a
@@ -174,7 +174,7 @@ class GeneralTests(unittest.TestCase):
         """
 
         @runtime_validation
-        class Foo:
+        class Foo(object):
             def __init__(self, fun: typing.Callable):
                 self.fun = fun
 
@@ -187,7 +187,7 @@ class GeneralTests(unittest.TestCase):
         with self.assertRaises(RuntimeTypeError):
             Foo(12)
 
-        class Sample:
+        class Sample(object):
             @runtime_validation
             def __init__(self, fun: typing.Callable):
                 self.fun = fun
@@ -208,3 +208,7 @@ class GeneralTests(unittest.TestCase):
                 return None
             # Deliberate return type error
             return str(data)
+
+
+if __name__ == "__name__":
+    unittest.main()

@@ -10,11 +10,11 @@ class ConcurrentRunTests(unittest.TestCase):
         ASSERT_ENABLED = True
 
         def test_runner(widget_number):
-            widgets = [x for x in range(widget_number)]
+            widgets = list(range(widget_number))
             with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
                 for score in executor.map(test_one_widget, widgets):
                     if ASSERT_ENABLED:
-                        assert isinstance(score, int)
+                        self.assertIsInstance(score, int)
 
         @runtime_validation
         def test_one_widget(widget_id: int) -> int:
@@ -25,10 +25,10 @@ class ConcurrentRunTests(unittest.TestCase):
         @runtime_validation
         def widget_inspector(widget_id: int, a: str, b: int, c: str) -> int:
             if ASSERT_ENABLED:
-                assert isinstance(widget_id, int)
-                assert isinstance(a, str)
-                assert isinstance(b, int)
-                assert isinstance(c, str)
+                self.assertIsInstance(widget_id, int)
+                self.assertIsInstance(a, str)
+                self.assertIsInstance(b, int)
+                self.assertIsInstance(c, str)
             return b
 
         for i in range(100):
@@ -47,7 +47,7 @@ class ConcurrentRunTests(unittest.TestCase):
             with concurrent.futures.ProcessPoolExecutor(max_workers=10) as executor:
                 for score in executor.map(test_one_widget, widgets):
                     if ASSERT_ENABLED:
-                        assert isinstance(score, int)
+                        self.assertIsInstance(score, int)
 
         @runtime_validation
         def test_one_widget(widget_id: int) -> int:
@@ -58,13 +58,17 @@ class ConcurrentRunTests(unittest.TestCase):
         @runtime_validation
         def widget_inspector(widget_id: int, a: str, b: int, c: str) -> int:
             if ASSERT_ENABLED:
-                assert isinstance(widget_id, int)
-                assert isinstance(a, str)
-                assert isinstance(b, int)
-                assert isinstance(c, str)
+                self.assertIsInstance(widget_id, int)
+                self.assertIsInstance(a, str)
+                self.assertIsInstance(b, int)
+                self.assertIsInstance(c, str)
             return b
 
         for i in range(100):
             test_runner(100)
             print(".", end="", flush=True)
         print("test success")
+
+
+if __name__ == "__name__":
+    unittest.main()

@@ -1,12 +1,11 @@
 import typing
-
-import pytest
+import unittest
 
 from enforce import runtime_validation
 from enforce.exceptions import RuntimeTypeError
 
 
-class TestContainerTypes:
+class TestContainerTypes(unittest.TestCase):
     """
     Tests for the container types - including types of unbounded size
     """
@@ -20,23 +19,27 @@ class TestContainerTypes:
         def bar(data: "B"):
             return data
 
-        class A:
+        class A(object):
             def __init__(self, value: int):
                 self.value = value
 
             def bar(self, value: int):
                 return self.value * 2 + value
 
-        class B:
+        class B(object):
             pass
 
         a = A(12)
 
-        assert foo(a) == 34
-        assert isinstance(bar(B()), B)
+        self.assertEqual(foo(a), 34)
+        self.assertIsInstance(bar(B()), B)
 
-        with pytest.raises(RuntimeTypeError):
+        with self.assertRaises(RuntimeTypeError):
             foo(12)
 
-        with pytest.raises(RuntimeTypeError):
+        with self.assertRaises(RuntimeTypeError):
             bar("B")
+
+
+if __name__ == "__name__":
+    unittest.main()

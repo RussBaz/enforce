@@ -78,3 +78,7 @@ class UnionTypesTests(unittest.TestCase):
             return msgs
 
         test([["a", "b"], ["x", "y"]])
+
+
+if __name__ == "__name__":
+    unittest.main()

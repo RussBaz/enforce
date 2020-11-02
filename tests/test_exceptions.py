@@ -2,10 +2,10 @@
 import unittest
 
 from enforce.exceptions import (
-  RuntimeTypeError,
-  parse_errors,
-  raise_errors,
-  process_errors,
+    RuntimeTypeError,
+    parse_errors,
+    raise_errors,
+    process_errors,
 )
 
 

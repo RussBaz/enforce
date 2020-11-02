@@ -13,7 +13,7 @@ class WrapperTests(unittest.TestCase):
         In such case a copy with '_self_' prefix is created on a proxy itself.
         """
 
-        class A:
+        class A(object):
             pass
 
         a = A()

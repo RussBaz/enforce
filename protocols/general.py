@@ -11,17 +11,17 @@ class Container(typing.Generic[T]):
         pass
 
 
-class Hashable:
+class Hashable(object):
     def __hash__(self) -> int:
         pass
 
 
-class Sized:
+class Sized(object):
     def __len__(self) -> int:
         pass
 
 
-class Callable:
+class Callable(object):
     def __protocol_extra_check__(self, data: typing.Any) -> dt.ValidationResult:
         is_callable = (
             inspect.isfunction(data) or inspect.ismethod(data) or inspect.isclass(data)

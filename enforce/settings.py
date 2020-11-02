@@ -16,7 +16,7 @@ class ModeChoices(enum.Enum):
     bivariant = 3
 
 
-class ErrorSettings:
+class ErrorSettings(object):
     @property
     def parser(self):
         return _GLOBAL_SETTINGS["errors"]["parser"]
@@ -30,7 +30,7 @@ class ErrorSettings:
         return _GLOBAL_SETTINGS["errors"]["exception"]
 
 
-class Settings:
+class Settings(object):
     def __init__(self, enabled=None, group=None):
         self.group = group or "default"
         self._enabled = enabled

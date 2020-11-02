@@ -195,3 +195,7 @@ class SimpleTypesTests(unittest.TestCase):
 
         with self.assertRaises(RuntimeTypeError):
             sample_bad(1)
+
+
+if __name__ == "__name__":
+    unittest.main()
