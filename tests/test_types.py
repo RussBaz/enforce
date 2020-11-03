@@ -271,7 +271,7 @@ class TestTypesChecking(unittest.TestCase):
         self.assertTrue(is_type_of_type(None, typing.Any))
         self.assertTrue(is_type_of_type(12, typing.Any))
         self.assertTrue(is_type_of_type([1, 3, "str"], typing.Any))
-        self.assertEqual(type, typing.Any)
+        # self.assertEqual(type, typing.Any)
 
     def test_enhanced_type_var(self):
         """
@@ -958,3 +958,7 @@ class TestTypeCheckingUtility(unittest.TestCase):
         self.assertFalse(is_named_tuple(nt3))
         self.assertFalse(is_named_tuple(nt4))
         self.assertFalse(is_named_tuple(nt5))
+
+
+if __name__ == "__main__":
+    unittest.main()
