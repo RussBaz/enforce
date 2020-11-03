@@ -361,11 +361,13 @@ class TestDecoratorArguments(unittest.TestCase):
         A TypeError should be thrown
         """
         with self.assertRaises(TypeError):
+
             @runtime_validation(group=5)
             def foo5(a: typing.Any) -> typing.Any:
                 return a
 
         with self.assertRaises(TypeError):
+
             @runtime_validation(enabled=5)
             def foo6(a: typing.Any) -> typing.Any:
                 return a

@@ -107,7 +107,7 @@ class BaseNode(object):
         actual_type = TYPE_NAME_ALIASES.get(actual_type, actual_type)
 
         if child_types:
-            actual_type = actual_type + "[" + ", ".join(child_types) + "]"
+            return "{}[{}]".format(actual_type, ", ".join(child_types))
 
         return actual_type
 
@@ -177,8 +177,8 @@ class BaseNode(object):
         self.children = [a for a in self.original_children]
 
     def __repr__(self):
-        children_nest = ", ".join([str(c) for c in self.children])
-        str_repr = "{}:{}".format(str(self.expected_data_type), self.__class__.__name__)
+        children_nest = ", ".join(str(c) for c in self.children)
+        str_repr = "{}:{}".format(self.expected_data_type, self.__class__.__name__)
         if children_nest:
             str_repr += " -> ({})".format(children_nest)
         return str_repr
@@ -444,7 +444,7 @@ class TupleNode(BaseNode):
             actual_type = TYPE_NAME_ALIASES.get(actual_type, actual_type)
 
             if child_types:
-                actual_type = actual_type + "[" + ", ".join(child_types) + "]"
+                actual_type = "{}[{}]".format(actual_type, ", ".join(child_types))
 
         return actual_type
 
@@ -483,9 +483,9 @@ class NamedTupleNode(BaseNode):
                 str(type(data))
                 + " with incorrect arguments: "
                 + ", ".join(
-                field + " -> " + str(type(getattr(data, field)))
-                for field in data._fields
-            )
+                    field + " -> " + str(type(getattr(data, field)))
+                    for field in data._fields
+                )
             )
             return None
         except AttributeError:
@@ -802,9 +802,7 @@ class MappingNode(BaseNode):
         else:
             return actual_type
 
-        actual_type = actual_type + "[" + key_type + ", " + value_type + "]"
-
-        return actual_type
+        return "{}[{}, {}]".format(actual_type, key_type, value_type)
 
 
 class ForwardRefNode(BaseNode):

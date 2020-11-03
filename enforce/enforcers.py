@@ -6,6 +6,8 @@ from wrapt import ObjectProxy
 
 from .settings import Settings
 from .types import EnhancedTypeVar, is_type_of_type
+from .utils import is_generic
+
 # from .wrappers import Proxy, EnforceProxy
 # from .exceptions import RuntimeTypeError
 from .validator import init_validator, Validator
@@ -82,15 +84,12 @@ class Enforcer(object):
         try:
             bind_arguments = self.signature.bind(*args, **kwargs)
         except TypeError as e:
-            message = str(e)
-
-            if message == "too many positional arguments":
-                new_message = (
-                    self.name
-                    + str(self.signature)
-                    + " was given an incorrect number of positional arguments"
+            if str(e) == "too many positional arguments":
+                raise TypeError(
+                    "{name}{signature} was given an incorrect number of positional arguments".format(
+                        name=self.name, signature=self.signature
+                    )
                 )
-                raise TypeError(new_message)
             else:
                 raise e
 
@@ -169,7 +168,7 @@ class GenericProxy(ObjectProxy):
             self.__enforcer__ = get_enforcer(
                 self, generic=True, instance_of=self, settings=self._self_settings
             )
-        elif is_type_of_type(wrapped_type, typing.GenericMeta):
+        elif is_generic(wrapped):
             super().__init__(wrapped)
             self.__enforcer__ = get_enforcer(
                 self, generic=True, settings=self._self_settings
@@ -197,7 +196,7 @@ class GenericProxy(ObjectProxy):
         #     return super().__repr__()
         r = super().__repr__()
         constraints = repr(self.__wrapped__.__args__)
-        return r + "[{}]".format(constraints)
+        return "{}[{}]".format(r, constraints)
 
 
 def get_enforcer(
@@ -302,7 +301,6 @@ def generate_new_enforcer(func, generic, parent_root, instance_of, settings):
 
         try:
             signature = inspect.signature(func)
-            a = func.__annotations__
             hints = getattr(func, "__annotations__", {})
         except TypeError:
             if hasattr(func, "__call__") and inspect.ismethod(func.__call__):

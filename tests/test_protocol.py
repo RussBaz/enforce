@@ -85,49 +85,50 @@ class TestProtocol(unittest.TestCase):
 
     @unittest.skipIf(sys.version_info < (3, 8), "not compatible with Python < 3.8")
     def test_parent(self):
-        T = typing.TypeVar('T', bound='A')
+        T = typing.TypeVar("T", bound="A")
 
         class A(object):
             var: int = 12
             something_else: typing.Optional[str] = None
             val: typing.Callable[[typing.Type[T], int], bool]
 
-            def bar(self, data: str) -> str: pass
+            def bar(self, data: str) -> str:
+                pass
 
-            __protocol_name__ = 'main.A'
+            __protocol_name__ = "main.A"
 
         protocol_definition = register(A)
 
         p_id, fields, extra_tests = protocol_definition
 
         expected_result = {
-            '__class__': '(Assertion) Field Guard for: typing.Callable',
-            '__delattr__': '(Assertion) Field Guard for: typing.Callable',
-            '__dir__': '(Assertion) Field Guard for: typing.Callable',
-            '__doc__': '(Assertion) Field Guard for: typing.Any',
-            '__eq__': '(Assertion) Field Guard for: typing.Callable',
-            '__format__': '(Assertion) Field Guard for: typing.Callable',
-            '__ge__': '(Assertion) Field Guard for: typing.Callable',
-            '__getattribute__': '(Assertion) Field Guard for: typing.Callable',
-            '__gt__': '(Assertion) Field Guard for: typing.Callable',
-            '__hash__': '(Assertion) Field Guard for: typing.Callable',
-            '__init__': '(Assertion) Field Guard for: typing.Callable',
-            '__init_subclass__': '(Assertion) Field Guard for: typing.Callable',
-            '__le__': '(Assertion) Field Guard for: typing.Callable',
-            '__lt__': '(Assertion) Field Guard for: typing.Callable',
-            '__ne__': '(Assertion) Field Guard for: typing.Callable',
-            '__new__': '(Assertion) Field Guard for: typing.Callable',
-            '__reduce__': '(Assertion) Field Guard for: typing.Callable',
-            '__reduce_ex__': '(Assertion) Field Guard for: typing.Callable',
-            '__repr__': '(Assertion) Field Guard for: typing.Callable',
-            '__setattr__': '(Assertion) Field Guard for: typing.Callable',
-            '__sizeof__': '(Assertion) Field Guard for: typing.Callable',
-            '__str__': '(Assertion) Field Guard for: typing.Callable',
-            '__subclasshook__': '(Assertion) Field Guard for: typing.Callable',
-            'var': "(Assertion) Field Guard for: <class 'int'>",
-            'something_else': '(Assertion) Field Guard for: typing.Union[str, NoneType]',
-            'val': '(Assertion) Field Guard for: typing.Callable[[typing.Type[~T], int], bool]',
-            'bar': '(Assertion) Field Guard for: typing.Callable[[typing.Type[~T], str], str]'
+            "__class__": "(Assertion) Field Guard for: typing.Callable",
+            "__delattr__": "(Assertion) Field Guard for: typing.Callable",
+            "__dir__": "(Assertion) Field Guard for: typing.Callable",
+            "__doc__": "(Assertion) Field Guard for: typing.Any",
+            "__eq__": "(Assertion) Field Guard for: typing.Callable",
+            "__format__": "(Assertion) Field Guard for: typing.Callable",
+            "__ge__": "(Assertion) Field Guard for: typing.Callable",
+            "__getattribute__": "(Assertion) Field Guard for: typing.Callable",
+            "__gt__": "(Assertion) Field Guard for: typing.Callable",
+            "__hash__": "(Assertion) Field Guard for: typing.Callable",
+            "__init__": "(Assertion) Field Guard for: typing.Callable",
+            "__init_subclass__": "(Assertion) Field Guard for: typing.Callable",
+            "__le__": "(Assertion) Field Guard for: typing.Callable",
+            "__lt__": "(Assertion) Field Guard for: typing.Callable",
+            "__ne__": "(Assertion) Field Guard for: typing.Callable",
+            "__new__": "(Assertion) Field Guard for: typing.Callable",
+            "__reduce__": "(Assertion) Field Guard for: typing.Callable",
+            "__reduce_ex__": "(Assertion) Field Guard for: typing.Callable",
+            "__repr__": "(Assertion) Field Guard for: typing.Callable",
+            "__setattr__": "(Assertion) Field Guard for: typing.Callable",
+            "__sizeof__": "(Assertion) Field Guard for: typing.Callable",
+            "__str__": "(Assertion) Field Guard for: typing.Callable",
+            "__subclasshook__": "(Assertion) Field Guard for: typing.Callable",
+            "var": "(Assertion) Field Guard for: <class 'int'>",
+            "something_else": "(Assertion) Field Guard for: typing.Union[str, NoneType]",
+            "val": "(Assertion) Field Guard for: typing.Callable[[typing.Type[~T], int], bool]",
+            "bar": "(Assertion) Field Guard for: typing.Callable[[typing.Type[~T], str], str]",
         }
 
         self.assertEqual(p_id, A.__protocol_name__)

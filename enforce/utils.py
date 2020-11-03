@@ -43,3 +43,30 @@ def merge_dictionaries(original_data, update, merge_lists=False):
             merged_data[key] = value
 
     return merged_data
+
+
+def is_generic(obj: typing.Any) -> bool:
+    if obj is None:
+        return False
+    elif type(obj).__name__ in frozenset(
+        (
+            "int",
+            "float",
+            "str",
+            "unicode",
+            "list",
+            "tuple",
+            "dict",
+            "OrderedDict",
+            "namedtuple",
+        )
+    ):
+        return False
+    elif hasattr(typing, "GenericMeta") and is_type_of_type(
+        type(obj), typing.GenericMeta
+    ):
+        return True
+    else:
+        from inspect import getdoc
+
+        return getdoc(obj).startswith("Abstract base class for generic types.")
