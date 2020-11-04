@@ -43,9 +43,8 @@ class ExceptionMessageTests(unittest.TestCase):
 def func({inputs}) {returns}:
     return data
 """
-        inputs = tuple(": ".join(input_pair) for input_pair in inputs)
-        inputs = ", ".join(inputs)
-        returns = "" if returns is None else "-> " + returns
+        inputs = ", ".join(": ".join(input_pair) for input_pair in inputs)
+        returns = "" if returns is None else "-> {}".format(returns)
         formatted_template = template.format(inputs=inputs, returns=returns)
 
         scope_data = {

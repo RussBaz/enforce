@@ -105,8 +105,7 @@ class ExceptionsTests(unittest.TestCase):
 
         errors = [("c", "typing.Union[str, int]")]
 
-        expected_message = output
-        expected_message += "\n" + error_message.format("c", type(None), errors[0][1])
+        expected_message = "{}\n{}".format(output, error_message.format("c", type(None), errors[0][1]))
 
         message = parse_errors(errors, hints)
 
@@ -136,10 +135,10 @@ class ExceptionsTests(unittest.TestCase):
             ("return", "typing.Dict"),
         ]
 
-        expected_message = output
-        expected_message += "\n" + return_error_message.format(
+        expected_message = "{}\n{}".format(output,
+                                           return_error_message.format(
             hints["return"], errors[0][1]
-        )
+        ))
 
         message = parse_errors(errors, hints, True)
 
@@ -154,8 +153,7 @@ class ExceptionsTests(unittest.TestCase):
         # Do not forget: the return hint is deleted at this stage
         del hints["return"]
 
-        expected_message = output
-        expected_message += "\n" + return_error_message.format(type(None), errors[0][1])
+        expected_message = "{}\n{}".format(output, return_error_message.format(type(None), errors[0][1]))
 
         message = parse_errors(errors, hints, True)
 
