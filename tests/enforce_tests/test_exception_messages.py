@@ -87,16 +87,13 @@ def func({inputs}) {returns}:
         return self.errors["hints"]
 
     def generateExceptionPattern(self, messages, is_return=False):
-        if is_return:
-            expected_message = self.return_error_message.format(*messages)
-            expected_message = ".*" + re.escape(expected_message) + ".*"
-        else:
-            expected_message = self.input_error_message.format(*messages)
-            expected_message = ".*" + re.escape(expected_message) + ".*"
-
-        pattern = re.compile(expected_message)
-
-        return pattern
+        return re.compile(
+            ".*{}.*".format(
+                re.escape(self.return_error_message.format(*messages))
+                if is_return
+                else re.escape(self.input_error_message.format(*messages))
+            )
+        )
 
     def test_simple_exceptions(self):
         sample_function = self.generate_strict_function(
@@ -235,13 +232,12 @@ def func({inputs}) {returns}:
         @self.skip_type_errors
         @runtime_validation
         def foo(data: MyNamedTuple):
-            return str(data.b) + str(data.a)
+            return "{}{}".format(data.b, data.a)
 
         foo(MyNamedTuple(10, 10))
 
-        error_string = (
-            str(MyNamedTuple)
-            + " with incorrect arguments: a -> <class 'int'>, b -> <class 'int'>"
+        error_string = "{} with incorrect arguments: a -> <class 'int'>, b -> <class 'int'>".format(
+            MyNamedTuple
         )
         self.assert_first_error_is("data", error_string)
 

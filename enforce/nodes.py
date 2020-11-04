@@ -479,13 +479,12 @@ class NamedTupleNode(BaseNode):
                 *(getattr(data, field) for field in data._fields)
             )
         except self.exception_type:
-            self.data_type_name = (
-                str(type(data))
-                + " with incorrect arguments: "
-                + ", ".join(
-                    field + " -> " + str(type(getattr(data, field)))
+            self.data_type_name = "{} with incorrect arguments: {}".format(
+                type(data),
+                ", ".join(
+                    "{} -> {}".format(field, str(type(getattr(data, field))))
                     for field in data._fields
-                )
+                ),
             )
             return None
         except AttributeError:
@@ -494,11 +493,7 @@ class NamedTupleNode(BaseNode):
             return None
 
     def validate_data(self, validator: "Validator", data, sticky=False):
-        if data is None:
-            data_type_name = self.data_type_name
-        else:
-            data_type_name = type(data).__name__
-
+        data_type_name = self.data_type_name if data is None else type(data).__name__
         data_type_name = TYPE_NAME_ALIASES.get(data_type_name, data_type_name)
 
         return dt.ValidationResult(
@@ -702,10 +697,7 @@ class MappingNode(BaseNode):
         super().__init__(data_type, is_sequence=True, is_container=True, **kwargs)
 
     def validate_data(self, validator: "Validator", data, sticky=False):
-        if not isinstance(data, type):
-            input_type = type(data)
-        else:
-            input_type = data
+        input_type = type(data) if not isinstance(data, type) else data
 
         covariant = self.covariant or validator.settings.covariant
         contravariant = self.contravariant or validator.settings.contravariant
@@ -848,9 +840,5 @@ class ForwardRefNode(BaseNode):
 
 
 def extract_type_name(data):
-    if isinstance(data, type):
-        type_name = data.__name__
-    else:
-        type_name = type(data).__name__
-
+    type_name = data.__name__ if isinstance(data, type) else type(data).__name__
     return TYPE_NAME_ALIASES.get(type_name, type_name)
