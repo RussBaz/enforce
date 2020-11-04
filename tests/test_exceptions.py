@@ -83,8 +83,8 @@ class ExceptionsTests(unittest.TestCase):
         errors = [("a", "typing.Dict"), ("b", "typing.Callable")]
 
         expected_message = output
-        expected_message += "\n" + error_message.format("a", hints["a"], errors[0][1])
-        expected_message += "\n" + error_message.format("b", hints["b"], errors[1][1])
+        expected_message += "\n{}\n{}".format(error_message.format("a", hints["a"], errors[0][1]),
+                                              error_message.format("b", hints["b"], errors[1][1]))
 
         message = parse_errors(errors, hints)
 
@@ -94,8 +94,8 @@ class ExceptionsTests(unittest.TestCase):
 
         errors = [("a", "int")]
 
-        expected_message = output
-        expected_message += "\n" + error_message.format("a", hints["a"], errors[0][1])
+        expected_message = "{}\n{}".format(output,
+                                            error_message.format("a", hints["a"], errors[0][1]))
 
         message = parse_errors(errors, hints)
 

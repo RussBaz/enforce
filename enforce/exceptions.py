@@ -22,10 +22,9 @@ def parse_errors(
     for error in errors:
         argument_name, argument_type = error
         hint = hints.get(argument_name, type(None))
-        if return_type:
-            output += "\n" + return_error_message.format(hint, argument_type)
-        else:
-            output += "\n" + error_message.format(argument_name, hint, argument_type)
+        output += "\n{}".format(return_error_message.format(hint, argument_type)
+                                if return_type
+                                else error_message.format(argument_name, hint, argument_type))
     return output
 
 

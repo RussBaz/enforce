@@ -471,7 +471,7 @@ class NamedTupleNode(BaseNode):
             return None
 
         if not hasattr(data, "_field_types"):
-            self.data_type_name = "untyped " + data_type.__name__
+            self.data_type_name = "untyped {}".format(data_type.__name__)
             return None
 
         try:
@@ -781,14 +781,14 @@ class MappingNode(BaseNode):
         value_types = sorted(value_types)
 
         if len(key_types) > 1:
-            key_type = "typing.Union[" + ", ".join(key_types) + "]"
+            key_type = "typing.Union[{}]".format(", ".join(key_types))
         elif len(key_types) == 1:
             key_type = key_types[0]
         else:
             return actual_type
 
         if len(value_types) > 1:
-            value_type = "typing.Union[" + ", ".join(value_types) + "]"
+            value_type = "typing.Union[{}]".format(", ".join(value_types))
         elif len(value_types) == 1:
             value_type = value_types[0]
         else:

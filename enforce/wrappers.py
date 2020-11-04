@@ -22,7 +22,7 @@ class Proxy(CallableObjectProxy):
         if hasattr(self, "_self_pass_through"):
             return object.__setattr__(self.__wrapped__, name, value)
 
-        return object.__setattr__(self, "_self_" + name, value)
+        return object.__setattr__(self, "_self_{name}".format(name=name), value)
 
     def __getattr__(self, name):
         if name == "__wrapped__":
@@ -40,7 +40,7 @@ class Proxy(CallableObjectProxy):
             # on the wrapped object but falls back to default behaviour
             # if there is no local copy, i.e. attribute with '_self_' prefix
             try:
-                return super().__getattr__("_self_" + name)
+                return super().__getattr__("_self_{name}".format(name=name))
             except AttributeError:
                 return super().__getattr__(name)
 
