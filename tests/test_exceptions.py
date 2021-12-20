@@ -83,8 +83,10 @@ class ExceptionsTests(unittest.TestCase):
         errors = [("a", "typing.Dict"), ("b", "typing.Callable")]
 
         expected_message = output
-        expected_message += "\n{}\n{}".format(error_message.format("a", hints["a"], errors[0][1]),
-                                              error_message.format("b", hints["b"], errors[1][1]))
+        expected_message += "\n{}\n{}".format(
+            error_message.format("a", hints["a"], errors[0][1]),
+            error_message.format("b", hints["b"], errors[1][1]),
+        )
 
         message = parse_errors(errors, hints)
 
@@ -94,8 +96,9 @@ class ExceptionsTests(unittest.TestCase):
 
         errors = [("a", "int")]
 
-        expected_message = "{}\n{}".format(output,
-                                            error_message.format("a", hints["a"], errors[0][1]))
+        expected_message = "{}\n{}".format(
+            output, error_message.format("a", hints["a"], errors[0][1])
+        )
 
         message = parse_errors(errors, hints)
 
@@ -105,7 +108,9 @@ class ExceptionsTests(unittest.TestCase):
 
         errors = [("c", "typing.Union[str, int]")]
 
-        expected_message = "{}\n{}".format(output, error_message.format("c", type(None), errors[0][1]))
+        expected_message = "{}\n{}".format(
+            output, error_message.format("c", type(None), errors[0][1])
+        )
 
         message = parse_errors(errors, hints)
 
@@ -135,10 +140,9 @@ class ExceptionsTests(unittest.TestCase):
             ("return", "typing.Dict"),
         ]
 
-        expected_message = "{}\n{}".format(output,
-                                           return_error_message.format(
-            hints["return"], errors[0][1]
-        ))
+        expected_message = "{}\n{}".format(
+            output, return_error_message.format(hints["return"], errors[0][1])
+        )
 
         message = parse_errors(errors, hints, True)
 
@@ -153,7 +157,9 @@ class ExceptionsTests(unittest.TestCase):
         # Do not forget: the return hint is deleted at this stage
         del hints["return"]
 
-        expected_message = "{}\n{}".format(output, return_error_message.format(type(None), errors[0][1]))
+        expected_message = "{}\n{}".format(
+            output, return_error_message.format(type(None), errors[0][1])
+        )
 
         message = parse_errors(errors, hints, True)
 

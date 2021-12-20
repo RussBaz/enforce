@@ -92,7 +92,7 @@ class EnhancedTypeVar(object):
             prefix = "-"
         else:
             prefix = "~"
-        return '{prefix}{name}'.format(prefix=prefix, name=self.__name__)
+        return "{prefix}{name}".format(prefix=prefix, name=self.__name__)
 
 
 # According to https://docs.python.org/3/reference/datamodel.html,

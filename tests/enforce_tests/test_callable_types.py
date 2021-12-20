@@ -66,7 +66,7 @@ class CallableTypesTests(unittest.TestCase):
             self.any_func_return("bad_input")
 
     def test_good_callable_object(self):
-        """ Test that a callable object works """
+        """Test that a callable object works"""
 
         class Good(object):
             def __call__(self, x: int, y: int) -> int:
@@ -75,7 +75,7 @@ class CallableTypesTests(unittest.TestCase):
         self.test(Good(), 5)
 
     def test_good_func_arg(self):
-        """ Test that good arguments pass """
+        """Test that good arguments pass"""
 
         def good(x: int, y: int) -> int:
             return int(x * y)
