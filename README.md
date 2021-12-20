@@ -1,6 +1,6 @@
 Enforce.py
 ==========
-![Python version range](https://img.shields.io/badge/python-3.5.3%20|%203.6%20|%203.7%20|%203.8%20|%203.9-blue.svg)
+![Python version range](https://img.shields.io/badge/python-3.5.3%20|%203.6%20|%203.7%20|%203.8%20|%203.9%20|%203.10-blue.svg)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Testing](https://github.com/SamuelMarks/enforce/workflows/Test/badge.svg)](https://github.com/SamuelMarks/enforce/actions)
 [![Coverage Status](https://img.shields.io/coveralls/RussBaz/enforce/dev.svg)](https://coveralls.io/github/RussBaz/enforce?branch=dev)
