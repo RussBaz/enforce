@@ -270,7 +270,7 @@ TYPE_PARSERS = {
     complex: _parse_complex,
     bytes: _parse_bytes,
 }
-if python_version_tuple() < ("3", "6"):
+if sys.version_info < (3, 6):
     TYPE_PARSERS.update(
         {
             typing.TupleMeta: _parse_tuple,
