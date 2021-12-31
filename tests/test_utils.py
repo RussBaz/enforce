@@ -4,18 +4,18 @@ from enforce.utils import run_lazy_function, merge_dictionaries
 
 
 class UtilsTests(unittest.TestCase):
-    
     def test_visit(self):
         """
         Verifies that 'visit' function returns a result returned by the given generator
         """
+
         def generator_foo(a):
-            result = yield generator_multiply_add(a, a+1)
-            result = yield generator_multiply_add(result, result+1)
+            result = yield generator_multiply_add(a, a + 1)
+            result = yield generator_multiply_add(result, result + 1)
             yield result
 
         def generator_multiply_add(a, b):
-            yield a + 2*b
+            yield a + 2 * b
 
         result = run_lazy_function(generator_foo(1))
 
@@ -28,17 +28,17 @@ class UtilsTests(unittest.TestCase):
         It also has an optional parameter, to merge lists instead of replacing them if both keys exist
         """
         d1 = {}
-        d2 = {'a': 'a', 'b': 'b'}
-        d3 = {'a': 'a', 'l': [1, 2]}
-        d4 = {'l': [3], 'c': 'c'}
-        d5 = {'l': 'l'}
+        d2 = {"a": "a", "b": "b"}
+        d3 = {"a": "a", "l": [1, 2]}
+        d4 = {"l": [3], "c": "c"}
+        d5 = {"l": "l"}
 
-        e1 = {'a': 'a', 'b': 'b'}
-        e2 = {'a': 'a', 'b': 'b', 'l': [1, 2]}
-        e3 = {'a': 'a', 'l': [3], 'c': 'c'}
-        e4 = {'a': 'a', 'l': [1, 2, 3], 'c': 'c'}
-        e5 = {'l': 'l', 'c': 'c'}
-        e6 = {'l': [3], 'c': 'c'}
+        e1 = {"a": "a", "b": "b"}
+        e2 = {"a": "a", "b": "b", "l": [1, 2]}
+        e3 = {"a": "a", "l": [3], "c": "c"}
+        e4 = {"a": "a", "l": [1, 2, 3], "c": "c"}
+        e5 = {"l": "l", "c": "c"}
+        e6 = {"l": [3], "c": "c"}
 
         r1 = merge_dictionaries(d1, d2)
         r2 = merge_dictionaries(d2, d3)
@@ -57,5 +57,5 @@ class UtilsTests(unittest.TestCase):
         self.assertDictEqual(d1, {})
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

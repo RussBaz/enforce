@@ -1,22 +1,22 @@
+import functools
 import inspect
 import typing
-import functools
 from collections import OrderedDict
+from itertools import filterfalse
 from multiprocessing import RLock
 
 from wrapt import decorator, ObjectProxy
 
+from .enforcers import get_enforcer, Parameters, GenericProxy, process_errors
 from .settings import Settings
-from .enforcers import apply_enforcer, Parameters, GenericProxy, process_errors
 from .types import is_type_of_type
 from .validator import init_validator
-
 
 BuildLock = RLock()
 RunLock = RLock()
 
 
-def protocol_registration(data=None, *, name: typing.Optional[str]=None):
+def protocol_registration(data=None, *, name: typing.Optional[str] = None):
     """
     This decorator creates and registers a protocol based on a provided class
     """
@@ -30,10 +30,10 @@ def runtime_validation(data=None, *, enabled=None, group=None):
     """
     with RunLock:
         if enabled is not None and not isinstance(enabled, bool):
-            raise TypeError('Enabled parameter must be boolean')
+            raise TypeError("Enabled parameter must be boolean")
 
         if group is not None and not isinstance(group, str):
-            raise TypeError('Group parameter must be string')
+            raise TypeError("Group parameter must be string")
 
         if enabled is None and group is None:
             enabled = True
@@ -65,23 +65,25 @@ def runtime_validation(data=None, *, enabled=None, group=None):
         return generate_decorated()
 
 
-def decorate(data, configuration, obj_instance=None, parent_root=None) -> typing.Callable:
+def decorate(
+    data, configuration, obj_instance=None, parent_root=None
+) -> typing.Callable:
     """
     Performs the function decoration with a type checking wrapper
 
     Works only if '__annotations__' are defined on the passed object
     """
-    if not hasattr(data, '__annotations__'):
+    if not hasattr(data, "__annotations__"):
         return data
 
-    data = apply_enforcer(data, parent_root=parent_root, settings=configuration)
+    enforcer = get_enforcer(data, parent_root=parent_root, settings=configuration)
 
-    universal = get_universal_decorator()
+    universal = get_universal_decorator(enforcer)
 
     return universal(data)
 
 
-def get_universal_decorator():
+def get_universal_decorator(enforcer):
     def universal(wrapped, instance, args, kwargs):
         """
         This function will be returned by the decorator. It adds type checking before triggering
@@ -89,7 +91,6 @@ def get_universal_decorator():
         output of original function.
         """
         with RunLock:
-            enforcer = wrapped.__enforcer__
             skip = False
 
             # In order to avoid problems with TypeVar-s, validator must be reset
@@ -99,7 +100,7 @@ def get_universal_decorator():
             if instance is not None and not inspect.isclass(instance):
                 instance_method = True
 
-            if hasattr(wrapped, '__no_type_check__'):
+            if hasattr(wrapped, "__no_type_check__"):
                 skip = True
 
             if instance_method:
@@ -107,7 +108,7 @@ def get_universal_decorator():
             else:
                 parameters = Parameters(args, kwargs, skip)
 
-            frame = inspect.stack()[2].frame
+            frame = inspect.stack()[-1].frame
             outer_locals = frame.f_locals
             outer_globals = frame.f_globals
 
@@ -137,7 +138,7 @@ def get_wrapper_builder(configuration, excluded_fields=None):
     if excluded_fields is None:
         excluded_fields = set()
 
-    excluded_fields |= {'__class__', '__new__'}
+    excluded_fields |= {"__class__", "__new__"}
 
     @decorator
     def build_wrapper(wrapped, instance, args, kwargs):
@@ -149,29 +150,42 @@ def get_wrapper_builder(configuration, excluded_fields=None):
                     wrapped = GenericProxy(wrapped, settings=configuration)
                     root = wrapped.__enforcer__.validator
 
-                for attr_name in dir(wrapped):
-                    try:
-                        if attr_name in excluded_fields:
-                            raise AttributeError
-                        old_attr = getattr(wrapped, attr_name)
+                for attr_name in filterfalse(
+                    lambda attr_name: attr_name in excluded_fields | {"__dict__"},
+                    dir(wrapped),
+                ):
+                    old_attr = getattr(wrapped, attr_name)
 
-                        if old_attr.__class__ is property:
-                            old_fset = old_attr.fset
-                            new_fset = decorate(old_fset, configuration, obj_instance=None, parent_root=root)
-                            new_attr = old_attr.setter(new_fset)
-                        elif attr_name in wrapped.__dict__ and type(wrapped.__dict__[attr_name]) is staticmethod:
-                            # if decorator was applied to class need to handle @staticmethods differently
-                            new_attr = staticmethod(decorate(
+                    if old_attr.__class__ is property:
+                        old_fset = old_attr.fset
+                        new_fset = decorate(
+                            old_fset,
+                            configuration,
+                            obj_instance=None,
+                            parent_root=root,
+                        )
+                        new_attr = old_attr.setter(new_fset)
+                    elif (
+                        attr_name in wrapped.__dict__
+                        and type(wrapped.__dict__[attr_name]) is staticmethod
+                    ):
+                        # if decorator was applied to class need to handle @staticmethods differently
+                        new_attr = staticmethod(
+                            decorate(
                                 old_attr,
                                 configuration,
                                 obj_instance=None,
-                                parent_root=root
-                            ))
-                        else:
-                            new_attr = decorate(old_attr, configuration, obj_instance=None, parent_root=root)
-                        setattr(wrapped, attr_name, new_attr)
-                    except AttributeError:
-                        pass
+                                parent_root=root,
+                            )
+                        )
+                    else:
+                        new_attr = decorate(
+                            old_attr,
+                            configuration,
+                            obj_instance=None,
+                            parent_root=root,
+                        )
+                    setattr(wrapped, attr_name, new_attr)
                 return wrapped
             else:
                 # Decorator was applied to a function or staticmethod.
@@ -181,11 +195,11 @@ def get_wrapper_builder(configuration, excluded_fields=None):
         else:
             if inspect.isclass(instance):
                 # Decorator was applied to a classmethod.
-                print('classmethod')
+                print("classmethod")
                 return decorate(wrapped, configuration, None)
             else:
                 # Decorator was applied to an instancemethod.
-                print('instancemethod')
+                print("instancemethod")
                 print(type(wrapped))
                 return decorate(wrapped, configuration, instance)
 
@@ -206,24 +220,38 @@ def get_typed_namedtuple(configuration, typed_namedtuple, fields, fields_types):
         def __call__(self, *args, **kwargs):
             number_of_arguments = len(args) + len(kwargs)
             expected_number_of_arguments = len(in_fields)
-            unknown_arguments = [str(key) for key in kwargs if key not in in_fields.keys()]
+            unknown_arguments = [
+                str(key) for key in kwargs if key not in in_fields.keys()
+            ]
 
             if unknown_arguments:
-                unexpected_names = ', '.join("'"+a+"'" for a in unknown_arguments)
-                e = '{0}() got an unexpected keyword argument: {1}'
-                e = e.format(tuple_name, unexpected_names)
-                raise TypeError(e)
+                unexpected_names = ", ".join(
+                    "'{}'".format(a) for a in unknown_arguments
+                )
+                raise TypeError(
+                    "{0}() got an unexpected keyword argument: {1}".format(
+                        tuple_name, unexpected_names
+                    )
+                )
 
             if number_of_arguments < expected_number_of_arguments:
-                missing_arguments = ["'"+str(arg)+"'" for arg in list(in_fields.keys())[number_of_arguments:] if arg not in kwargs]
-                missing_names = ', '.join(missing_arguments)
-                e = '{0}() missing {1} keyword arguments: {2}'
-                e = e.format(tuple_name, len(missing_arguments), missing_names)
-                raise TypeError(e)
+                missing_arguments = [
+                    "'{}'".format(arg)
+                    for arg in list(in_fields.keys())[number_of_arguments:]
+                    if arg not in kwargs
+                ]
+                missing_names = ", ".join(missing_arguments)
+                raise TypeError(
+                    "{0}() missing {1} keyword arguments: {2}".format(
+                        tuple_name, len(missing_arguments), missing_names
+                    )
+                )
             elif number_of_arguments > expected_number_of_arguments:
-                e = '{0}() takes {1} positional arguments but {2} were given'
-                e = e.format(tuple_name, expected_number_of_arguments, number_of_arguments)
-                raise TypeError(e)
+                raise TypeError(
+                    "{0}() takes {1} positional arguments but {2} were given".format(
+                        tuple_name, expected_number_of_arguments, number_of_arguments
+                    )
+                )
 
             in_fields_items = iter(in_fields.keys())
             in_data = OrderedDict()

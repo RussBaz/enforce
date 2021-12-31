@@ -1,22 +1,19 @@
-import unittest
-import typing
 import inspect
+import typing
+import unittest
 
-from wrapt import ObjectProxy
-
-from enforce import runtime_validation
-from enforce.wrappers import Proxy, EnforceProxy # , ListProxy
+from enforce.wrappers import EnforceProxy  # , ListProxy
 
 
 class WrapperTests(unittest.TestCase):
-
     def test_proxy_transparency(self):
         """
         Verifies if the proxy transparency can be switched on and off at runtime
         If transparency is off, then if an attribute is changed, it is saved locally only
         In such case a copy with '_self_' prefix is created on a proxy itself.
         """
-        class A:
+
+        class A(object):
             pass
 
         a = A()
@@ -35,17 +32,17 @@ class WrapperTests(unittest.TestCase):
         c = C()
 
         self.assertTrue(a.b, proxy_a.b)
-        self.assertFalse(hasattr(a, '__enforcer__'))
+        self.assertFalse(hasattr(a, "__enforcer__"))
         self.assertEqual(proxy_a.__enforcer__, 12)
 
-        self.assertFalse(hasattr(A, '__enforcer__'))
+        self.assertFalse(hasattr(A, "__enforcer__"))
         self.assertIsNone(B.__enforcer__)
         self.assertIsNone(b.__enforcer__)
 
         self.assertIs(C.__enforcer__, foo)
         self.assertIs(c.__enforcer__, foo)
 
-    #def test_list_proxy(self):
+    # def test_list_proxy(self):
     #    a = [1, 2]
     #    b = ListProxy(a)
     #    b.append(3)
@@ -63,8 +60,8 @@ class WrapperTests(unittest.TestCase):
 
         foo_proxy = EnforceProxy(foo)
 
-        self.assertTrue(hasattr(foo_proxy, '__enforcer__'))
-        self.assertFalse(hasattr(foo, '__enforcer__'))
+        self.assertTrue(hasattr(foo_proxy, "__enforcer__"))
+        self.assertFalse(hasattr(foo, "__enforcer__"))
         self.assertIs(foo, foo_proxy.__wrapped__)
         self.assertIsNone(foo_proxy.__enforcer__)
 
@@ -72,10 +69,10 @@ class WrapperTests(unittest.TestCase):
         foo_proxy.__enforcer__ = tmp_number
 
         self.assertEqual(foo_proxy.__enforcer__, tmp_number)
-        self.assertFalse(hasattr(foo, '__enforcer__'))
+        self.assertFalse(hasattr(foo, "__enforcer__"))
 
         inspect.signature(foo_proxy)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -14,10 +14,10 @@ class DictTypesTests(unittest.TestCase):
         """
         Verifies that unrestricted Dictionary type is correctly checked
         """
-        d = {'a': 12, 'b': 'b'}
+        d = {"a": 12, "b": "b"}
 
         @runtime_validation
-        def foo(a: typing.Dict, b: typing.Any=None) -> typing.Dict:
+        def foo(a: typing.Dict, b: typing.Any = None) -> typing.Dict:
             return b
 
         foo(d, d)
@@ -32,6 +32,7 @@ class DictTypesTests(unittest.TestCase):
         """
         Verifies that empty dictionary is treated correctly
         """
+
         @runtime_validation
         def foo(a: typing.Any) -> typing.Dict:
             return dict()
@@ -42,7 +43,7 @@ class DictTypesTests(unittest.TestCase):
         """
         Verifies that dictionary is treated like a Mapping
         """
-        config({'mode': 'covariant'})
+        config({"mode": "covariant"})
 
         @runtime_validation
         def returns_dict() -> typing.Mapping:
@@ -59,18 +60,12 @@ class DictTypesTests(unittest.TestCase):
         TypeAlias = typing.Dict[str, typing.Union[int, str, None]]
 
         @runtime_validation
-        def foo(a: TypeAlias, b: typing.Any=None) -> TypeAlias:
+        def foo(a: TypeAlias, b: typing.Any = None) -> TypeAlias:
             return b
 
-        good_dict = {
-            'hello': 'world',
-            'name': None,
-            'id': 1234
-        }
+        good_dict = {"hello": "world", "name": None, "id": 1234}
 
-        bad_dict = {
-            'hello': 123.5
-        }
+        bad_dict = {"hello": 123.5}
 
         foo(good_dict, good_dict)
 
@@ -89,27 +84,15 @@ class DictTypesTests(unittest.TestCase):
         TypeAlias = typing.Dict[str, typing.Dict[str, typing.Optional[int]]]
 
         @runtime_validation
-        def foo(a: TypeAlias, b: typing.Any=None) -> TypeAlias:
+        def foo(a: TypeAlias, b: typing.Any = None) -> TypeAlias:
             return b
 
-        good_dict = {
-            'hello': {
-                'world': 12,
-                'me': None
-            }
-        }
+        good_dict = {"hello": {"world": 12, "me": None}}
 
-        bad_dict = {
-            12: None
-        }
+        bad_dict = {12: None}
 
         bad_dict_2 = {
-            'hello': {
-                'world': 12,
-                'everyone': None,
-                'me': {1, 3},
-                2: {'a': 'a'}
-            }
+            "hello": {"world": 12, "everyone": None, "me": {1, 3}, 2: {"a": "a"}}
         }
 
         foo(good_dict, good_dict)
@@ -125,3 +108,7 @@ class DictTypesTests(unittest.TestCase):
 
         with self.assertRaises(RuntimeTypeError):
             foo(good_dict, bad_dict_2)
+
+
+if __name__ == "__name__":
+    unittest.main()

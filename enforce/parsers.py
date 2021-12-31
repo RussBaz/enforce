@@ -1,18 +1,20 @@
+import sys
 import typing
 from collections import namedtuple
 
 # This enables a support for Python version 3.5.0-3.5.2
-try:
+from platform import python_version_tuple
+
+if sys.version_info < (3, 6):
     from typing import UnionMeta
-except ImportError:
-    UnionMeta = typing.Union
+else:
+    from typing import Union as UnionMeta
 
 from . import nodes
 from .types import EnhancedTypeVar, is_named_tuple, is_wrapped_generic
 from .protocol import _Protocol
 
-
-ParserChoice = namedtuple('ParserChoice', ['validator', 'parser'])
+ParserChoice = namedtuple("ParserChoice", ["validator", "parser"])
 
 
 def get_parser(node, hint, validator, parsers=None):
@@ -31,7 +33,9 @@ def get_parser(node, hint, validator, parsers=None):
         parser = parsers.get(hint, _get_aliased_parser_or_default(hint, _parse_default))
     else:
         _fail_on_unacceptable_hint(node, hint_type, validator, parsers)
-        parser = parsers.get(hint_type, _get_aliased_parser_or_default(hint, _parse_default))
+        parser = parsers.get(
+            hint_type, _get_aliased_parser_or_default(hint, _parse_default)
+        )
 
     yield parser(node, hint, validator, parsers)
 
@@ -71,7 +75,7 @@ def _parse_namedtuple(node, hint, validator, parsers):
 
 
 def _parse_default(node, hint, validator, parsers):
-    if str(hint).startswith('typing.Union'):
+    if str(hint).startswith("typing.Union"):
         yield _parse_union(node, hint, validator, parsers)
     else:
         new_node = yield nodes.SimpleNode(hint)
@@ -86,9 +90,9 @@ def _parse_union(node, hint, validator, parsers):
     in order to enable further validation of nested types
     """
     new_node = yield nodes.UnionNode()
-    try:
+    if hasattr(hint, "__union_params__"):
         union_params = hint.__union_params__
-    except AttributeError:
+    else:
         union_params = hint.__args__
     validator.all_nodes.append(new_node)
     for element in union_params:
@@ -105,7 +109,9 @@ def _parse_type_var(node, hint, validator, parsers):
         except KeyError:
             covariant = hint.__covariant__
             contravariant = hint.__contravariant__
-            new_node = yield nodes.TypeVarNode(covariant=covariant, contravariant=contravariant)
+            new_node = yield nodes.TypeVarNode(
+                covariant=covariant, contravariant=contravariant
+            )
             if hint.__bound__ is not None:
                 yield get_parser(new_node, hint.__bound__, validator, parsers)
             elif hint.__constraints__:
@@ -177,7 +183,7 @@ def _parse_generic(node, hint, validator, parsers):
         new_node = yield nodes.GenericNode(
             hint,
             covariant=validator.settings.covariant,
-            contravariant=validator.settings.contravariant
+            contravariant=validator.settings.contravariant,
         )
         validator.all_nodes.append(new_node)
         yield _yield_parsing_result(node, new_node)
@@ -254,28 +260,30 @@ def _yield_parsing_result(node, new_node):
 
 
 def _fail_on_empty_protocol(node, hint, validator, parsers):
-    raise TypeError('Cannot enforce undefined protocol')
+    raise TypeError("Cannot enforce undefined protocol")
 
 
 TYPE_PARSERS = {
     UnionMeta: _parse_union,
-    typing.TupleMeta: _parse_tuple,
-    typing.GenericMeta: _parse_generic,
-    typing.CallableMeta: _parse_callable,
     typing.TypeVar: _parse_type_var,
-    typing._ForwardRef: _parse_forward_ref,
     EnhancedTypeVar: _parse_type_var,
     complex: _parse_complex,
-    bytes: _parse_bytes
-    }
-
-TYPE_ERROR_GENERATORS = {
-    _Protocol: _fail_on_empty_protocol
+    bytes: _parse_bytes,
 }
+if sys.version_info < (3, 6):
+    TYPE_PARSERS.update(
+        {
+            typing.TupleMeta: _parse_tuple,
+            typing.GenericMeta: _parse_generic,
+            typing.CallableMeta: _parse_callable,
+            typing._ForwardRef: _parse_forward_ref,
+        }
+    )
 
+TYPE_ERROR_GENERATORS = {_Protocol: _fail_on_empty_protocol}
 
 # For details, see the '_get_aliased_parser_or_default' docstring
 ALIASED_TYPE_PARSERS = (
     ParserChoice(validator=is_named_tuple, parser=_parse_namedtuple),
-    ParserChoice(validator=is_wrapped_generic, parser=_parse_generic)
-    )
+    ParserChoice(validator=is_wrapped_generic, parser=_parse_generic),
+)

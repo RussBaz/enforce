@@ -1,12 +1,11 @@
 ﻿import typing
-
-import pytest
+import unittest
 
 from enforce import runtime_validation, config
 from enforce.exceptions import RuntimeTypeError
 
 
-class TestDecorators:
+class TestDecorators(unittest.TestCase):
     """
     A container for decorator related tests
     """
@@ -15,6 +14,7 @@ class TestDecorators:
         """
         Verifies that an original name and a docstring are preserved
         """
+
         def test(text: str) -> None:
             """I am a docstring"""
             print(text)
@@ -24,15 +24,16 @@ class TestDecorators:
 
         test = runtime_validation(test)
 
-        assert original_doc == test.__doc__
-        assert original_name == test.__name__
+        self.assertEqual(original_doc, test.__doc__)
+        self.assertEqual(original_name, test.__name__)
 
     def test_class(self):
         """
         Checks if a class object can be decorated
         """
+
         @runtime_validation
-        class SampleClass:
+        class SampleClass(object):
             def test(self, data: int) -> int:
                 return data
 
@@ -40,20 +41,21 @@ class TestDecorators:
                 return data
 
         sample = SampleClass()
-        assert sample.test(1) == 1
-        assert sample.test_bad(1) == 1
+        self.assertEqual(sample.test(1), 1)
+        self.assertEqual(sample.test_bad(1), 1)
 
-        with pytest.raises(RuntimeTypeError):
-            sample.test('')
+        with self.assertRaises(RuntimeTypeError):
+            sample.test("")
 
-        with pytest.raises(RuntimeTypeError):
-            sample.test_bad('')
+        with self.assertRaises(RuntimeTypeError):
+            sample.test_bad("")
 
     def test_method(self):
         """
         Checks if a method of a class object can be decorated
         """
-        class SampleClass:
+
+        class SampleClass(object):
             @runtime_validation
             def test(self, data: int) -> int:
                 return data
@@ -63,20 +65,21 @@ class TestDecorators:
                 return data
 
         sample = SampleClass()
-        assert sample.test(1) == 1
-        assert sample.test_bad(1) == 1
+        self.assertEqual(sample.test(1), 1)
+        self.assertEqual(sample.test_bad(1), 1)
 
-        with pytest.raises(RuntimeTypeError):
-            sample.test('')
+        with self.assertRaises(RuntimeTypeError):
+            sample.test("")
 
-        with pytest.raises(RuntimeTypeError):
-            sample.test_bad('')
+        with self.assertRaises(RuntimeTypeError):
+            sample.test_bad("")
 
     def test_staticmethod(self):
         """
         Checks if a staticmethod of a class object can be decorated
         """
-        class SampleClass:
+
+        class SampleClass(object):
             @runtime_validation
             @staticmethod
             def test(data: int) -> int:
@@ -98,41 +101,42 @@ class TestDecorators:
                 return data
 
         sample = SampleClass()
-        assert sample.test(1) == 1
-        assert sample.test2(1) == 1
-        assert sample.test_bad(1) == 1
-        assert sample.test_bad2(1) == 1
+        self.assertEqual(sample.test(1), 1)
+        self.assertEqual(sample.test2(1), 1)
+        self.assertEqual(sample.test_bad(1), 1)
+        self.assertEqual(sample.test_bad2(1), 1)
 
-        assert SampleClass.test(1) == 1
-        assert SampleClass.test2(1) == 1
-        assert SampleClass.test_bad(1) == 1
-        assert SampleClass.test_bad2(1) == 1
+        self.assertEqual(SampleClass.test(1), 1)
+        self.assertEqual(SampleClass.test2(1), 1)
+        self.assertEqual(SampleClass.test_bad(1), 1)
+        self.assertEqual(SampleClass.test_bad2(1), 1)
 
-        with pytest.raises(RuntimeTypeError):
-            sample.test('')
+        with self.assertRaises(RuntimeTypeError):
+            sample.test("")
 
-        with pytest.raises(RuntimeTypeError):
-            sample.test2('')
+        with self.assertRaises(RuntimeTypeError):
+            sample.test2("")
 
-        with pytest.raises(RuntimeTypeError):
-            sample.test_bad('')
+        with self.assertRaises(RuntimeTypeError):
+            sample.test_bad("")
 
-        with pytest.raises(RuntimeTypeError):
-            sample.test_bad2('')
+        with self.assertRaises(RuntimeTypeError):
+            sample.test_bad2("")
 
-        with pytest.raises(RuntimeTypeError):
-            SampleClass.test('')
+        with self.assertRaises(RuntimeTypeError):
+            SampleClass.test("")
 
-        with pytest.raises(RuntimeTypeError):
-            SampleClass.test2('')
+        with self.assertRaises(RuntimeTypeError):
+            SampleClass.test2("")
 
-        with pytest.raises(RuntimeTypeError):
-            SampleClass.test_bad('')
+        with self.assertRaises(RuntimeTypeError):
+            SampleClass.test_bad("")
 
-        with pytest.raises(RuntimeTypeError):
-            SampleClass.test_bad2('')
+        with self.assertRaises(RuntimeTypeError):
+            SampleClass.test_bad2("")
 
-        # testing staticmethods with class decorator
+            # testing staticmethods with class decorator
+
         @runtime_validation
         class Foo(object):
             @staticmethod
@@ -143,17 +147,18 @@ class TestDecorators:
             def bad(x: int) -> int:
                 return str(x)
 
-        assert Foo.good(1) == 1
-        assert Foo.good(5) == 5
+        self.assertEqual(Foo.good(1), 1)
+        self.assertEqual(Foo.good(5), 5)
 
-        with pytest.raises(RuntimeTypeError):
+        with self.assertRaises(RuntimeTypeError):
             Foo.bad(5)
 
     def test_classmethod(self):
         """
         Checks if a classmethod of a class object can be decorated
         """
-        class SampleClass:
+
+        class SampleClass(object):
             @runtime_validation
             @classmethod
             def test(cls, data: int) -> int:
@@ -175,46 +180,47 @@ class TestDecorators:
                 return data
 
         sample = SampleClass()
-        assert sample.test(1) == 1
-        assert sample.test2(1) == 1
-        assert sample.test_bad(1) == 1
-        assert sample.test_bad2(1) == 1
+        self.assertEqual(sample.test(1), 1)
+        self.assertEqual(sample.test2(1), 1)
+        self.assertEqual(sample.test_bad(1), 1)
+        self.assertEqual(sample.test_bad2(1), 1)
 
-        assert SampleClass.test(1) == 1
-        assert SampleClass.test2(1) == 1
-        assert SampleClass.test_bad(1) == 1
-        assert SampleClass.test_bad2(1) == 1
+        self.assertEqual(SampleClass.test(1), 1)
+        self.assertEqual(SampleClass.test2(1), 1)
+        self.assertEqual(SampleClass.test_bad(1), 1)
+        self.assertEqual(SampleClass.test_bad2(1), 1)
 
-        #with pytest.raises(RuntimeTypeError):
+        # with self.assertRaises(RuntimeTypeError):
         #    sample.test('')
 
-        with pytest.raises(RuntimeTypeError):
-            sample.test2('')
+        with self.assertRaises(RuntimeTypeError):
+            sample.test2("")
 
-        #with pytest.raises(RuntimeTypeError):
+        # with self.assertRaises(RuntimeTypeError):
         #    sample.test_bad('')
 
-        with pytest.raises(RuntimeTypeError):
-            sample.test_bad2('')
+        with self.assertRaises(RuntimeTypeError):
+            sample.test_bad2("")
 
-        #with pytest.raises(RuntimeTypeError):
+        # with self.assertRaises(RuntimeTypeError):
         #    SampleClass.test('')
 
-        with pytest.raises(RuntimeTypeError):
-            SampleClass.test2('')
+        with self.assertRaises(RuntimeTypeError):
+            SampleClass.test2("")
 
-        #with pytest.raises(RuntimeTypeError):
+        # with self.assertRaises(RuntimeTypeError):
         #    SampleClass.test_bad('')
 
-        with pytest.raises(RuntimeTypeError):
-            SampleClass.test_bad2('')
+        with self.assertRaises(RuntimeTypeError):
+            SampleClass.test_bad2("")
 
     def test_property(self):
         """
         Checks if property object can be type checked
         """
+
         @runtime_validation
-        class Sample:
+        class Sample(object):
             def __init__(self):
                 self._x = 0
 
@@ -226,8 +232,7 @@ class TestDecorators:
             def x(self, value: int):
                 self._x = value
 
-
-        class Sample2:
+        class Sample2(object):
             def __init__(self):
                 self._x = 0
 
@@ -240,8 +245,7 @@ class TestDecorators:
             def x(self, value: int):
                 self._x = value
 
-
-        class Sample3:
+        class Sample3(object):
             def __init__(self):
                 self._x = 0
 
@@ -255,42 +259,34 @@ class TestDecorators:
             def x(self, value: int):
                 self._x = value
 
-        
         s = Sample()
         s2 = Sample2()
         s3 = Sample3()
 
-        assert 0 == s.x
-        assert 0 == s2.x
-        assert 0 == s3.x
+        self.assertEqual(0, s.x)
+        self.assertEqual(0, s2.x)
+        self.assertEqual(0, s3.x)
 
         s.x = 1
         s2.x = 1
         s3.x = 1
 
-        assert 1 == s.x
-        assert 1 == s2.x
-        assert 1 == s3.x
+        self.assertEqual(1, s.x)
+        self.assertEqual(1, s2.x)
+        self.assertEqual(1, s3.x)
 
-        with pytest.raises(RuntimeTypeError):
-            s.x = 'string'
+        with self.assertRaises(RuntimeTypeError):
+            s.x = "string"
 
-        with pytest.raises(RuntimeTypeError):
-            s2.x = 'string'
+        with self.assertRaises(RuntimeTypeError):
+            s2.x = "string"
 
-        with pytest.raises(RuntimeTypeError):
-            s3.x = 'string'
+        with self.assertRaises(RuntimeTypeError):
+            s3.x = "string"
 
-        assert 1 == s.x
-        assert 1 == s2.x
-        assert 1 == s3.x
-
-    @pytest.mark.skip('Well, that was a shame')
-    def test_instance(self):
-        """
-        Checks if an instance method can be decorated
-        """
-        pytest.fail('Missing the test')
+        self.assertEqual(1, s.x)
+        self.assertEqual(1, s2.x)
+        self.assertEqual(1, s3.x)
 
     def test_working_callable_argument(self):
         @runtime_validation
@@ -306,7 +302,7 @@ class TestDecorators:
 
         foo(bar, 5)
 
-        with pytest.raises(RuntimeTypeError):
+        with self.assertRaises(RuntimeTypeError):
             foo(5, 7)
 
     def test_tuple_support(self):
@@ -314,9 +310,9 @@ class TestDecorators:
         def test(tup: typing.Tuple[int, str, float]) -> typing.Tuple[str, int]:
             return tup[1], tup[0]
 
-        tup = ('a', 5, 3.0)
+        tup = ("a", 5, 3.0)
 
-        with pytest.raises(RuntimeTypeError):
+        with self.assertRaises(RuntimeTypeError):
             test(tup)
 
     def test_list_support(self):
@@ -324,9 +320,9 @@ class TestDecorators:
         def test(arr: typing.List[str]) -> typing.List[str]:
             return arr[:1]
 
-        arr = [1, 'b', 'c']
-        
-        with pytest.raises(RuntimeTypeError):
+        arr = [1, "b", "c"]
+
+        with self.assertRaises(RuntimeTypeError):
             test(arr)
 
     def test_dict_support(self):
@@ -334,8 +330,8 @@ class TestDecorators:
         def test(hash_values: typing.Dict[str, int]) -> typing.Dict[int, str]:
             return {value: key for key, value in hash_values.items()}
 
-        hash_values = {5: 1, 'b': 5}
-        with pytest.raises(RuntimeTypeError):
+        hash_values = {5: 1, "b": 5}
+        with self.assertRaises(RuntimeTypeError):
             test(hash_values)
 
     def test_recursion_slim(self):
@@ -348,49 +344,56 @@ class TestDecorators:
 
         test(good)
 
-        with pytest.raises(RuntimeTypeError):
+        with self.assertRaises(RuntimeTypeError):
             test(bad)
 
 
-class TestDecoratorArguments:
-
+class TestDecoratorArguments(unittest.TestCase):
     def setUp(self):
-        config({'enabled': True})
+        config({"enabled": True})
 
     def tearDown(self):
-        config({'enabled': True})
+        config({"enabled": True})
 
     def test_config_validation(self):
         """
         If the unsupported value for the config option is provided,
         A TypeError should be thrown
         """
-        with pytest.raises(TypeError):
-            @runtime_validation(group=5)
-            def foo5(a: typing.Any) -> typing.Any: return a
+        with self.assertRaises(TypeError):
 
-        with pytest.raises(TypeError):
+            @runtime_validation(group=5)
+            def foo5(a: typing.Any) -> typing.Any:
+                return a
+
+        with self.assertRaises(TypeError):
+
             @runtime_validation(enabled=5)
-            def foo6(a: typing.Any) -> typing.Any: return a
+            def foo6(a: typing.Any) -> typing.Any:
+                return a
 
     def test_basic_arguments(self):
         @runtime_validation
-        def test1(foo: typing.Any): return foo
+        def test1(foo: typing.Any):
+            return foo
 
-        @runtime_validation(group='foo', enabled=True)
-        def test2(foo: typing.Any): return foo
+        @runtime_validation(group="foo", enabled=True)
+        def test2(foo: typing.Any):
+            return foo
 
         test1(5)
         test2(5)
 
     def test_enable(self):
         @runtime_validation(enabled=True)
-        def test1(a: typing.List[str]): return a
+        def test1(a: typing.List[str]):
+            return a
 
         @runtime_validation(enabled=False)
-        def test2(a: typing.List[str]): return a
+        def test2(a: typing.List[str]):
+            return a
 
-        with pytest.raises(RuntimeTypeError):
+        with self.assertRaises(RuntimeTypeError):
             test1(5)
 
         # This should work with that decorator disabled
@@ -399,71 +402,84 @@ class TestDecoratorArguments:
     def test_groups(self):
         config(
             {
-                'enabled': None,
-                'groups': {
-                    'set': {'foo': True},
-                    'disable_previous': True,
-                    'default': False
-                    }
-                })
+                "enabled": None,
+                "groups": {
+                    "set": {"foo": True},
+                    "disable_previous": True,
+                    "default": False,
+                },
+            }
+        )
 
-        @runtime_validation(group='foo')
-        def test1(a: typing.List[str]): return a
+        @runtime_validation(group="foo")
+        def test1(a: typing.List[str]):
+            return a
 
-        @runtime_validation(group='foo', enabled=True)
-        def test2(a: typing.List[str]): return a
+        @runtime_validation(group="foo", enabled=True)
+        def test2(a: typing.List[str]):
+            return a
 
-        @runtime_validation(group='bar')
-        def test3(a: typing.List[str]): return a
+        @runtime_validation(group="bar")
+        def test3(a: typing.List[str]):
+            return a
 
-        @runtime_validation(group='bar', enabled=True)
-        def test4(a: typing.List[str]): return a
+        @runtime_validation(group="bar", enabled=True)
+        def test4(a: typing.List[str]):
+            return a
 
-        @runtime_validation(group='foo', enabled=False)
-        def test5(a: typing.List[str]): return a
+        @runtime_validation(group="foo", enabled=False)
+        def test5(a: typing.List[str]):
+            return a
 
-        with pytest.raises(RuntimeTypeError):
+        with self.assertRaises(RuntimeTypeError):
             test1(5)
 
-        with pytest.raises(RuntimeTypeError):
+        with self.assertRaises(RuntimeTypeError):
             test2(5)
 
         test3(5)
 
-        with pytest.raises(RuntimeTypeError):
+        with self.assertRaises(RuntimeTypeError):
             test4(5)
 
         test5(5)
 
-        config({'groups': {'set': {'foo': False}}})
+        config({"groups": {"set": {"foo": False}}})
 
         test1(5)
 
-        with pytest.raises(RuntimeTypeError):
+        with self.assertRaises(RuntimeTypeError):
             test2(5)
 
     def test_global_enable(self):
-        config({'enabled': False})
+        config({"enabled": False})
 
         @runtime_validation
-        def test1(a: typing.List[str]): return a
+        def test1(a: typing.List[str]):
+            return a
 
         @runtime_validation(enabled=True)
-        def test2(a: typing.List[str]): return a
+        def test2(a: typing.List[str]):
+            return a
 
         @runtime_validation(enabled=False)
-        def test3(a: typing.List[str]): return a
+        def test3(a: typing.List[str]):
+            return a
 
         test1(5)
         test2(5)
         test3(5)
 
-        config({'enabled': True})
+        config({"enabled": True})
 
-        with pytest.raises(RuntimeTypeError):
+        with self.assertRaises(RuntimeTypeError):
             test1(5)
 
-        with pytest.raises(RuntimeTypeError):
+        with self.assertRaises(RuntimeTypeError):
             test2(5)
 
         test3(5)
+
+
+if __name__ == "__main__":
+    unittest.main()

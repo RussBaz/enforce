@@ -1,32 +1,34 @@
 import builtins
-import typing
 import numbers
+import sys
 from collections import ChainMap
-from typing import Optional, Union, Any, TypeVar, Tuple, Generic
+from typing import Optional, Union, Any, TypeVar, Tuple, Generic, Set, List, Dict
 
 # This enables a support for Python version 3.5.0-3.5.2
-try:
+if sys.version_info < (3, 6):
     from typing import UnionMeta
-except ImportError:
+else:
     UnionMeta = Union
 
 from .utils import run_lazy_function
 
 
-class EnhancedTypeVar:
+class EnhancedTypeVar(object):
     """
     Utility wrapper for adding extra properties to default TypeVars
     Allows TypeVars to be bivariant
     Can be constructed as any other TypeVar or from existing TypeVars
     """
 
-    def __init__(self,
-                 name: str,
-                 *constraints: Any,
-                 bound: Optional[type] = None,
-                 covariant: Optional[bool] = False,
-                 contravariant: Optional[bool] = False,
-                 type_var: Optional['TypeVar'] = None):
+    def __init__(
+        self,
+        name: str,
+        *constraints: Any,
+        bound: Optional[type] = None,
+        covariant: Optional[bool] = False,
+        contravariant: Optional[bool] = False,
+        type_var: Optional["TypeVar"] = None
+    ):
         if type_var is not None:
             self.__name__ = type_var.__name__
             self.__bound__ = type_var.__bound__
@@ -40,7 +42,7 @@ class EnhancedTypeVar:
             self.__contravariant__ = contravariant
             self.__constraints__ = tuple(constraints)
             if len(self.__constraints__) == 1:
-                raise TypeError('A single constraint is not allowed')
+                raise TypeError("A single constraint is not allowed")
 
     @property
     def constraints(self):
@@ -49,7 +51,7 @@ class EnhancedTypeVar:
         """
         if self.__bound__:
             # This must have a comma at the end - it is a single element tuple
-            return self.__bound__,
+            return (self.__bound__,)
         else:
             return self.__constraints__
 
@@ -57,11 +59,13 @@ class EnhancedTypeVar:
         """
         Allows comparing Enhanced Type Var to other type variables (enhanced or not)
         """
-        name = getattr(data, '__name__', None) == self.__name__
-        bound = getattr(data, '__bound__', None) == self.__bound__
-        covariant = getattr(data, '__covariant__', None) == self.__covariant__
-        contravariant = getattr(data, '__contravariant__', None) == self.__contravariant__
-        constraints = getattr(data, '__constraints__', None) == self.__constraints__
+        name = getattr(data, "__name__", None) == self.__name__
+        bound = getattr(data, "__bound__", None) == self.__bound__
+        covariant = getattr(data, "__covariant__", None) == self.__covariant__
+        contravariant = (
+            getattr(data, "__contravariant__", None) == self.__contravariant__
+        )
+        constraints = getattr(data, "__constraints__", None) == self.__constraints__
         return all((name, bound, covariant, contravariant, constraints))
 
     def __hash__(self):
@@ -81,14 +85,14 @@ class EnhancedTypeVar:
         Further enhances TypeVar representation through addition of bi-variant symbol
         """
         if self.__covariant__ and self.__contravariant__:
-            prefix = '*'
+            prefix = "*"
         elif self.__covariant__:
-            prefix = '+'
+            prefix = "+"
         elif self.__contravariant__:
-            prefix = '-'
+            prefix = "-"
         else:
-            prefix = '~'
-        return prefix + self.__name__
+            prefix = "~"
+        return "{prefix}{name}".format(prefix=prefix, name=self.__name__)
 
 
 # According to https://docs.python.org/3/reference/datamodel.html,
@@ -104,6 +108,7 @@ class Integer(numbers.Integral):
     """
     Integer stub class
     """
+
     pass
 
 
@@ -111,6 +116,7 @@ class Boolean(numbers.Integral):
     """
     Boolean stub class
     """
+
     pass
 
 
@@ -120,28 +126,27 @@ TYPE_ALIASES = {
     bool: Boolean,
     float: numbers.Real,
     complex: numbers.Complex,
-    dict: typing.Dict,
-    list: typing.List,
-    set: typing.Set,
-    None: type(None)
+    dict: Dict,
+    list: List,
+    set: Set,
+    None: type(None),
 }
 
 REVERSED_TYPE_ALIASES = {v: k for k, v in TYPE_ALIASES.items()}
 
 # Tells the type checking method to ignore __subclasscheck__
 # on the following types and their subclasses
-IGNORED_SUBCLASSCHECKS = [
-    Generic
-]
+IGNORED_SUBCLASSCHECKS = [Generic]
 
 
-def is_type_of_type(data: Union[type, str, None],
-                    data_type: Union[type, str, 'TypeVar', EnhancedTypeVar, None],
-                    covariant: bool = False,
-                    contravariant: bool = False,
-                    local_variables: Optional[typing.Dict] = None,
-                    global_variables: Optional[typing.Dict] = None
-                    ) -> bool:
+def is_type_of_type(
+    data: Union[type, str, None],
+    data_type: Union[type, str, "TypeVar", EnhancedTypeVar, None],
+    covariant: bool = False,
+    contravariant: bool = False,
+    local_variables: Optional[Dict] = None,
+    global_variables: Optional[Dict] = None,
+) -> bool:
     """
     Returns if the type or type like object is of the same type as constrained
     Support co-variance, contra-variance and TypeVar-s
@@ -155,7 +160,11 @@ def is_type_of_type(data: Union[type, str, None],
     if global_variables is None:
         global_variables = {}
 
-    calling_scope = ChainMap(local_variables, global_variables, vars(typing), vars(builtins))
+    import typing
+
+    calling_scope = ChainMap(
+        local_variables, global_variables, vars(typing), vars(builtins)
+    )
 
     # If a variable is string, then it should look it up in the scope of a calling function
     if isinstance(data_type, str):
@@ -168,7 +177,9 @@ def is_type_of_type(data: Union[type, str, None],
     data = run_lazy_function(sort_and_flat_type(data))
 
     subclasscheck_enabled = True
-    is_type_var = data_type.__class__ is TypeVar or data_type.__class__ is EnhancedTypeVar
+    is_type_var = (
+        data_type.__class__ is TypeVar or data_type.__class__ is EnhancedTypeVar
+    )
 
     # TypeVars have a list of constraints and it can be bound to a specific constraint (which takes precedence)
     if is_type_var:
@@ -182,17 +193,23 @@ def is_type_of_type(data: Union[type, str, None],
         contravariant = data_type.__contravariant__
     elif data_type is Any:
         constraints = [Any]
-    elif str(data_type).startswith('typing.Union'):
+    elif str(data_type).startswith("typing.Union"):
         constraints = [data_type]
     else:
         subclasscheck_enabled = not any(
-            data_type.__class__ is t or t in data_type.__mro__ for t in IGNORED_SUBCLASSCHECKS)
+            data_type.__class__ is t
+            or hasattr(data_type, "__mro__")
+            and t in data_type.__mro__
+            for t in IGNORED_SUBCLASSCHECKS
+        )
         constraints = [data_type]
 
     if not constraints:
         constraints = [Any]
 
-    constraints = [TYPE_ALIASES.get(constraint, constraint) for constraint in constraints]
+    constraints = [
+        TYPE_ALIASES.get(constraint, constraint) for constraint in constraints
+    ]
 
     if Any in constraints:
         return True
@@ -203,13 +220,17 @@ def is_type_of_type(data: Union[type, str, None],
             subclass_check = None
 
             if not is_type_var and subclasscheck_enabled:
-                subclass_check = perform_subclasscheck(data, data_type, covariant, contravariant)
+                subclass_check = perform_subclasscheck(
+                    data, data_type, covariant, contravariant
+                )
 
             if subclass_check is not None:
                 return subclass_check
 
             if covariant and contravariant:
-                return any((d in data.__mro__) or (data in d.__mro__) for d in constraints)
+                return any(
+                    (d in data.__mro__) or (data in d.__mro__) for d in constraints
+                )
 
             if covariant:
                 return any(d in data.__mro__ for d in constraints)
@@ -295,43 +316,18 @@ def sort_and_flat_type(type_in):
 
 
 def is_named_tuple(data):
-    try:
-        fields = data._fields
-        field_types = getattr(data, '_field_types', {})
-
-        if type(data) == type:
-            data_type = data
-        else:
-            data_type = type(data)
-
-            if len(fields) != len(data):
-                return False
-
-        is_tuple = is_type_of_type(data_type, tuple, covariant=True)
-
-        if not is_tuple:
-            return False
-
-        for field_name in field_types.keys():
-            if field_name not in fields:
-                return False
-
-        for field_name in fields:
-            getattr(data, field_name)
-
-    except (AttributeError, TypeError):
+    # Old version replaced with https://stackoverflow.com/a/2166841
+    t = type(data)
+    b = t.__bases__
+    if len(b) != 1 or b[0] != tuple:
         return False
-
-    else:
-        return True
+    f = getattr(t, "_fields", None)
+    if not isinstance(f, tuple):
+        return False
+    return all(type(n) == str for n in f)
 
 
 def is_wrapped_generic(data):
-    try:
-        wrapped = data.__wrapped__
-        is_wrapped = is_type_of_type(wrapped, typing.Generic, covariant=True)
-        return is_wrapped
-    except AttributeError:
-        pass
-
-    return False
+    if not hasattr(data, "__wrapped__"):
+        return False
+    return is_type_of_type(data.__wrapped__, Generic, covariant=True)

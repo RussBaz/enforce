@@ -1,40 +1,49 @@
-from typing import Optional, List, Dict, Union, Any, NamedTuple, Callable, get_type_hints, Generic
+from typing import (
+    Optional,
+    List,
+    Dict,
+    Union,
+    Any,
+    Callable,
+    get_type_hints,
+)
 
 from . import domain_types as dt
 from .assertions import get_assert_for
 
+__protocol_registry = {}  # type: dt.ProtocolRegistry
 
-__protocol_registry = {}    # type: dt.ProtocolRegistry
 
-
-def register(data: Optional[Any], *,
-             name: Optional[dt.ProtocolId]=None,
-             requires: Optional[dt.Fields]=None,
-             ignores: Optional[List[dt.FieldName]]=None
-             ) -> dt.ProtocolDefinition:
+def register(
+    data: Optional[Any],
+    *,
+    name: Optional[dt.ProtocolId] = None,
+    requires: Optional[dt.Fields] = None,
+    ignores: Optional[List[dt.FieldName]] = None
+) -> dt.ProtocolDefinition:
     ignored_fields = {
-        '__abstractmethods__',
-        '__annotations__',
-        '__protocol_name__',
-        '__protocol_extra_check__',
-        '__weakref__',
-        '_is_protocol',
-        '_gorg',
-        '__dict__',
-        '__args__',
-        '__slots__',
-        '_get_protocol_attrs',
-        '__next_in_mro__',
-        '__parameters__',
-        '__origin__',
-        '__orig_bases__',
-        '__extra__',
-        '__tree_hash__',
-        '__module__'
+        "__abstractmethods__",
+        "__annotations__",
+        "__protocol_name__",
+        "__protocol_extra_check__",
+        "__weakref__",
+        "_is_protocol",
+        "_gorg",
+        "__dict__",
+        "__args__",
+        "__slots__",
+        "_get_protocol_attrs",
+        "__next_in_mro__",
+        "__parameters__",
+        "__origin__",
+        "__orig_bases__",
+        "__extra__",
+        "__tree_hash__",
+        "__module__",
     }
 
     def is_ignored_field(s: str):
-        if s.startswith('_abc_'):
+        if s.startswith("_abc_"):
             return True
 
         if s in ignored_fields:
@@ -43,14 +52,14 @@ def register(data: Optional[Any], *,
         return False
 
     if data is None and name is None:
-        raise TypeError('No Protocol was given')
+        raise TypeError("No Protocol was given")
     else:
         if name:
             protocol_name = name
         else:
             protocol_name = data.__protocol_name__
 
-    own_code_annotations = {}   # type: Dict[dt.FieldName, dt.FieldDefinition]
+    own_code_annotations = {}  # type: Dict[dt.FieldName, dt.FieldDefinition]
 
     try:
         own_code_annotations = dict(data.__annotations__)
@@ -58,12 +67,12 @@ def register(data: Optional[Any], *,
         pass
 
     if len(protocol_name) < 1:
-        raise TypeError('Invalid protocol name - an empty string')
+        raise TypeError("Invalid protocol name - an empty string")
 
     if protocol_name in __protocol_registry:
-        raise TypeError('Protocol is already registered: ' + str(protocol_name))
+        raise TypeError("Protocol is already registered: {}".format(protocol_name))
 
-    tmp_protocol_definition = {}    # type: Dict[dt.FieldName, dt.FieldDefinition]
+    tmp_protocol_definition = {}  # type: Dict[dt.FieldName, dt.FieldDefinition]
 
     extra_tests = None
 
@@ -72,7 +81,7 @@ def register(data: Optional[Any], *,
             extra_tests = data.__protocol_extra_check__
         except AttributeError:
             pass
-            
+
         field_names_to_process = own_code_annotations.keys() | set(dir(data))
         for field_name in field_names_to_process:
             if not is_ignored_field(field_name):
@@ -86,14 +95,14 @@ def register(data: Optional[Any], *,
                     hint = own_code_annotations.get(field_name, None)
                     is_callable = isinstance(hint, Callable)
                 else:
-                    is_callable = hasattr(field, '__call__')
+                    is_callable = hasattr(field, "__call__")
 
                 if is_callable and hint is None:
                     if len(hints) < 1:
                         hint = Callable
                     else:
-                        returns = hints.get('return', Any)
-                        inputs = [v for k, v in hints.items() if k != 'return']
+                        returns = hints.get("return", Any)
+                        inputs = [v for k, v in hints.items() if k != "return"]
 
                         hint = Callable[inputs, returns]
 
@@ -117,7 +126,7 @@ def register(data: Optional[Any], *,
     protocol_definition = dt.ProtocolDefinition(
         id=protocol_name,
         fields={k: get_assert_for(v) for k, v in tmp_protocol_definition.items()},
-        extra_tests=extra_tests
+        extra_tests=extra_tests,
     )
 
     __protocol_registry[protocol_name] = protocol_definition
@@ -145,12 +154,13 @@ def verify_protocol(protocol: dt.ProtocolDefinition, data: Any) -> bool:
     pass
 
 
-class _Protocol:
+class _Protocol(object):
     __slots__ = ()
 
     def __getitem__(self, data: Union[dt.ProtocolId, type]) -> dt.ProtocolDefinition:
         if not is_registered(data):
-            raise TypeError('Not a valid Protocol: {}'.format(str(data)))
+            raise TypeError("Not a valid Protocol: {!s}".format(data))
         return retrieve(data)
+
 
 P = _Protocol()

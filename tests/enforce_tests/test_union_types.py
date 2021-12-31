@@ -16,7 +16,9 @@ class UnionTypesTests(unittest.TestCase):
             return 5
 
         @runtime_validation
-        def nest_func(x: typing.Union[float, typing.List[typing.Union[str, int]]]) -> int:
+        def nest_func(
+            x: typing.Union[float, typing.List[typing.Union[str, int]]]
+        ) -> int:
             return 5
 
         self.test_func = test_func
@@ -32,38 +34,38 @@ class UnionTypesTests(unittest.TestCase):
             return data
 
         self.assertEqual(sample(1), 1)
-        self.assertEqual(sample(''), '')
+        self.assertEqual(sample(""), "")
         with self.assertRaises(RuntimeTypeError):
-            sample(b'')
+            sample(b"")
 
         with self.assertRaises(RuntimeTypeError):
             sample_bad(1.0)
 
     def test_good_nested_union(self):
         self.test_func(5.0)
-        self.test_func(['1', '2', 'a'])
+        self.test_func(["1", "2", "a"])
 
     def test_bad_nested_union(self):
         with self.assertRaises(RuntimeTypeError):
-            self.test_func('a')
+            self.test_func("a")
 
         with self.assertRaises(RuntimeTypeError):
             self.test_func([1, 2, 3, 4])
 
         with self.assertRaises(RuntimeTypeError):
-            self.test_func(['a', 4, 5])
+            self.test_func(["a", 4, 5])
 
     def test_nested_func_good(self):
         self.nest_func(5.0)
-        self.nest_func(['a', 'b', 'c'])
+        self.nest_func(["a", "b", "c"])
         self.nest_func([1, 2, 3])
-        self.nest_func([1, 'a', 2, 'b'])
+        self.nest_func([1, "a", 2, "b"])
 
     def test_nested_func_bad(self):
         with self.assertRaises(RuntimeTypeError):
-            self.nest_func('a')
+            self.nest_func("a")
         with self.assertRaises(RuntimeTypeError):
-            self.nest_func({'a': 5, 'b': 6})
+            self.nest_func({"a": 5, "b": 6})
         with self.assertRaises(RuntimeTypeError):
             self.nest_func({1, 2, 3, 4})
 
@@ -76,3 +78,7 @@ class UnionTypesTests(unittest.TestCase):
             return msgs
 
         test([["a", "b"], ["x", "y"]])
+
+
+if __name__ == "__name__":
+    unittest.main()
